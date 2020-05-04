@@ -1,0 +1,6 @@
+<Controller graph="gBoxFlipping_posCtrl.xml" >
+
+  <Task name="LeftCP  XYZ" effector="ContactPoint_L" controlVariable="XYZ" active="true"/>
+  <Task name="RightCP XYZ" effector="ContactPoint_R" controlVariable="XYZ" active="true"/>
+
+</Controller>

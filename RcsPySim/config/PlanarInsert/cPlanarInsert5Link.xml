@@ -1,0 +1,20 @@
+<Controller graph="gPlanarInsert5Link.xml">
+
+    <Task name="LinearPosition_X"  effector="Effector" controlVariable="X" active="true" />
+    <Task name="LinearPosition_Z"  effector="Effector" controlVariable="Z" active="true" />
+    <Task name="AngularPosition_Y" effector="Effector" controlVariable="B" active="true" />
+
+    <Task name="LinearVelocity_X"  effector="Effector" controlVariable="Xd" active="true" />
+    <Task name="LinearVelocity_Z"  effector="Effector" controlVariable="Zd" active="true" />
+    <Task name="AngularVelocity_Y" effector="Effector" controlVariable="Bd" active="true" />
+
+    <CollisionModel  DistanceThreshold="0.05">
+        <CollisionPair body1="UpperWall" body2="Link4" />
+        <CollisionPair body1="LowerWall" body2="Link4" />
+        <CollisionPair body1="LowerWall" body2="Link3" />
+        <CollisionPair body1="LowerWall" body2="Link2" />
+        <CollisionPair body1="Effector"  body2="Link3" />
+        <CollisionPair body1="Effector"  body2="Link2" />
+    </CollisionModel>
+
+</Controller>

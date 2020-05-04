@@ -1,0 +1,11 @@
+<CollisionModel DistanceThreshold="0.1">
+
+    <CollisionPair body1="Hand_L" body2="Table" DistanceThreshold="0.03"/>
+    <CollisionPair body1="Hand_R" body2="Table" DistanceThreshold="0.03"/>
+
+    <CollisionPair body1="Hand_L"   body2="Hand_R" DistanceThreshold="0.10"/>
+    <CollisionPair body1="Hand_L"   body2="Wrist3_R" DistanceThreshold="0.10"/>
+    <CollisionPair body1="Hand_R"   body2="Wrist3_L" DistanceThreshold="0.10"/>
+    <CollisionPair body1="Wrist3_L" body2="Wrist3_R" DistanceThreshold="0.08"/>
+
+</CollisionModel>

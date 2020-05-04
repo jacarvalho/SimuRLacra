@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<Experiment type="TargetTracking"
+            extraConfigDir="/home/muratore/localdisk/Software/SimuRLacra/RcsPySim/src/python/rcsenv/config/TargetTracking"
+            physicsEngine="Bullet" graphFileName="TargetTracking.xml" dt="0.01" max_steps="1000"
+            checkJointLimits="True">
+    <tasksLeft function="lin" errorDynamics="1.0 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0" goal="0.5 0.25 1.0"/>
+    <tasksLeft function="lin" errorDynamics="1.0 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0" goal="0.5 -0.5 1.0"/>
+    <tasksRight function="lin" errorDynamics="1.0 0.0 0.0 0.0 1.0 0.0 0.0 0.0 1.0" goal="0.25 0.25 1.0"/>
+  <collision file="collisionModel.xml"/>
+</Experiment>

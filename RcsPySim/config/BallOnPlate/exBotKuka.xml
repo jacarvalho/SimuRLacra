@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+
+<Experiment type="BallOnPlate"
+            extraConfigDir="config/BallOnPlate"
+            graphFileName="gBotKuka.xml"
+            physicsConfigFile="physics.xml"
+            actionModelType="plate_acc5d"
+            dt="0.02"
+            minReward="0.0001"
+            Q="0.1 0.1 1.0 1.0 1.0 0.001 0.001 0.01 0.01 0.01"
+            R="0.001 0.001"
+            rewardFcnType="exponential"
+            policyFile="pBoPTRPO.xml"
+            normalizeActions="true"
+            physicsEngine="Bullet"
+>
+	<initdomainParam ball_mass="0.2"
+                       ball_radius="0.05"
+                       ball_friction="0.4"
+                       ball_rollingfriction="0.003"
+                       ball_slip="50.0"
+                       ball_angularvelocitydamping="0"
+                       ball_linearvelocitydamping="0"
+                       ball_com_x="0"
+                       ball_com_y="0"
+                       ball_com_z="0"
+                       action_delay="0"
+    />
+</Experiment>

@@ -1,0 +1,34 @@
+<Graph>
+
+    <Body name="GroundPlane" physics="kinematic">
+        <Shape type="BOX" graphics="true" physics="true" extents="6.0 6.0 0.01" transform="0 0 -0.005 0 0 0" color="LIGHTGRAY"/>
+        <Shape type="FRAME" scale="0.5" graphics="true"/>
+    </Body>
+
+    <Body name="GoalLL" transform="-1 -1 0.15 0 0 0">
+        <Shape type="SPHERE" radius="0.06" graphics="true" physics="false" distance="false" color="RUBY_S"/>
+    </Body>
+
+    <Body name="GoalUL" transform="-1 1 0.15 0 0 0">
+        <Shape type="SPHERE" radius="0.06" graphics="true" physics="false" distance="false" color="COPPER"/>
+    </Body>
+
+    <Body name="GoalLR" transform="1 -1 0.15 0 0 0">
+        <Shape type="SPHERE" radius="0.06" graphics="true" physics="false" distance="false" color="BRONZE"/>
+    </Body>
+
+    <Body name="GoalUR" transform="1 1 0.15 0 0 0">
+        <Shape type="SPHERE" radius="0.06" graphics="true" physics="false" distance="false" color="BRASS"/>
+    </Body>
+
+    <Body name="EffectorTemp" prev="GroundPlane" mass="0.1" physics="dynamic">
+        <Joint name="DofX" type="TransX" range="-1.2 0 1.2"/>
+        <Shape type="SPHERE" radius="0.008" graphics="true" physics="true" distance="true" color="JADE_S" transform="0 0 1 0 0 0"/>
+    </Body>
+
+    <Body name="Effector" prev="EffectorTemp" mass="1" physics="dynamic">
+        <Joint name="DofY" type="TransY" range="-1.2 0 1.2"/>
+        <Shape type="SPHERE" radius="0.08" graphics="true" physics="true" distance="true" color="JADE_S" transform="0 0 0.15 0 0 0"/>
+    </Body>
+
+</Graph>

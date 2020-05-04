@@ -1,0 +1,7 @@
+<Graph xmlns:xi="http://www.w3.org/2003/XInclude" name="BoxLiftingSimple">
+
+  <xi:include href="gBoxLiftingSimple_common.xml" />
+
+  <xi:include href="../common/SimpleEffector_posCtrl.xml"/>
+
+</Graph>

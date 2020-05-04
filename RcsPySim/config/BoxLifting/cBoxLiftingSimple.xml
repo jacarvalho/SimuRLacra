@@ -1,0 +1,5 @@
+<Controller graph="gBoxLiftingSimple_posCtrl.xml" >
+
+  <Task name="Contact XYZ" effector="ContactPoint" controlVariable="XYZ" active="true"/>
+
+</Controller>

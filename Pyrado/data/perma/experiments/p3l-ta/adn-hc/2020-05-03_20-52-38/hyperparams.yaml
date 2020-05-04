@@ -1,0 +1,32 @@
+env:
+  checkJointLimits: true
+  collisionAvoidanceIK: true
+  dt: 0.02
+  max_dist_force: None
+  max_steps: 1000
+  observeCollisionCost: false
+  observeCurrentManipulability: true
+  observeDynamicalSystemDiscrepancy: false
+  observeForceTorque: true
+  observeGoalDistance: false
+  observeManipulabilityIndex: false
+  observePredictedCollisionCost: false
+  observeVelocities: false
+  physicsEngine: Bullet
+  position_mps: true
+  taskCombinationMethod: sum
+seed: 1001
+policy:
+  output_nonlin: <built-in method sigmoid of type object at 0x7f3e13217f80>
+  potentials_dyn_fcn: <function pd_cubic at 0x7f3dda4042f0>
+  tau_init: 1.0
+  tau_learnable: true
+algo:
+  expl_factor: 1.1
+  expl_r_init: 5.8
+  expl_std_init: 0.2
+  max_iter: 200
+  num_rollouts: 1
+  num_sampler_envs: 4
+  pop_size: 58
+algo_name: hc

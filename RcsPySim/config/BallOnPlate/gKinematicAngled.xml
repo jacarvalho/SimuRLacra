@@ -1,0 +1,27 @@
+<!-- Simulate the plate as kinematic object, with a tilted initial pose -->
+<Graph xmlns:xi="http://www.w3.org/2003/XInclude" name="BOPBot" >
+
+  <Body name="GroundPlane" physics="kinematic" >
+    <Shape type="BOX" graphics="true" physics="true" extents="5.0 5.0 0.01" transform="0 0 -0.005 0 0 0" color="LIGHTGRAY_TRANS"/>
+    <Shape type="FRAME" graphics="true" scale="0.5"/>
+  </Body>
+
+
+
+  <Body name="Plate" physics="kinematic" mass="5.0" transform="0 0 0 0 0 0" >
+    <!--   <Joint name="xPlate" type="TransX" range="-10 0 10"   constraint="false" />
+      <Joint name="yPlate" type="TransY" range="-10 0 10"   constraint="false" />
+      <Joint name="zPlate" type="TransZ" range="-10 1 10"   constraint="false" /> -->
+    <Joint name="a" type="RotX"   range="-170 -20 170" constraint="false" transform="0 0 1 0 0 0"/>
+    <Joint name="b" type="RotY"   range="-170 0 170" constraint="false" />
+
+    <Shape type="BOX" extents="2.0 2.0 0.02" transform="0 0 -0.01 0 0 0" color="LIGHTGRAY"  material="plate_mat"   physics="true" graphics="true"/>
+    <Shape type="FRAME" graphics="true" scale="0.5"/>
+  </Body>
+
+  <Body name="Ball" physics="dynamic" rigid_body_joints="0.0 0.0 0.1 0 0 0" mass="0.01" prev="Plate" >
+    <Shape type="SPHERE" radius="0.1" color="RUBY_S" material="ball_mat"  physics="true" graphics="true"/>
+    <Shape type="FRAME" graphics="true" scale="0.3"/>
+  </Body>
+
+</Graph>
