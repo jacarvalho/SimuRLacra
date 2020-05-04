@@ -1,0 +1,36 @@
+<!-- Bavarian Environment -->
+<Graph xmlns:xi="http://www.w3.org/2003/XInclude" name="BavariaTech">
+
+  <Body name="GroundPlane" physics="kinematic" >
+      <Shape type="BOX" extents="5.0 5.0 0.01" transform="0 0 -0.005 0 0 0" graphics="true" physics="true" color="LIGHTGRAY_TRANS" XtextureFile="../textures/fMRT_bavaria.png"/>
+      <Shape type="FRAME" graphics="true" scale="0.6"/>
+  </Body>
+
+  <xi:include href="gBeerBench_articulated.xml" />
+  
+  <Group name="_1"
+    transform="2 0 0 0 0 0">
+    <xi:include href="gPitcher_simple.xml" />
+  </Group >
+  
+  <Group name="_2"
+    transform="1 0.2 0 0 0 0">
+    <xi:include href="gPitcher_simple.xml" />
+  </Group >
+  
+  <Group name="_3"
+    transform="0 0.1 2 0 0 0">
+    <xi:include href="gPitcher_simple.xml" />
+  </Group >
+  
+  <Group name="_4"
+    transform="1 0.1 2 0 0 0">
+    <xi:include href="gPitcher_simple.xml" />
+  </Group >
+  
+  <Group name="_5"
+    transform="-1 0.1 2 0 0 0">
+    <xi:include href="gPitcher_simple.xml" />
+  </Group >
+    
+</Graph>
