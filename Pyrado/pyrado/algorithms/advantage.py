@@ -92,7 +92,7 @@ class GAE(LoggerAware, to.nn.Module):
         return self._value_fcn
 
     @value_fcn.setter
-    def value_fcn(self, value_fcn: to.nn.Module):
+    def value_fcn(self, value_fcn: [to.nn.Module, Policy]):
         """ Set the value function approximator. """
         if not isinstance(value_fcn, (to.nn.Module, Policy)):
             raise pyrado.TypeErr(given=value_fcn, expected_type=[to.nn.Module, Policy])
