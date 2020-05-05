@@ -15,15 +15,33 @@ __Pros__
 
 __Cons__
 * _No vision-based environments/tasks._ In principle there is nothing stopping you from integrating computer vision into SimuRLacra. However, I assume there are better suited frameworks out there.
+* _Without bells and whistles._ Most implementations (especially the algorithms) do not focus on performance. After all, this framework was created to understand and prototype things. 
 * _Hyper-parameters are not fully tuned._ Sometimes the most important part of reinforcement learning is the time-consuming search for the right hyper-parameters. I only did this for the environment-algorithm combinations reported in my papers. But, for all the other cases there is [Optuna](https://optuna.org/) and some optuna-based example scripts that you can start from.
 * _Unfinished GPU-support._ At the moment the porting of the policies is implemented but not fully tests. The GPU-enabled re-implementation of the simulation environments in the pysim folder (simple Python simulations) is at question. The environments based on [Rcs](https://github.com/HRI-EU/Rcs) which require the Bullet or Vortex physics engine will only be able to run on CPU.
 
-Tested on Ubuntu 16.04, 18.04 (recommended), and 19.10, with PyTorch 1.3.  
+SimuRLacra was tested on Ubuntu 16.04, 18.04 (recommended), and 19.10, with PyTorch 1.3.  
 (From Ubuntu 20.04 on Qt4 is deprecated, thus you can not build Rcs.)
+
+__Not the right framework for you?__
+* If you are looking for even more modular code or simply want to see how much you can do with Python decorators, check out [vel](https://github.com/MillionIntegrals/vel/tree/master/vel). It is a really beautiful framework.
+* If you need code optimized for performance, check out [stable baselines](https://github.com/hill-a/stable-baselines). I know, that was captain obvious.
+* If you are missing value-based algorithms will bells and whistles, check out [MushroomRL](https://github.com/MushroomRL/mushroom-rl). The main contributor is good at every sport. Sorry Carlo, but I had to make it public.
+
+## Citing
+If you use code or ideas from this project for your research, please cite SimuRLacra.
+```
+@misc{Muratore_SimuRLacra,
+  author = {Fabio Muratore},
+  title = {SimuRLacra - A Framework for Reinforcement Learning from Randomized Simulations},
+  year = {2020},
+  publisher = {GitHub},
+  journal = {GitHub repository},
+  howpublished = {\url{https://github.com/famura/SimuRLacra}}
+}
+```
 
 ## Installation
 
-### Install anaconda and create the anaconda environment
 Follow the instructions on the [anaconda homepage](https://www.anaconda.com/download/#download) to download the anaconda (or miniconda) version for your machine (andaconda 3 is recommended).
 
 Clone the repository and go to the project's directory (defaults to SimuRLacra)
@@ -34,7 +52,6 @@ git clone git@github.com:famura/SimuRLacra.git  # ssh
 cd SimuRLacra
 ```
 
-### Install SimuRLacra
 Create an anaconda environment (without PyTorch) using the provided yml-file. This takes about 3 min.
 ```
 conda env create -f Pyrado/environment.yml
