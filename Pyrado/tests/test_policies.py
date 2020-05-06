@@ -3,7 +3,6 @@ import os.path as osp
 import torch as to
 from pytest_lazyfixture import lazy_fixture
 
-from rcsenv import ControlPolicy
 from tests.conftest import m_needs_cuda
 from pyrado.policies.adn import ADNPolicy, pd_cubic
 from pyrado.policies.dummy import DummyPolicy, IdlePolicy
@@ -626,8 +625,7 @@ def test_export_cpp(policy, tmpdir):
 
 
 @to.no_grad()
-@pytest.mark.skipif('torch' not in ControlPolicy.types, reason='Requires RcsPySim compiled with libtorch!')
-@pytest.mark.nnpolicy
+@pytest.mark.m_needs_rcs
 @pytest.mark.parametrize('policy', lazy_fixture([
     'linpol_bobspec',
     'fnnpol_bobspec',
@@ -637,6 +635,10 @@ def test_export_cpp(policy, tmpdir):
     'adnpol_bobspec',
 ]), ids=['lin', 'fnn', 'rnn', 'lstm', 'gru', 'adn'])
 def test_export_rcspysim(policy, tmpdir):
+    from rcsenv import ControlPolicy
+    
+    pytest.skipif('torch' not in ControlPolicy.types, reason='Requires RcsPySim compiled with libtorch!')
+    
     # Generate scripted version (in double mode for CPP compatibility)
     scripted = policy.double().trace()
     print(scripted.graph)

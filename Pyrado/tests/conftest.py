@@ -48,7 +48,7 @@ try:
     )
     m_needs_rcs = pytest.mark.skipif(False)  # don't skip if rcsenv can be imported
 
-except ImportError:
+except (ImportError, ModuleNotFoundError):
     m_needs_vortex = pytest.mark.skip
     m_needs_bullet = pytest.mark.skip
     m_needs_rcs = pytest.mark.skip
