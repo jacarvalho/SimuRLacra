@@ -109,8 +109,12 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         model_path = osp.join(pyrado.MUJOCO_ASSETS_DIR, 'wam_cup.xml')
         super().__init__(model_path, frame_skip, max_steps, task_args)
 
-        self.p_gains = np.array([200, 300, 100, 100, 10, 10, 2.5])
-        self.d_gains = np.array([7, 15, 5, 2.5, 0.3, 0.3, 0.05])
+        # Desired position for the initial state
+        self.init_des_pos = np.array([0.0, 0.5876, 0.0, 1.36, 0.0, -0.321, -1.57])
+
+        # Controller gains
+        self.p_gains = np.array([200.0, 300.0, 100.0, 100.0, 10.0, 10.0, 2.5])
+        self.d_gains = np.array([7.0, 15.0, 5.0, 2.5, 0.3, 0.3, 0.05])
 
         self.camera_config = dict(
             trackbodyid=0,  # id of the body to track
@@ -128,7 +132,7 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
 
     def _create_spaces(self):
         # Torque space
-        max_torque = np.array([150., 125., 40., 60., 5., 5., 2.])
+        max_torque = np.array([150.0, 125.0, 40.0, 60.0, 5.0, 5.0, 2.0])
         self._torque_space = BoxSpace(-max_torque, max_torque)
 
         # State space
@@ -137,9 +141,11 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         self._state_space = BoxSpace(-max_state, max_state)
 
         # Initial state space
-        init_pos = self.init_qpos.copy()
-        init_pos[:7] = np.array([0.0, 0.58760536, 0.0, 1.36004913, 0.0, -0.32072943, -1.57])  # arm position
-        init_state = np.concatenate([init_pos, self.init_qvel.copy()]).ravel()
+        # Set the actual stable initial position
+        # .. this position would be reached after a finite time using the internal controller
+        # .. to stabilize at self.init_des_pos
+        np.put(self.init_qpos, [1, 3, 5, 6, 7], [0.6519, 1.409, -0.2827, -1.57, -0.2115])
+        init_state = np.concatenate([self.init_qpos.copy(), self.init_qvel.copy()]).ravel()
         self._init_space = SingularStateSpace(init_state)
 
         # Action space
@@ -147,30 +153,27 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         self._act_space = BoxSpace(-max_act, max_act)
 
         # Observation space
-        self._obs_space = BoxSpace(np.array([0]), np.array([self.max_steps]))
+        self._obs_space = BoxSpace(np.array([0.0]), np.array([1.0]))
 
     def _create_task(self, task_args: [dict, None] = None) -> Task:
-        # TODO: Formulate proper task/reward
-        # TODO: Desired position (slightly above cup_base) - velocity should be perpendicular to the surface rim of the cup
-        # check if velocity is downward 
+        # TODO: Formulate proper reward
+        # .. check if velocity is downward and close to center of cup; compute when a collision occurs / last timestep
         ball_pos = self.sim.data.body_xpos[40].copy()
         state_des = np.concatenate([self.init_qpos.copy(), self.init_qvel.copy()])
         return DesStateTask(self.spec, state_des, ZeroPerStepRewFcn())
 
     def _mujoco_step(self, act: np.ndarray):
-        # act = (des_qpos, des_qvel) with dim=(6,) is zero centered, therefore the init_pos is added
-        des_pos = self._init_space.sample_uniform()[:7]
-        des_pos[1] += act[0]
-        des_pos[3] += act[1]
-        des_pos[5] += act[2]
+        # Extract desired position/velocity from the `act` attribute
+        # .. `self.init_des_pos` needs to be added because the desired trajectory is centered around zero
+        des_pos = self.init_des_pos.copy()
+        np.add.at(des_pos, [1, 3, 5], act[:3])
         des_vel = np.zeros_like(des_pos)
-        des_vel[1] += act[3]
-        des_vel[3] += act[4]
-        des_vel[5] += act[5]
+        np.add.at(des_vel, [1, 3, 5], act[3:])
 
         # Compute error on position and velocity
+        nq = len(self.init_qpos)
         err_pos = des_pos - self.state[:7]
-        err_vel = des_vel - self.state[:7]
+        err_vel = des_vel - self.state[nq:nq+7]
 
         # Compute torques
         torque = self.p_gains * err_pos + self.d_gains * err_vel
