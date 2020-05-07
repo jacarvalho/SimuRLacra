@@ -122,7 +122,7 @@ class MujocoSimEnv(SimEnv, ABC, Serializable):
         self._task = self._create_task(self.task_args)
 
     @abstractmethod
-    def _mujoco_step(self, act: np.ndarray):
+    def _mujoco_step(self, act: np.ndarray) -> dict:
         """
         Apply the given action to the MuJoCo simulation. This executes one step of the physics simulation.
 
@@ -211,8 +211,8 @@ class MujocoSimEnv(SimEnv, ABC, Serializable):
         self._curr_act = act  # just for the render function
 
         # Apply the action and simulate the resulting dynamics
-        self._mujoco_step(act)
-        info = {'t': self._curr_step*self._dt}
+        info = self._mujoco_step(act)
+        info['t'] = self._curr_step*self._dt
 
         # Check if the task or the environment is done
         done = self._task.is_done(self.state)

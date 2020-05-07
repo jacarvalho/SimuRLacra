@@ -81,6 +81,8 @@ class WAMSim(MujocoSimEnv, Serializable):
         vel = self.sim.data.qvel.copy()
         self.state = np.concatenate([pos, vel])
 
+        return dict()
+
 
 class WAMBallInCupSim(MujocoSimEnv, Serializable):
     # TODO: this class is work in progress...
@@ -190,6 +192,8 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         pos = self.sim.data.qpos.copy()
         vel = self.sim.data.qvel.copy()
         self.state = np.concatenate([pos, vel])
+
+        return dict()
 
     def observe(self, state: np.ndarray) -> np.ndarray:
         return np.array([self._curr_step / self.max_steps])
