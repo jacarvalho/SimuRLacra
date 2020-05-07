@@ -193,7 +193,7 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         vel = self.sim.data.qvel.copy()
         self.state = np.concatenate([pos, vel])
 
-        return dict()
+        return dict(des_pos=des_pos, des_vel=des_vel, pos=pos[:7], vel=vel[:7])
 
     def observe(self, state: np.ndarray) -> np.ndarray:
         return np.array([self._curr_step / self.max_steps])
