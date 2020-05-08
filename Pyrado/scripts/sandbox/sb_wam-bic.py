@@ -60,9 +60,9 @@ def compute_trajectory(weights):
 
     # trajectory (corresponds to linear policy)
     q = pos_features @ weights
-    qd = vel_features @ weights / length
+    qd = vel_features @ weights #/ length
 
-    """ Possible Plotting
+    #""" Possible Plotting
     plt.figure()
     plt.plot(t, pos_features)
     plt.figure()
@@ -74,7 +74,13 @@ def compute_trajectory(weights):
     plt.figure()
     plt.plot(t, qd)
     plt.show()
-    """
+    #"""
+
+    print(np.gradient(q[:, 0], 1/1750))
+    plt.figure()
+    plt.plot(t, np.gradient(q[:, 0], 1/1750))
+    plt.plot(t, qd[:, 0])
+    plt.show()
 
     return q, qd
 
@@ -120,14 +126,16 @@ def main_dummy_mp(env):
     policy = DummyMovPrimPolicy(env.spec)
 
     res = rollout(env=env, policy=policy, eval=True, render_mode=RenderMode(video=True))
-    des_traj = res.env_infos['des_pos']
-    traj = res.env_infos['pos']
+    des_pos_traj = res.env_infos['des_pos']
+    pos_traj = res.env_infos['pos']
+    des_vel_traj = res.env_infos['des_vel']
+    vel_traj = res.env_infos['vel']
 
     # Plot trajectories of joints 1 and 3 and their corresponding desired trajectories
     for idx in [1, 3]:
         plt.figure()
-        plt.plot(des_traj[:, idx], label=f'des_qpos {idx}')
-        plt.plot(traj[:, idx], label=f'qpos {idx}')
+        plt.plot(des_pos_traj[:, idx], label=f'des_qpos {idx}')
+        plt.plot(pos_traj[:, idx], label=f'qpos {idx}')
         plt.legend()
         plt.show()
 
