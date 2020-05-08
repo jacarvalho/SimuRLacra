@@ -41,26 +41,26 @@ def compute_trajectory(weights):
     weights = np.concatenate([np.zeros((2, 3)), weights, np.zeros((2, 3))])
 
     length = 3.5  # time in seconds
-    t = np.linspace(0, 1, int(length * 500)).reshape(-1, 1)  # Observations [normalized timesteps]
+    t = np.linspace(0, 1, int(length*500)).reshape(-1, 1)  # Observations [normalized timesteps]
     centers = np.linspace(0, 1, weights.shape[0]).reshape(1, -1)  # RBF center locations
     diffs = t - centers
 
     width = 0.0035  # pyrado's scale = 1/(2*width)
 
     # features
-    w = np.exp(- diffs ** 2 / (2 * width))
-    wd = - (diffs / width) * w
+    w = np.exp(- diffs ** 2/(2*width))
+    wd = - (diffs/width)*w
 
     w_sum = np.sum(w, axis=1, keepdims=True)
     wd_sum = np.sum(wd, axis=1, keepdims=True)
 
     # normalized features
-    pos_features = w / w_sum
-    vel_features = (wd * w_sum - w * wd_sum) / w_sum ** 2
+    pos_features = w/w_sum
+    vel_features = (wd*w_sum - w*wd_sum)/w_sum ** 2
 
     # trajectory (corresponds to linear policy)
-    q = pos_features @ weights
-    qd = vel_features @ weights #/ length
+    q = pos_features@weights
+    qd = vel_features@weights/length
 
     #""" Possible Plotting
     plt.figure()
@@ -87,28 +87,74 @@ def compute_trajectory(weights):
 
 def compute_trajectory_pyrado(weights):
     weights = np.concatenate([np.zeros((2, 3)), weights, np.zeros((2, 3))])
+    weights = to.from_numpy(weights)
 
     length = 3.5
     width = 0.0035
-    t = np.linspace(0, 1, int(length * 500)).reshape(-1, 1)
+    time = np.linspace(0, 1, int(length*500)).reshape(-1, 1)  # the observations are numpy arrays, so we mimic this here
+    time = to.tensor(time, requires_grad=True)  # policy and backprop works with tensors
+
     rbf = RBFFeat(num_feat_per_dim=weights.shape[0],
                   bounds=(np.array([0.]), np.array([1.])),
                   scale=1/(2*width))
-    pos_features = rbf(to.from_numpy(t))
 
-    q = pos_features @ weights
+    pos_feat = rbf(time)
+    q = pos_feat@weights
 
-    # TODO: How to compute the desired velocities `qd` with pyrado?
+    """ Explicit """
 
-    return q
+    vel_feat_E = rbf.derivative(time)
+    qd_E = vel_feat_E@weights
+
+    """ Autograd """
+
+    q1, q2, q3 = q.t()
+    q1.backward(to.ones((1750,)), retain_graph=True)
+    q1d = time.grad.clone()
+    time.grad.fill_(0.)
+    q2.backward(to.ones((1750,)), retain_graph=True)
+    q2d = time.grad.clone()
+    time.grad.fill_(0.)
+    q3.backward(to.ones((1750,)))
+    q3d = time.grad.clone()
+
+    qd = to.cat([q1d, q2d, q3d], dim=1)
+
+    """ Check similarity """
+    assert to.norm(qd_E - qd) < 1e-6
+
+    return q, qd
 
 
 def check_feat_equality():
     weights = np.random.normal(0, 10*np.pi/180, (5, 3))
-    q1 = compute_trajectory_pyrado(weights)
-    q2, _ = compute_trajectory(weights)
+    q1, qd1 = compute_trajectory_pyrado(weights)
+    q2, qd2 = compute_trajectory(weights)
 
-    return np.allclose(q1.numpy(), q2)
+    assert q1.size() == q2.shape
+    assert qd1.size() == qd2.shape
+
+    is_q_equal = np.allclose(q1.detach().numpy(), q2)
+    is_qd_equal = np.allclose(qd1.detach().numpy(), qd2)
+
+    correct = is_q_equal and is_qd_equal
+
+    if not correct:
+        _, axs = plt.subplots(2)
+        axs[0].set_title('positions - solid: pyrado, dashed: reference')
+        axs[0].plot(q1.detach().numpy())
+        axs[0].set_prop_cycle(None)
+        axs[0].plot(q2, ls='--')
+        axs[1].set_title('velocities - solid: pyrado, dashed: reference, dotted: finite difference')
+        axs[1].plot(qd1.detach().numpy())
+        axs[1].set_prop_cycle(None)
+        axs[1].plot(qd2, ls='--')
+        if is_q_equal:  # q1 and a2 are the same
+            finite_diff = np.diff(np.concatenate([np.zeros((1, 3)), q2], axis=0)*500., axis=0)  # init with 0, 500Hz
+            axs[1].plot(finite_diff, c='k', ls=':')
+        plt.show()
+
+    return correct
 
 
 def main_stabilization(env):
