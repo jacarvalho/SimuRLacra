@@ -84,7 +84,7 @@ class RunningNormalizer:
         return (data - self._bound_lo) / (self._bound_up - self._bound_lo) * 2 - 1
 
 
-def normalize(x: [np.ndarray, to.Tensor], axis: int = -1, order: int = 1) -> (np.ndarray, to.Tensor):
+def normalize(x: [np.ndarray, to.Tensor], axis: int = -1, order: int = 1, eps: float = 1e-8) -> (np.ndarray, to.Tensor):
     """
     Normalize a numpy `ndarray` or a PyTroch `Tensor` without changing the input.
     Choosing `axis=1` and `norm_order=1` makes all columns of sum to 1.
@@ -92,15 +92,16 @@ def normalize(x: [np.ndarray, to.Tensor], axis: int = -1, order: int = 1) -> (np
     :param x: input to normalize
     :param axis: axis of the array to normalize along
     :param order: order of the norm (e.g., L_1 norm: absolute values, L_2 norm: quadratic values)
+    :param eps: lower bound on the norm, to avoid division by zero
     :return: normalized array
     """
     if isinstance(x, np.ndarray):
         norm_x = np.atleast_1d(np.linalg.norm(x, ord=order, axis=axis))  # calculate norm over axis
-        norm_x[norm_x == 0] = 1.  # avoid division by 0
+        norm_x = np.where(norm_x > eps, norm_x, np.ones_like(norm_x))  # avoid division by 0
         return x/np.expand_dims(norm_x, axis)  # element wise division
     elif isinstance(x, to.Tensor):
         norm_x = to.norm(x, p=order, dim=axis)  # calculate norm over axis
-        norm_x[norm_x == 0] = 1.
+        norm_x = to.where(norm_x > eps, norm_x, to.ones_like(norm_x))  # avoid division by 0
         return x/norm_x.unsqueeze(axis)  # element wise division
     else:
         raise pyrado.TypeErr(given=x, expected_type=[np.array, to.Tensor])
