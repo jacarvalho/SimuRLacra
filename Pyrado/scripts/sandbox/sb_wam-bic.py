@@ -60,9 +60,14 @@ def compute_trajectory(weights):
 
     # trajectory (corresponds to linear policy)
     q = pos_features@weights
-    qd = vel_features@weights/length
+    qd = vel_features@weights
 
-    #""" Possible Plotting
+    """ Check if gradient is correct with finite difference approximation """
+    for i in range(q.shape[1]):
+        qd_approx = np.gradient(q[:, i], 1/(length*500))
+        assert np.allclose(qd_approx, qd[:, i], rtol=1e-3, atol=1e-3)
+
+    """ Possible Plotting
     plt.figure()
     plt.plot(t, pos_features)
     plt.figure()
@@ -74,13 +79,7 @@ def compute_trajectory(weights):
     plt.figure()
     plt.plot(t, qd)
     plt.show()
-    #"""
-
-    print(np.gradient(q[:, 0], 1/1750))
-    plt.figure()
-    plt.plot(t, np.gradient(q[:, 0], 1/1750))
-    plt.plot(t, qd[:, 0])
-    plt.show()
+    """
 
     return q, qd
 
