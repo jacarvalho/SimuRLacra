@@ -260,24 +260,26 @@ python setup_deps.py pytorch -j12
 ```
 
 ### Lapack library not found in compile time (PyTorch)
-Run
+__Option 1:__ if you have sudo rights, run
 ```
 sudo apt-get install libopenblas-dev
 ```
-and then rebuild PyTorch (from scratch).
+and then rebuild PyTorch from scratch.
 
+__Option 2:__ if you don't have sudo rights, run
+```
+conda install -c conda-forge lapack
+```
+and then rebuild PyTorch from scratch.
 
 ### Pyrado's policy export tests are skipped
-
 Set `USE_LIBTORCH = ON` for the cmake arguments of `RcsPySim`
 ```
 cd PATH_TO/SimuRLacra/Rcs/build
 ccmake .  # set the option, configure (2x), and generate
 ```
 
-
 ### PyTorch compilation is too slow or uses too many CPUs
-
 The Pytorch setup script (thirdParty/pytorch/setup.py) determines the number of cpus to compile automatically. It can be overridden by setting the environment variable MAX_JOBS:
 ```
 export MAX_JOBS=1
@@ -286,7 +288,6 @@ Please use your shell syntax accordingly (the above example is for bash).
 
 
 ### Set up MuJoCo and mujoco-py
-
 Download `mujoco200 linux` from the [official page](https://www.roboti.us/index.html) and extract it to `~/.mujoco` such that you have `~/.mujoco/mujoco200`. Put your MuJoCo license file in `~/.mujoco`.
 
 During executing `setup_deps.py`, mujoco-py is set up as a git submodule and installed via the downloaded `setup.py`.
