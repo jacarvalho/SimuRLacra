@@ -28,13 +28,13 @@ IN_HRI = 'SIT' in os.environ
 # Allows to use them in the configuration
 
 parser = argparse.ArgumentParser(description='Setup RcsPySim dev env')
-parser.add_argument('tasks', metavar='task', type=str, nargs='*', help='Subtasks to execute')
-parser.add_argument('--vortex', help='Use vortex physics engine', action='store_true', default=False)
-parser.add_argument('--use-cuda', dest='usecuda', help='Use CUDA for PyTorch', action='store_true', default=False)
-parser.add_argument('--headless', help='Build in headless mode', action='store_true')
-parser.add_argument('--local-torch', dest='uselibtorch', help='Use the local libtorch from the thirdParty directory', action='store_true', default=True)
-parser.add_argument('--no-local-torch', dest='uselibtorch', help='Use the local libtorch from the thirdParty directory', action='store_false')
-parser.add_argument('-j', help='Number of make threads', default=1, type=int)
+parser.add_argument('tasks', metavar='task', type=str, nargs='*', help='Subtasks to execute. Suggested tasks are `all` (includes every feature) or `no_rcs` (excludes Rcs and RcsPysim). To get a list of all availibe tasks, run `python setup_deps.py`.')
+parser.add_argument('--vortex', action='store_true', default=False, help='Use vortex physics engine')
+parser.add_argument('--use-cuda', dest='usecuda', action='store_true', default=False, help='Use CUDA for PyTorch')
+parser.add_argument('--headless', action='store_true', help='Build in headless mode')
+parser.add_argument('--local-torch', dest='uselibtorch', action='store_true', default=True, help='Use the local libtorch from the thirdParty directory')
+parser.add_argument('--no-local-torch', dest='uselibtorch', action='store_false', help='Use the local libtorch from the thirdParty directory')
+parser.add_argument('-j', default=1, type=int, help='Number of make threads')
 
 args = parser.parse_args()
 # Check for help print later, when the tasks are defined
@@ -404,7 +404,7 @@ def setup_separate_pytorch():
     setup_meshes()
     setup_mujoco_py()
     setup_pyrado()
-    print("\nWM5, Rcs, RcsPySim, iiwa & Schunk meshes, mujoco-py, and Pyrado are set up!\n")
+    print("\nWM5, Rcs, RcsPySim, iiwa & Schunk & WAM meshes, mujoco-py, and Pyrado are set up!\n")
 
 
 def setup_no_rcs():
@@ -414,7 +414,7 @@ def setup_no_rcs():
     setup_pyrado()
     setup_mujoco_py()
     setup_pytorch_based()
-    print("\nWM5, Rcs, PyTorch, RcsPySim, iiwa & Schunk meshes, mujoco-py, Pyrado (with GPyTorch, BoTorch, and Pyro) are set up!\n")
+    print("\nPyTorch, RcsPySim, WAM meshes, mujoco-py, Pyrado (with GPyTorch, BoTorch, and Pyro) are set up!\n")
 
 
 def setup_all():
@@ -428,7 +428,7 @@ def setup_all():
     setup_pyrado()
     setup_mujoco_py()
     setup_pytorch_based()
-    print("\nWM5, Rcs, PyTorch, RcsPySim, iiwa & Schunk meshes, mujoco-py, Pyrado (with GPyTorch, BoTorch, and Pyro) are set up!\n")
+    print("\nWM5, Rcs, PyTorch, RcsPySim, iiwa & Schunk & WAM meshes, mujoco-py, Pyrado (with GPyTorch, BoTorch, and Pyro) are set up!\n")
     
 
 # All tasks list
