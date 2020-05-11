@@ -13,14 +13,18 @@
 import os
 import sys
 
-# Add the Pyrado package to the path
-sys.path.insert(0, os.path.abspath('../..'))
+from pyrado import VERSION
+
+# Add packages to the path
+sys.path.insert(0, os.path.abspath('..'))  # doc folder
+sys.path.insert(0, os.path.abspath('../..'))  # Pyrado folder
 
 # -------------------
 # Project information
 # -------------------
 project = 'Pyrado'
-version = '0.1'
+version = '.'.join(VERSION.split('.'))  # short version
+release = VERSION  # full version including tags
 copyright = '2020'
 author = 'Fabio Muratore & Felix Treede & Robin Menzenbach'
 

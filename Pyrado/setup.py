@@ -1,8 +1,10 @@
 from setuptools import setup, find_packages
 
+from pyrado import VERSION
+
 setup(
     name='pyrado',
-    version='0.1',
+    version=VERSION,
     description='A framework for reinforcement learning with domain randomization',
     author='Fabio Muratore & Felix Treede & Robin Menzenbach',
     author_email='muratore@ias.tu-darmstadt.de',
