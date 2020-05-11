@@ -27,7 +27,7 @@ class FinalRewMode(NamedTuple):
 
 class FinalRewTask(TaskWrapper, Serializable):
     """
-    Wrapper for tasks which yield a reward / cost on success / failure
+    Wrapper for tasks which yields a reward / cost on success / failure
     
     :usage:
     .. code-block:: python
@@ -45,7 +45,7 @@ class FinalRewTask(TaskWrapper, Serializable):
         """
         Serializable._init(self, locals())
 
-        # Invoke base constructor
+        # Call TaskWrapper's constructor
         super().__init__(wrapped_task)
 
         if not isinstance(mode, FinalRewMode):
@@ -159,3 +159,65 @@ class FinalRewTask(TaskWrapper, Serializable):
 
             else:
                 raise NotImplementedError(f'No matching configuration found for the given FinalRewMode:\n{self.mode}')
+
+
+class BestStateFinalRewTask(TaskWrapper, Serializable):
+    """
+    Wrapper for tasks which yields a reward / cost on success / failure based on the best reward / cost observed in the
+    current trajectory that is scaled by the number of taken / remaining time steps.
+    """
+
+    def __init__(self, wrapped_task: Task, max_steps: int, factor: float = 1.):
+        """
+        Constructor
+
+        :param wrapped_task: task to wrap
+        :param max_steps: maximum number of time steps in the environment to infer the number of steps when done
+        :param factor: value to scale the final reward
+        """
+        Serializable._init(self, locals())
+
+        # Call TaskWrapper's constructor
+        super().__init__(wrapped_task)
+
+        if not isinstance(max_steps, int):
+            raise pyrado.TypeErr(given=max_steps, expected_type=int)
+        self._max_steps = max_steps
+        self.factor = factor
+        self.best_rew = -pyrado.inf
+        self._yielded_final_rew = False
+
+    @property
+    def yielded_final_rew(self) -> bool:
+        """ Get the flag that signals if this instance already yielded its final reward. """
+        return self._yielded_final_rew
+
+    def step_rew(self, state: np.ndarray, act: np.ndarray, remaining_steps: int) -> float:
+        rew = self._wrapped_task.step_rew(state, act, remaining_steps)
+        if rew > self.best_rew:
+            self.best_rew = rew
+        return rew
+
+    def reset(self, **kwargs):
+        super().reset(**kwargs)
+        self.best_rew = -pyrado.inf
+        self._yielded_final_rew = False
+
+    def compute_final_rew(self, state: np.ndarray, remaining_steps: int) -> float:
+        """
+        Compute the reward / cost on task completion / fail of this task.
+
+        :param state: current state of the environment
+        :param remaining_steps: number of time steps left in the episode
+        :return: final reward of this task
+        """
+        if self._yielded_final_rew:
+            # Only yield the final reward once
+            return 0.
+
+        else:
+            self._yielded_final_rew = True
+
+            # Return the highest reward / lowest cost scaled with the number of taken time steps and the factor
+            scale = (self._max_steps - remaining_steps) * self.factor
+            return scale * self.best_rew
