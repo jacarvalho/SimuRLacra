@@ -290,35 +290,35 @@ class RBFFeat:
         return feat_val
 
     def derivative(self, inp: to.Tensor) -> to.Tensor:
-            """
-            Compute the drivative of the features w.r.t. the inputs.
+        """
+        Compute the drivative of the features w.r.t. the inputs.
 
-            .. note::
-                Only processing of 1-dim input (e.g., no images)! The input can be batched along the first dimension.
+        .. note::
+            Only processing of 1-dim input (e.g., no images)! The input can be batched along the first dimension.
 
-            :param inp: input i.e. observations in the RL setting
-            :return: value of all features derivatives given the observations
-            """
+        :param inp: input i.e. observations in the RL setting
+        :return: value of all features derivatives given the observations
+        """
 
-            if inp.ndimension() > 2:
-                raise pyrado.ShapeErr(msg='RBF class can only handle 1-dim or 2-dim input!')
-            inp = atleast_2D(inp)  # first dim is the batch size, the second dim it the actual input dimension
-            inp = inp.reshape(inp.shape[0], 1, inp.shape[1]).repeat(1, self.centers.shape[0], 1)  # reshape explicitly
+        if inp.ndimension() > 2:
+            raise pyrado.ShapeErr(msg='RBF class can only handle 1-dim or 2-dim input!')
+        inp = atleast_2D(inp)  # first dim is the batch size, the second dim it the actual input dimension
+        inp = inp.reshape(inp.shape[0], 1, inp.shape[1]).repeat(1, self.centers.shape[0], 1)  # reshape explicitly
 
-            exp_sq_dist = to.exp(-self.scale*to.pow(inp - self.centers, 2))
-            exp_sq_dist_d = -2*self.scale * (inp - self.centers)
+        exp_sq_dist = to.exp(-self.scale*to.pow(inp - self.centers, 2))
+        exp_sq_dist_d = -2*self.scale * (inp - self.centers)
 
-            feat_val = to.empty(inp.shape[0], self.num_feat)
-            feat_val_dot = to.empty(inp.shape[0], self.num_feat)
+        feat_val = to.empty(inp.shape[0], self.num_feat)
+        feat_val_dot = to.empty(inp.shape[0], self.num_feat)
 
-            for i, (sample, sample_d) in enumerate(zip(exp_sq_dist, exp_sq_dist_d)):
-                if self._state_wise_norm:
-                    # Normalize the features such that the activation for every state dimension sums up to one
-                    feat_val[i, :] = normalize(sample, axis=0, order=1).reshape(-1, )
-                else:
-                    # Turn the features into a vector and normalize over all of them
-                    feat_val[i, :] = normalize(sample.t().reshape(-1, ), axis=-1, order=1)
+        for i, (sample, sample_d) in enumerate(zip(exp_sq_dist, exp_sq_dist_d)):
+            if self._state_wise_norm:
+                # Normalize the features such that the activation for every state dimension sums up to one
+                feat_val[i, :] = normalize(sample, axis=0, order=1).reshape(-1, )
+            else:
+                # Turn the features into a vector and normalize over all of them
+                feat_val[i, :] = normalize(sample.t().reshape(-1, ), axis=-1, order=1)
 
-                feat_val_dot[i, :] = sample_d.squeeze() * feat_val[i, :] - feat_val[i, :] * sum(sample_d.squeeze() * feat_val[i, :])
+            feat_val_dot[i, :] = sample_d.squeeze() * feat_val[i, :] - feat_val[i, :] * sum(sample_d.squeeze() * feat_val[i, :])
 
-            return feat_val_dot
+        return feat_val_dot
