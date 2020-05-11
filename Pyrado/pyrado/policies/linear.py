@@ -1,5 +1,4 @@
 import torch as to
-import torch.nn as nn
 
 import pyrado
 from pyrado.utils.data_types import EnvSpec
@@ -32,7 +31,7 @@ class LinearPolicy(Policy):
 
         self._feats = feats
         self._num_feat = feats.get_num_feat(self._num_obs)
-        self.net = nn.Linear(self._num_feat, self._num_act, bias=False)
+        self.net = to.nn.Linear(self._num_feat, self._num_act, bias=False)
 
         # Call custom initialization function after PyTorch network parameter initialization
         init_param_kwargs = init_param_kwargs if init_param_kwargs is not None else dict()
@@ -41,7 +40,7 @@ class LinearPolicy(Policy):
 
     @property
     def features(self) -> FeatureStack:
-        """ Get the (nonlinear) feature transformations). """
+        """ Get the (nonlinear) feature transformations. """
         return self._feats
 
     def init_param(self, init_values: to.Tensor = None, **kwargs):
@@ -60,17 +59,16 @@ class LinearPolicy(Policy):
         """
         return self._feats(obs)
 
-    def forward(self, obs: to.Tensor, feats_val: to.Tensor = None) -> to.Tensor:
+    def forward(self, obs: to.Tensor) -> to.Tensor:
         """
         Evaluate the features at the given observation or use given feature values
 
         :param obs: observations from the environment
-        :param feats_val: values of the features, if not None (i.e., precomputed features), observations are ignored
         :return: actions
         """
         obs = obs.to(self.device)
         batched = obs.ndimension() == 2  # number of dim is 1 if unbatched, dim > 2 is cought by features
-        feats_val = self.eval_feats(obs) if feats_val is None else feats_val
+        feats_val = self.eval_feats(obs)
 
         # Inner product between policy parameters and the value of the features
         act = self.net(feats_val)
