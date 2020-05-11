@@ -11,16 +11,450 @@ from pyrado.environments.pysim.quanser_cartpole import QCartPoleSim
 from pyrado.environments.pysim.quanser_qube import QQubeSim
 from pyrado.environment_wrappers.utils import inner_env
 from pyrado.policies.base import Policy
-from pyrado.policies.features import FeatureStack, identity_feat
+from pyrado.policies.features import FeatureStack, identity_feat, RBFFeat
 from pyrado.policies.linear import LinearPolicy
 from pyrado.utils.math import clamp_symm
 from pyrado.utils.tensor_utils import insert_tensor_col
+
+
+class DualRBFLinearPolicy(LinearPolicy):
+    """
+    A linear policy with RBF features which are also used to get the derivative of the features.
+    The use-case in mind is a simple policy which generates the joint position and joint velocity commands for the
+    internal PD-controller of a robot (e.g. Barrett WAM). By re-using the RBF, we reduce the number of parameters,
+    while we can at the same time get the velocity information from the features, i.e. the derivative of the normalized
+    Gaussians.
+    """
+
+    def __init__(self,
+                 spec: EnvSpec,
+                 rbf_hparam: dict,
+                 init_param_kwargs: dict = None,
+                 use_cuda: bool = False):
+        """
+        Constructor
+
+        :param spec: specification of environment
+        :param rbf_hparam: hyper-parameters for the RBF-features, see `RBFFeat`
+        :param init_param_kwargs: additional keyword arguments for the policy parameter initialization
+        """
+        self._feats = RBFFeat(**rbf_hparam)
+
+        # Call LinearPolicy's constructor (custom parts will be overridden later)
+        super().__init__(spec, FeatureStack([self._feats]), init_param_kwargs, use_cuda)
+        if not self._num_act%2 == 0:
+            raise pyrado.ShapeErr(msg='DualRBFLinearPolicy only works with an even number of actions')
+
+        # Override custom parts
+        self._feats = RBFFeat(**rbf_hparam)
+        self._num_feat = self._feats.num_feat
+        self.net = to.nn.Linear(self._num_feat, self._num_act//2, bias=False)
+
+        # Call custom initialization function after PyTorch network parameter initialization
+        init_param_kwargs = init_param_kwargs if init_param_kwargs is not None else dict()
+        self.init_param(None, **init_param_kwargs)
+        self.to(self.device)
+
+    def forward(self, obs: to.Tensor) -> to.Tensor:
+        """
+        Evaluate the features at the given observation or use given feature values
+
+        :param obs: observations from the environment
+        :return: actions
+        """
+        obs = obs.to(self.device)
+        batched = obs.ndimension() == 2  # number of dim is 1 if unbatched, dim > 2 is cought by features
+        feats_val = self.eval_feats(obs)
+        feats_dot = self._feats.derivative(obs)
+
+        # Inner product between policy parameters and the value of the features
+        act_pos = self.net(feats_val)
+        act_vel = self.net(feats_dot)
+        act = to.cat([act_pos, act_vel], dim=0)
+
+        # Return the flattened tensor if not run in a batch mode to be compatible with the action spaces
+        return act.flatten() if not batched else act
+
+
+class QBallBalancerPDCtrl(Policy):
+    """
+    PD-controller for the Quanser Ball Balancer.
+    The only but significant difference of this controller to the other PD controller is the clipping of the actions.
+
+    .. note::
+        This class's desired state specification deviates from the Pyrado policies which interact with a `Task`.
+    """
+
+    def __init__(self,
+                 env_spec: EnvSpec,
+                 state_des: to.Tensor = to.zeros(2),
+                 kp: to.Tensor = None,
+                 kd: to.Tensor = None):
+        """
+        Constructor
+
+        :param env_spec: environment specification
+        :param state_des: tensor of desired x and y ball position [m]
+        :param kp: 2x2 tensor of constant controller feedback coefficients for error [V/m]
+        :param kd: 2x2 tensor of constant controller feedback coefficients for error time derivative [Vs/m]
+        """
+        super().__init__(env_spec)
+
+        self.state_des = state_des
+        self.limit_rad = 0.52360  # limit for angle command; see the saturation block in the Simulink model
+        self.kp_servo = 14.  # P-gain for the servo angle; see the saturation block the Simulink model
+        self.Kp, self.Kd = None, None
+        self.init_param(kp, kd)
+
+    def forward(self, obs: to.Tensor) -> to.Tensor:
+        """
+        Calculate the controller output.
+
+        :param obs: observation from the environment
+        :return act: controller output [V]
+        """
+        th_x, th_y, x, y, _, _, x_dot, y_dot = obs
+
+        err = to.tensor([self.state_des[0] - x, self.state_des[1] - y])
+        err_dot = to.tensor([0. - x_dot, 0. - y_dot])
+        th_des = self.Kp.mv(err) + self.Kd.mv(err_dot)
+
+        # Saturation for desired angular position
+        th_des = to.clamp(th_des, -self.limit_rad, self.limit_rad)
+        err_th = th_des - to.tensor([th_x, th_y])
+
+        # Return action, see "Actuator Electrical Dynamics" block in [1]
+        return err_th*self.kp_servo
+
+    def init_param(self, kp: to.Tensor = None, kd: to.Tensor = None, verbose: bool = False, **kwargs):
+        """
+        Initialize controller parameters.
+
+        :param kp: 2x2 tensor of constant controller feedback coefficients for error [V/m]
+        :param kd: 2x2 tensor of constant controller feedback coefficients for error time derivative [Vs/m]
+        :param verbose: print the controller's gains
+        """
+        self.Kp = to.diag(to.tensor([3.45, 3.45])) if kp is None else kp
+        self.Kd = to.diag(to.tensor([2.11, 2.11])) if kd is None else kd
+        if not self.Kp.shape == (2, 2):
+            raise pyrado.ShapeErr(given=self.Kp, expected_match=(2, 2))
+        if not self.Kd.shape == (2, 2):
+            raise pyrado.ShapeErr(given=self.Kd, expected_match=(2, 2))
+
+        if verbose:
+            print(f"Set Kp to\n{self.Kp.numpy()}\nand Kd to\n{self.Kd.numpy()}")
+
+    def reset(self, state_des: [np.ndarray, to.Tensor] = None):
+        """
+        Set the controller's desired state.
+
+        :param state_des: tensor of desired x and y ball position [m], or None to keep the current desired state
+        """
+        if state_des is not None:
+            if isinstance(state_des, to.Tensor):
+                pass
+            elif isinstance(state_des, np.ndarray):
+                self.state_des = to.from_numpy(state_des).type(to.get_default_dtype())
+            else:
+                raise pyrado.TypeErr(given=state_des, expected_type=[to.Tensor, np.ndarray])
+            self.state_des = state_des.clone()
+
+
+class QCartPoleSwingUpAndBalanceCtrl(Policy):
+    """ Swing-up and balancing controller for the Quanser Cart-Pole """
+
+    def __init__(self,
+                 env_spec: EnvSpec,
+                 u_max: float = 18.,
+                 v_max: float = 12.,
+                 long: bool = False):
+        """
+        Constructor
+
+        :param env_spec: environment specification
+        :param u_max:
+        :param v_max: maximum voltage the control signal will be clipped to
+        :param long: flag for long or short pole
+        """
+        super().__init__(env_spec)
+
+        # Store inputs
+        self.u_max = u_max
+        self.v_max = v_max
+        self.pd_control = False
+        self.pd_activated = False
+        self.long = long
+        self.dp_nom = QCartPoleSim.get_nominal_domain_param(self.long)
+
+        if long:
+            self.K_pd = to.tensor([-41.833, 189.8393, -47.8483, 28.0941])
+        else:
+            self.k_p = to.tensor(8.5)  # former: 8.5
+            self.k_d = to.tensor(0.)  # former: 0.
+            self.k_e = to.tensor(24.5)  # former: 19.5 (frequency dependent)
+            self.K_pd = to.tensor([41., -200., 55., -16.])  # former: [+41.8, -173.4, +46.1, -16.2]
+
+    def init_param(self, init_values: to.Tensor = None, **kwargs):
+        pass
+
+    def forward(self, obs: to.Tensor) -> to.Tensor:
+        """
+        Calculate the controller output.
+
+        :param obs: observation from the environment
+        :return act: controller output [V]
+        """
+        x, sin_th, cos_th, x_dot, theta_dot = obs
+        theta = to.atan2(sin_th, cos_th)
+        alpha = (theta - math.pi) if theta > 0 else (theta + math.pi)
+
+        J_pole = self.dp_nom['l_pole']**2*self.dp_nom['m_pole']/3.
+        J_eq = self.dp_nom['m_cart'] + (self.dp_nom['eta_g']*self.dp_nom['K_g']**2*
+                                        self.dp_nom['J_m'])/self.dp_nom['r_mp']**2
+
+        # Energy terms
+        Ek = J_pole/2.*theta_dot**2
+        Ep = self.dp_nom['m_pole']*self.dp_nom['g']*self.dp_nom['l_pole']*(
+                1 - cos_th)  # E(0) = 0., E(pi) = E(-pi) = 2 mgl
+        Er = 2.*self.dp_nom['m_pole']*self.dp_nom['g']*self.dp_nom['l_pole']
+
+        if to.abs(alpha) < 0.1745 or self.pd_control:
+            # Stabilize at the top
+            self.pd_activated = True
+            u = self.K_pd.dot(to.tensor([x, alpha, x_dot, theta_dot]))
+        else:
+            # Swing up
+            u = self.k_e*(Ek + Ep - Er)*to.sign(theta_dot*cos_th) + self.k_p*(0. - x) + self.k_d*(0. - x_dot)
+            u = u.clamp(-self.u_max, self.u_max)
+
+            if self.pd_activated:
+                self.pd_activated = False
+
+        act = (J_eq*self.dp_nom['R_m']*self.dp_nom['r_mp']*u)/ \
+              (self.dp_nom['eta_g']*self.dp_nom['K_g']*self.dp_nom['eta_m']*self.dp_nom['k_m']) + \
+              self.dp_nom['K_g']*self.dp_nom['k_m']*x_dot/self.dp_nom['r_mp']
+
+        # Return the clipped action
+        act = act.clamp(-self.v_max, self.v_max)
+        return act.view(1)  # such that when act is later converted to numpy it does not become a float
+
+
+class QQubeSwingUpAndBalanceCtrl(Policy):
+    """ Hybrid controller (QQubeEnergyCtrl, QQubePDCtrl) switching based on the pendulum pole angle alpha """
+
+    def __init__(self,
+                 env_spec: EnvSpec,
+                 ref_energy: float = 0.04,  # Quanser's value: 0.04
+                 energy_gain: float = 30.,  # Quanser's value: 25.
+                 acc_max: float = 5.,  # Quanser's value: 5.
+                 alpha_max_pd_enable: float = 10.,  # Quanser's value: 20
+                 pd_gains=to.tensor([-0.42, 18.45, -0.53, 1.53]),  # Quanser's value: [-2., 30., -2., 2.5]
+                 energy_th_gain=0.4):
+        """
+        Constructor
+
+        :param env_spec: environment specification
+        :param ref_energy: reference energy level
+        :param energy_gain: P-gain on the difference to the reference energy
+        :param acc_max: maximum acceleration
+        :param alpha_max_pd_enable: angle threshold for enabling the PD -controller [deg]
+        :param pd_gains: gains for the PD-controller
+        :param energy_th_gain: P-gain on angle theta for the Energy controller
+        """
+        super().__init__(env_spec)
+
+        self.alpha_max_pd_enable = alpha_max_pd_enable/180.*math.pi
+
+        # Set up the energy and PD controller
+        self.e_ctrl = QQubeEnergyCtrl(env_spec, ref_energy, energy_gain, acc_max, energy_th_gain)
+        self.pd_ctrl = QQubePDCtrl(env_spec, k=pd_gains, al_des=math.pi)
+
+    def pd_enabled(self, cos_al: [float, to.Tensor]) -> bool:
+        """
+        Check if the PD-controller should be enabled based oin a predefined threshold on the alpha angle.
+
+        :param cos_al: cosine of the pendulum pole angle
+        :return: bool if condition is met
+        """
+        cos_al_delta = 1. + to.cos(to.tensor(math.pi - self.alpha_max_pd_enable))
+        return bool(to.abs(1. + cos_al) < cos_al_delta)
+
+    def init_param(self, init_values: to.Tensor = None, **kwargs):
+        pass
+
+    def forward(self, obs: to.tensor):
+        # Reconstruct the sate for the error-based controller
+        sin_th, cos_th, sin_al, cos_al, th_d, al_d = obs
+        s = to.stack([to.atan2(sin_th, cos_th), to.atan2(sin_al, cos_al), th_d, al_d])
+
+        if self.pd_enabled(cos_al):
+            s[1] = s[1]%(2*math.pi)  # alpha can have multiple revolutions
+            return self.pd_ctrl(s)
+        else:
+            return self.e_ctrl(s)
+
+
+class QQubeEnergyCtrl(Policy):
+    """ Energy-based controller used to swing the pendulum up """
+
+    def __init__(self,
+                 env_spec: EnvSpec,
+                 ref_energy: float,
+                 energy_gain: float,
+                 acc_max: float,
+                 th_gain: float):
+        """
+        Constructor
+
+        :param env_spec: environment specification
+        :param ref_energy: reference energy level [J]
+        :param energy_gain: P-gain on the energy [m/s/J]
+        :param acc_max: maximum linear acceleration of the pendulum pivot [m/s**2]
+        :param th_gain: P-gain on angle theta
+        """
+        super().__init__(env_spec)
+
+        # Initialize parameters
+        self._log_E_ref = to.nn.Parameter(to.log(to.tensor(ref_energy)), requires_grad=True)
+        self._log_E_gain = to.nn.Parameter(to.log(to.tensor(energy_gain)), requires_grad=True)
+        self._th_gain = to.nn.Parameter(to.tensor(th_gain), requires_grad=True)
+        self.acc_max = to.tensor(acc_max)
+        self.dp_nom = QQubeSim.get_nominal_domain_param()
+
+    @property
+    def E_ref(self):
+        return to.exp(self._log_E_ref)
+
+    @E_ref.setter
+    def E_ref(self, new_E_ref):
+        self._log_E_ref = to.log(new_E_ref)
+
+    @property
+    def E_gain(self):
+        r""" Called $\mu$ by Quanser."""
+        return to.exp(self._log_E_gain)
+
+    @E_gain.setter
+    def E_gain(self, new_mu):
+        r""" Called $\mu$ by Quanser."""
+        self._log_E_gain = to.log(new_mu)
+
+    def init_param(self, init_values: to.Tensor = None, **kwargs):
+        pass
+
+    def forward(self, obs: to.Tensor):
+        """
+        Control step of energy-based controller which is used in the swing-up controller
+
+        :param obs: observations pre-processed in the `forward` method of `QQubeSwingUpAndBalanceCtrl`
+        :return: action
+        """
+        # Reconstruct partial state
+        th, al, thd, ald = obs
+
+        # Compute energies
+        Jp = self.dp_nom['Mp']*self.dp_nom['Lp']**2/12.
+        E_kin = 0.5*Jp*ald**2
+        E_pot = 0.5*self.dp_nom['Mp']*self.dp_nom['g']*self.dp_nom['Lp']*(1. - to.cos(al))
+        E = E_kin + E_pot
+
+        # Compute clipped action
+        u = self.E_gain*(self.E_ref - E)*to.sign(ald*to.cos(al)) + self._th_gain*th
+        acc = clamp_symm(u, self.acc_max)
+        trq = self.dp_nom['Mr']*self.dp_nom['Lr']*acc
+        volt = -self.dp_nom['Rm']/self.dp_nom['km']*trq
+        return volt.unsqueeze(0)
+
+
+class QQubePDCtrl(Policy):
+    r"""
+    PD-controller for the Qunaser Qube.
+    Accepts th_des and drives Qube to $x_{des} = [\theta_{des}, \alpha_{des}, 0.0, 0.0]$.
+    Flag done is set when $|x_des - x| < tol$.
+    """
+
+    def __init__(self,
+                 env_spec: EnvSpec,
+                 k: to.Tensor = to.tensor([3., 0., 0.5, 0.]),
+                 th_des: float = 0.,
+                 al_des: float = 0.,
+                 tols: to.Tensor = to.tensor([1/180.*math.pi, 1./180.*math.pi]),
+                 calibration_mode: bool = False):
+        """
+        Constructor
+
+        :param env_spec: environment specification
+        :param k: controller gains, the default values stabilize the pendulum at the center hanging down
+        :param th_des: desired rotary pole angle [rad]
+        :param al_des: desired pendulum pole angle [rad]
+        :param tols: tolerances for the desired angles [rad]
+        :param calibration_mode: flag if the PD controller is used for calibration
+        """
+        super().__init__(env_spec)
+
+        self.k = to.nn.Parameter(k, requires_grad=True)
+        self.state_des = to.tensor([th_des, al_des, 0., 0.])
+        self.tols = tols
+        self.calibration_mode = calibration_mode
+        self.done = False
+
+    def init_param(self, init_values: to.Tensor = None, **kwargs):
+        pass
+
+    def forward(self, meas: to.Tensor) -> to.Tensor:
+        # Unpack the raw measurement (is not an observation)
+        err = self.state_des - meas  # th, al, thd, ald
+        k = self.k
+
+        if abs(err[0].item()) <= self.tols[0].item() and abs(err[1].item()) <= self.tols[1].item():
+            self.done = True
+
+        # PD control
+        return k.dot(err).unsqueeze(0)
+
+
+class GoToLimCtrl:
+    """ Controller for going to one of the joint limits (part of the calibration routine) """
+
+    def __init__(self, positive: bool = True, cnt_done: int = 250):
+        """
+        Constructor
+
+        :param positive: direction switch
+        """
+        self.done = False
+        self.th_lim = 10.
+        self.sign = 1 if positive else -1
+        self.u_max = 0.8
+        self.cnt = 0
+        self.cnt_done = cnt_done
+
+    def __call__(self, meas: to.Tensor) -> to.Tensor:
+        """
+        Go to joint limits by applying u_max and save limit value in th_lim.
+
+        :param meas: sensor measurement
+        :return: action
+        """
+        # Unpack the raw measurement (is not an observation)
+        th = meas[0].item()
+
+        if abs(th - self.th_lim) > 1e-8:
+            self.cnt = 0
+            self.th_lim = th
+        else:
+            self.cnt += 1
+
+        # Do this for cnt_done time steps
+        self.done = self.cnt >= self.cnt_done
+        return to.tensor([self.sign*self.u_max])
 
 
 def get_lin_ctrl(env: SimEnv, ctrl_type: str, ball_z_dim_mismatch: bool = True) -> LinearPolicy:
     """
     Construct a linear controller specified by its controller gains.
     Parameters for BallOnPlate5DSim by Markus Lamprecht (clipped gains < 1e-5 to 0).
+
     :param env: environment
     :param ctrl_type: type of the controller: 'lqr', or 'h2'
     :param ball_z_dim_mismatch: only useful for BallOnPlate5DSim
@@ -109,377 +543,3 @@ def get_lin_ctrl(env: SimEnv, ctrl_type: str, ball_z_dim_mismatch: bool = True) 
     ctrl = LinearPolicy(env.spec, feats)
     ctrl.init_param(-1*ctrl_gains)  # in classical control it is u = -K*x; here a = psi(s)*s
     return ctrl
-
-
-class QBallBalancerPDCtrl(Policy, ABC):
-    """
-    PD-controller for the Quanser Ball Balancer.
-    The only but significant difference of this controller to the other PD controller is the clipping of the actions.
-
-    .. note::
-        This class's desired state specification deviates from the Pyrado policies which interact with a `Task`.
-    """
-
-    def __init__(self,
-                 env_spec: EnvSpec,
-                 state_des: to.Tensor = to.zeros(2),
-                 kp: to.Tensor = None,
-                 kd: to.Tensor = None):
-        """
-        Constructor
-
-        :param env_spec: environment specification
-        :param state_des: tensor of desired x and y ball position [m]
-        :param kp: 2x2 tensor of constant controller feedback coefficients for error [V/m]
-        :param kd: 2x2 tensor of constant controller feedback coefficients for error time derivative [Vs/m]
-        """
-        super().__init__(env_spec)
-
-        self.state_des = state_des
-        self.limit_rad = 0.52360  # limit for angle command; see the saturation block in the Simulink model
-        self.kp_servo = 14.  # P-gain for the servo angle; see the saturation block the Simulink model
-        self.Kp, self.Kd = None, None
-        self.init_param(kp, kd)
-
-    def forward(self, obs: to.Tensor) -> to.Tensor:
-        """
-        Calculate the controller output.
-
-        :param obs: observation from the environment
-        :return act: controller output [V]
-        """
-        th_x, th_y, x, y, _, _, x_dot, y_dot = obs
-
-        err = to.tensor([self.state_des[0] - x, self.state_des[1] - y])
-        err_dot = to.tensor([0. - x_dot, 0. - y_dot])
-        th_des = self.Kp.mv(err) + self.Kd.mv(err_dot)
-
-        # Saturation for desired angular position
-        th_des = to.clamp(th_des, -self.limit_rad, self.limit_rad)
-        err_th = th_des - to.tensor([th_x, th_y])
-
-        # Return action, see "Actuator Electrical Dynamics" block in [1]
-        return err_th*self.kp_servo
-
-    def init_param(self, kp: to.Tensor = None, kd: to.Tensor = None, verbose: bool = False, **kwargs):
-        """
-        Initialize controller parameters.
-
-        :param kp: 2x2 tensor of constant controller feedback coefficients for error [V/m]
-        :param kd: 2x2 tensor of constant controller feedback coefficients for error time derivative [Vs/m]
-        :param verbose: print the controller's gains
-        """
-        self.Kp = to.diag(to.tensor([3.45, 3.45])) if kp is None else kp
-        self.Kd = to.diag(to.tensor([2.11, 2.11])) if kd is None else kd
-        if not self.Kp.shape == (2, 2):
-            raise pyrado.ShapeErr(given=self.Kp, expected_match=(2, 2))
-        if not self.Kd.shape == (2, 2):
-            raise pyrado.ShapeErr(given=self.Kd, expected_match=(2, 2))
-
-        if verbose:
-            print(f"Set Kp to\n{self.Kp.numpy()}\nand Kd to\n{self.Kd.numpy()}")
-
-    def reset(self, state_des: [np.ndarray, to.Tensor] = None):
-        """
-        Set the controller's desired state.
-
-        :param state_des: tensor of desired x and y ball position [m], or None to keep the current desired state
-        """
-        if state_des is not None:
-            if isinstance(state_des, to.Tensor):
-                pass
-            elif isinstance(state_des, np.ndarray):
-                self.state_des = to.from_numpy(state_des).type(to.get_default_dtype())
-            else:
-                raise pyrado.TypeErr(given=state_des, expected_type=[to.Tensor, np.ndarray])
-            self.state_des = state_des.clone()
-
-
-class QCartPoleSwingUpAndBalanceCtrl(Policy, ABC):
-    """ Swing-up and balancing controller for the Quanser Cart-Pole """
-
-    def __init__(self,
-                 env_spec: EnvSpec,
-                 u_max: float = 18.,
-                 v_max: float = 12.,
-                 long: bool = False):
-        """
-        Constructor
-
-        :param env_spec: environment specification
-        :param u_max:
-        :param v_max: maximum voltage the control signal will be clipped to
-        :param long: flag for long or short pole
-        """
-        super().__init__(env_spec)
-
-        # Store inputs
-        self.u_max = u_max
-        self.v_max = v_max
-        self.pd_control = False
-        self.pd_activated = False
-        self.long = long
-        self.dp_nom = QCartPoleSim.get_nominal_domain_param(self.long)
-
-        if long:
-            self.K_pd = to.tensor([-41.833, 189.8393, -47.8483, 28.0941])
-        else:
-            self.k_p = to.tensor(8.5)  # former: 8.5
-            self.k_d = to.tensor(0.)  # former: 0.
-            self.k_e = to.tensor(24.5)  # former: 19.5 (frequency dependent)
-            self.K_pd = to.tensor([41., -200., 55., -16.])  # former: [+41.8, -173.4, +46.1, -16.2]
-
-    def init_param(self, init_values: to.Tensor = None, **kwargs):
-        pass
-
-    def forward(self, obs: to.Tensor) -> to.Tensor:
-        """
-        Calculate the controller output.
-
-        :param obs: observation from the environment
-        :return act: controller output [V]
-        """
-        x, sin_th, cos_th, x_dot, theta_dot = obs
-        theta = to.atan2(sin_th, cos_th)
-        alpha = (theta - math.pi) if theta > 0 else (theta + math.pi)
-
-        J_pole = self.dp_nom['l_pole']**2*self.dp_nom['m_pole']/3.
-        J_eq = self.dp_nom['m_cart'] + (self.dp_nom['eta_g']*self.dp_nom['K_g']**2*
-                                        self.dp_nom['J_m'])/self.dp_nom['r_mp']**2
-
-        # Energy terms
-        Ek = J_pole/2.*theta_dot**2
-        Ep = self.dp_nom['m_pole']*self.dp_nom['g']*self.dp_nom['l_pole']*(
-                1 - cos_th)  # E(0) = 0., E(pi) = E(-pi) = 2 mgl
-        Er = 2.*self.dp_nom['m_pole']*self.dp_nom['g']*self.dp_nom['l_pole']
-
-        if to.abs(alpha) < 0.1745 or self.pd_control:
-            # Stabilize at the top
-            self.pd_activated = True
-            u = self.K_pd.dot(to.tensor([x, alpha, x_dot, theta_dot]))
-        else:
-            # Swing up
-            u = self.k_e*(Ek + Ep - Er)*to.sign(theta_dot*cos_th) + self.k_p*(0. - x) + self.k_d*(0. - x_dot)
-            u = u.clamp(-self.u_max, self.u_max)
-
-            if self.pd_activated:
-                self.pd_activated = False
-
-        act = (J_eq*self.dp_nom['R_m']*self.dp_nom['r_mp']*u)/ \
-              (self.dp_nom['eta_g']*self.dp_nom['K_g']*self.dp_nom['eta_m']*self.dp_nom['k_m']) + \
-              self.dp_nom['K_g']*self.dp_nom['k_m']*x_dot/self.dp_nom['r_mp']
-
-        # Return the clipped action
-        act = act.clamp(-self.v_max, self.v_max)
-        return act.view(1)  # such that when act is later converted to numpy it does not become a float
-
-
-class QQubeSwingUpAndBalanceCtrl(Policy, ABC):
-    """ Hybrid controller (QQubeEnergyCtrl, QQubePDCtrl) switching based on the pendulum pole angle alpha """
-
-    def __init__(self,
-                 env_spec: EnvSpec,
-                 ref_energy: float = 0.04,  # Quanser's value: 0.04
-                 energy_gain: float = 30.,  # Quanser's value: 25.
-                 acc_max: float = 5.,  # Quanser's value: 5.
-                 alpha_max_pd_enable: float = 10.,  # Quanser's value: 20
-                 pd_gains=to.tensor([-0.42, 18.45, -0.53, 1.53]),  # Quanser's value: [-2., 30., -2., 2.5]
-                 energy_th_gain=0.4):
-        """
-        Constructor
-
-        :param env_spec: environment specification
-        :param ref_energy: reference energy level
-        :param energy_gain: P-gain on the difference to the reference energy
-        :param acc_max: maximum acceleration
-        :param alpha_max_pd_enable: angle threshold for enabling the PD -controller [deg]
-        :param pd_gains: gains for the PD-controller
-        :param energy_th_gain: P-gain on angle theta for the Energy controller
-        """
-        super().__init__(env_spec)
-
-        self.alpha_max_pd_enable = alpha_max_pd_enable/180.*math.pi
-
-        # Set up the energy and PD controller
-        self.e_ctrl = QQubeEnergyCtrl(env_spec, ref_energy, energy_gain, acc_max, energy_th_gain)
-        self.pd_ctrl = QQubePDCtrl(env_spec, k=pd_gains, al_des=math.pi)
-
-    def pd_enabled(self, cos_al: [float, to.Tensor]) -> bool:
-        """
-        Check if the PD-controller should be enabled based oin a predefined threshold on the alpha angle.
-
-        :param cos_al: cosine of the pendulum pole angle
-        :return: bool if condition is met
-        """
-        cos_al_delta = 1. + to.cos(to.tensor(math.pi - self.alpha_max_pd_enable))
-        return bool(to.abs(1. + cos_al) < cos_al_delta)
-
-    def init_param(self, init_values: to.Tensor = None, **kwargs):
-        pass
-
-    def forward(self, obs: to.tensor):
-        # Reconstruct the sate for the error-based controller
-        sin_th, cos_th, sin_al, cos_al, th_d, al_d = obs
-        s = to.stack([to.atan2(sin_th, cos_th), to.atan2(sin_al, cos_al), th_d, al_d])
-
-        if self.pd_enabled(cos_al):
-            s[1] = s[1]%(2*math.pi)  # alpha can have multiple revolutions
-            return self.pd_ctrl(s)
-        else:
-            return self.e_ctrl(s)
-
-
-class QQubeEnergyCtrl(Policy, ABC):
-    """ Energy-based controller used to swing the pendulum up """
-
-    def __init__(self,
-                 env_spec: EnvSpec,
-                 ref_energy: float,
-                 energy_gain: float,
-                 acc_max: float,
-                 th_gain: float):
-        """
-        Constructor
-
-        :param env_spec: environment specification
-        :param ref_energy: reference energy level [J]
-        :param energy_gain: P-gain on the energy [m/s/J]
-        :param acc_max: maximum linear acceleration of the pendulum pivot [m/s**2]
-        :param th_gain: P-gain on angle theta
-        """
-        super().__init__(env_spec)
-
-        # Initialize parameters
-        self._log_E_ref = to.nn.Parameter(to.log(to.tensor(ref_energy)), requires_grad=True)
-        self._log_E_gain = to.nn.Parameter(to.log(to.tensor(energy_gain)), requires_grad=True)
-        self._th_gain = to.nn.Parameter(to.tensor(th_gain), requires_grad=True)
-        self.acc_max = to.tensor(acc_max)
-        self.dp_nom = QQubeSim.get_nominal_domain_param()
-
-    @property
-    def E_ref(self):
-        return to.exp(self._log_E_ref)
-
-    @E_ref.setter
-    def E_ref(self, new_E_ref):
-        self._log_E_ref = to.log(new_E_ref)
-
-    @property
-    def E_gain(self):
-        r""" Called $\mu$ by Quanser."""
-        return to.exp(self._log_E_gain)
-
-    @E_gain.setter
-    def E_gain(self, new_mu):
-        r""" Called $\mu$ by Quanser."""
-        self._log_E_gain = to.log(new_mu)
-
-    def init_param(self, init_values: to.Tensor = None, **kwargs):
-        pass
-
-    def forward(self, obs: to.Tensor):
-        """
-        Control step of energy-based controller which is used in the swing-up controller
-
-        :param obs: observations pre-processed in the `forward` method of `QQubeSwingUpAndBalanceCtrl`
-        :return: action
-        """
-        # Reconstruct partial state
-        th, al, thd, ald = obs
-
-        # Compute energies
-        Jp = self.dp_nom['Mp']*self.dp_nom['Lp']**2/12.
-        E_kin = 0.5*Jp*ald**2
-        E_pot = 0.5*self.dp_nom['Mp']*self.dp_nom['g']*self.dp_nom['Lp']*(1. - to.cos(al))
-        E = E_kin + E_pot
-
-        # Compute clipped action
-        u = self.E_gain*(self.E_ref - E)*to.sign(ald*to.cos(al)) + self._th_gain*th
-        acc = clamp_symm(u, self.acc_max)
-        trq = self.dp_nom['Mr']*self.dp_nom['Lr']*acc
-        volt = -self.dp_nom['Rm']/self.dp_nom['km']*trq
-        return volt.unsqueeze(0)
-
-
-class QQubePDCtrl(Policy, ABC):
-    r"""
-    PD-controller for the Qunaser Qube.
-    Accepts th_des and drives Qube to $x_{des} = [\theta_{des}, \alpha_{des}, 0.0, 0.0]$.
-    Flag done is set when $|x_des - x| < tol$.
-    """
-
-    def __init__(self,
-                 env_spec: EnvSpec,
-                 k: to.Tensor = to.tensor([3., 0., 0.5, 0.]),
-                 th_des: float = 0.,
-                 al_des: float = 0.,
-                 tols: to.Tensor = to.tensor([1/180.*math.pi, 1./180.*math.pi]),
-                 calibration_mode: bool = False):
-        """
-        Constructor
-
-        :param env_spec: environment specification
-        :param k: controller gains, the default values stabilize the pendulum at the center hanging down
-        :param th_des: desired rotary pole angle [rad]
-        :param al_des: desired pendulum pole angle [rad]
-        :param tols: tolerances for the desired angles [rad]
-        :param calibration_mode: flag if the PD controller is used for calibration
-        """
-        super().__init__(env_spec)
-
-        self.k = to.nn.Parameter(k, requires_grad=True)
-        self.state_des = to.tensor([th_des, al_des, 0., 0.])
-        self.tols = tols
-        self.calibration_mode = calibration_mode
-        self.done = False
-
-    def init_param(self, init_values: to.Tensor = None, **kwargs):
-        pass
-
-    def forward(self, meas: to.Tensor) -> to.Tensor:
-        # Unpack the raw measurement (is not an observation)
-        err = self.state_des - meas  # th, al, thd, ald
-        k = self.k
-
-        if abs(err[0].item()) <= self.tols[0].item() and abs(err[1].item()) <= self.tols[1].item():
-            self.done = True
-
-        # PD control
-        return k.dot(err).unsqueeze(0)
-
-
-class GoToLimCtrl:
-    """ Controller for going to one of the joint limits (part of the calibration routine) """
-
-    def __init__(self, positive: bool = True, cnt_done: int = 250):
-        """
-        Constructor
-
-        :param positive: direction switch
-        """
-        self.done = False
-        self.th_lim = 10.
-        self.sign = 1 if positive else -1
-        self.u_max = 0.8
-        self.cnt = 0
-        self.cnt_done = cnt_done
-
-    def __call__(self, meas: to.Tensor) -> to.Tensor:
-        """
-        Go to joint limits by applying u_max and save limit value in th_lim.
-
-        :param meas: sensor measurement
-        :return: action
-        """
-        # Unpack the raw measurement (is not an observation)
-        th = meas[0].item()
-
-        if abs(th - self.th_lim) > 1e-8:
-            self.cnt = 0
-            self.th_lim = th
-        else:
-            self.cnt += 1
-
-        # Do this for cnt_done time steps
-        self.done = self.cnt >= self.cnt_done
-        return to.tensor([self.sign*self.u_max])
