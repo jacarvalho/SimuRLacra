@@ -10,7 +10,7 @@ from pyrado.spaces.singular import SingularStateSpace
 from pyrado.tasks.base import Task
 from pyrado.tasks.masked import MaskedTask
 from pyrado.tasks.utils import proximity_succeeded
-from pyrado.tasks.final_state import FinalRewTask, FinalRewMode
+from pyrado.tasks.final_reward import FinalRewTask, FinalRewMode
 from pyrado.tasks.desired_state import DesStateTask
 from pyrado.tasks.reward_functions import ExpQuadrErrRewFcn, ZeroPerStepRewFcn
 from pyrado.tasks.sequential import SequentialTasks

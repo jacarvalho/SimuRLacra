@@ -4,7 +4,7 @@ import numpy as np
 
 from pyrado.utils.data_types import EnvSpec
 from pyrado.spaces.box import BoxSpace
-from pyrado.tasks.final_state import FinalRewTask, FinalRewMode
+from pyrado.tasks.final_reward import FinalRewTask, FinalRewMode
 from pyrado.tasks.sequential import SequentialTasks
 from pyrado.tasks.utils import proximity_succeeded
 from pyrado.tasks.desired_state import DesStateTask, RadiallySymmDesStateTask

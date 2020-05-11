@@ -5,7 +5,7 @@ import pyrado
 from pyrado.environments.pysim.base import SimPyEnv
 from pyrado.spaces.box import BoxSpace
 from pyrado.tasks.base import Task
-from pyrado.tasks.final_state import FinalRewTask, FinalRewMode
+from pyrado.tasks.final_reward import FinalRewTask, FinalRewMode
 from pyrado.tasks.desired_state import RadiallySymmDesStateTask
 from pyrado.tasks.reward_functions import QuadrErrRewFcn, UnderActuatedSwingUpRewFcn
 

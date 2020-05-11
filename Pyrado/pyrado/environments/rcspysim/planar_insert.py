@@ -12,7 +12,7 @@ from pyrado.tasks.masked import MaskedTask
 from pyrado.tasks.parallel import ParallelTasks
 from pyrado.tasks.predefined import create_task_space_discrepancy_task_XZ
 from pyrado.tasks.utils import proximity_succeeded
-from pyrado.tasks.final_state import FinalRewTask, FinalRewMode
+from pyrado.tasks.final_reward import FinalRewTask, FinalRewMode
 from pyrado.tasks.desired_state import DesStateTask
 from pyrado.tasks.reward_functions import ExpQuadrErrRewFcn, AbsErrRewFcn, RewFcn
 from pyrado.utils.data_types import EnvSpec

@@ -4,7 +4,7 @@ import numpy as np
 import pyrado
 from pyrado.spaces.empty import EmptySpace
 from pyrado.tasks.desired_state import DesStateTask
-from pyrado.tasks.final_state import FinalRewTask, FinalRewMode
+from pyrado.tasks.final_reward import FinalRewTask, FinalRewMode
 from pyrado.tasks.masked import MaskedTask
 from pyrado.tasks.reward_functions import RewFcn, ZeroPerStepRewFcn, AbsErrRewFcn
 from pyrado.tasks.utils import proximity_succeeded, never_succeeded
