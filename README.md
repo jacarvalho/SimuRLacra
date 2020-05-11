@@ -25,9 +25,10 @@ SimuRLacra was tested on Ubuntu 16.04, 18.04 (recommended), and 19.10, with PyTo
 __Not the right framework for you?__
 * If you are looking for even more modular code or simply want to see how much you can do with Python decorators, check out [vel](https://github.com/MillionIntegrals/vel/tree/master/vel). It is a really beautiful framework.
 * If you need code optimized for performance, check out [stable baselines](https://github.com/hill-a/stable-baselines). I know, that was captain obvious.
-* If you are missing value-based algorithms will bells and whistles, check out [MushroomRL](https://github.com/MushroomRL/mushroom-rl). The main contributor is good at every sport. Sorry Carlo, but I had to make it public.
+* If you are missing value-based algorithms will bells and whistles, check out [MushroomRL](https://github.com/MushroomRL/mushroom-rl). The main contributor is good at every sport. Sorry Carlo, but the world has to know it.
 
 ## Citing
+
 If you use code or ideas from this project for your research, please cite SimuRLacra.
 ```
 @misc{Muratore_SimuRLacra,
@@ -73,7 +74,6 @@ Now you have __two options__:
 2. Create the anaconda environment and install PyTorch GPyTorch, BoTorch, and Pyro right after via pip. This version is perfectly fine if you never want to export you learned policies. This variant is faster and we can be sure that PyTorch, BoTorch, ect. are compatible versions.
 
 ### Option 1
-
 Next, we will download eigen3, pybind11, catch2, WM5, ect. into the `thirdParty` directory as git submodules. Rcs will be placed in the project's directory. Moreover, we will set up PyTorch.
 > _Note_: Following this setup option, PyTorch will be build from source, takes at least 30 min.
 
@@ -83,10 +83,9 @@ conda activate pyrado
 python setup_deps.py all -j12
 ```
 This setup script calls `git submodule init` and `git submodule update`. During the installation of Rcs, the Vortex physics engine as well as the WM5 collision library are searched via a cmake find scripts.
-In case this process crashes, please first check the [Common Pitfalls](#common-pitfalls) section below.
+In case this process crashes, please first check the [Troubleshooting](#troubleshooting) section below.
 
 ### Option 2
-
 Next, we will download eigen3, pybind11, catch2, WM5, ect. into the `thirdParty` directory as git submodules. Rcs will be placed in the project's directory. Moreover, we will set up PyTorch.
 > _Note_: Following this setup option, PyTorch will be installed via anaconda, takes about 2 min.
 
@@ -96,7 +95,7 @@ conda activate pyrado
 python setup_deps.py separate_pytorch -j12
 ```
 This setup script calls `git submodule init` and `git submodule update`. During the installation of Rcs, the Vortex physics engine as well as the WM5 collision library are searched via a cmake find scripts.
-In case this process crashes, please first check the [Common Pitfalls](#common-pitfalls) section below.
+In case this process crashes, please first check the [Troubleshooting](#troubleshooting) section below.
 
 ### Verify the installation of the anaconda env
 ```
@@ -141,14 +140,14 @@ Now execute
 ```
 run_docker.sh
 ```
-wichs opens a shell in the docker with the pyrado virtual env activated.
+which opens a shell in the docker with the pyrado virtual env activated.
 The command in `run_docker.sh` uses cuda supprort. If you do not want to use cuda remove the `--gpus` option.
 
 It will build the pyrado image. And configure a script to run the docker container with GUI support.
 You can also connect the image with IDEs such as PyCharm to develop directly in the docker container.
 
-
 ## Check
+
 If not already activated, execute
 ```
 conda activate pyrado
@@ -216,7 +215,6 @@ TARGET_LINK_LIBRARIES(ExampleKinetics RcsCore RcsGui RcsGraphics RcsPhysics z)
 ```
 
 ### Bullet `double` vs. `float`
-
 Check Rcs with which precision Bullet was build 
 ```
 cd PATH_TO/SimuRLacra/thirdParty/Rcs/build
@@ -265,7 +263,6 @@ __Option 1:__ if you have sudo rights, run
 sudo apt-get install libopenblas-dev
 ```
 and then rebuild PyTorch from scratch.
-
 __Option 2:__ if you don't have sudo rights, run
 ```
 conda install -c conda-forge lapack
@@ -285,7 +282,6 @@ The Pytorch setup script (thirdParty/pytorch/setup.py) determines the number of 
 export MAX_JOBS=1
 ```
 Please use your shell syntax accordingly (the above example is for bash).
-
 
 ### Set up MuJoCo and mujoco-py
 Download `mujoco200 linux` from the [official page](https://www.roboti.us/index.html) and extract it to `~/.mujoco` such that you have `~/.mujoco/mujoco200`. Put your MuJoCo license file in `~/.mujoco`.
