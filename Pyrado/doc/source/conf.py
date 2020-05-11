@@ -44,7 +44,6 @@ extensions = [
     'sphinx_removed_in'
 ]
 
-
 # Add any paths that contain templates here, relative to this directory
 templates_path = ['_templates']
 
@@ -60,6 +59,9 @@ source_suffix = {
     '.txt': 'restructuredtext',
     '.md': 'markdown',
 }
+
+# The master toctree document
+master_doc = 'index'
 
 # -----------------------
 # Options for HTML output
