@@ -10,6 +10,7 @@ from pyrado.tasks.base import Task
 from pyrado.environments.mujoco.base import MujocoSimEnv
 from pyrado.spaces.box import BoxSpace
 from pyrado.tasks.desired_state import DesStateTask
+from pyrado.tasks.environment_specific import WAMBallInCupTask
 from pyrado.tasks.reward_functions import ZeroPerStepRewFcn
 
 
@@ -158,11 +159,7 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         self._obs_space = BoxSpace(np.array([0.0]), np.array([1.0]))
 
     def _create_task(self, task_args: [dict, None] = None) -> Task:
-        # TODO: Formulate proper reward
-        # .. check if velocity is downward and close to center of cup; compute when a collision occurs / last timestep
-        ball_pos = self.sim.data.body_xpos[40].copy()
-        state_des = np.concatenate([self.init_qpos.copy(), self.init_qvel.copy()])
-        return DesStateTask(self.spec, state_des, ZeroPerStepRewFcn())
+        return WAMBallInCupTask(self.spec, self.sim)
 
     def _mujoco_step(self, act: np.ndarray):
         # Extract desired position/velocity from the `act` attribute

@@ -11,7 +11,7 @@ from pyrado.policies.base import Policy
 from pyrado.utils.data_types import RenderMode, EnvSpec
 from pyrado.policies.features import FeatureStack, RBFFeat
 from pyrado.policies.linear import LinearPolicy
-from pyrado.sampling.rollout import rollout
+from pyrado.sampling.rollout import rollout, after_rollout_query
 
 
 class DummyMovPrimPolicy(Policy):
@@ -171,6 +171,7 @@ def main_dummy_mp(env):
     policy = DummyMovPrimPolicy(env.spec)
 
     res = rollout(env=env, policy=policy, eval=True, render_mode=RenderMode(video=True))
+    after_rollout_query(env, res)  # to plot rewards of newly added Task/Reward
     des_pos_traj = res.env_infos['des_pos']
     pos_traj = res.env_infos['pos']
     des_vel_traj = res.env_infos['des_vel']
@@ -189,7 +190,7 @@ if __name__ == '__main__':
     np.random.seed(101)
 
     # Check for function equality
-    print(check_feat_equality())
+    # print(check_feat_equality())
 
     # Environment
     env = WAMBallInCupSim(max_steps=1750)
