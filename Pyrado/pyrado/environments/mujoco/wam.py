@@ -74,7 +74,7 @@ class WAMSim(MujocoSimEnv, Serializable):
         state_des = np.concatenate([self.init_qpos.copy(), self.init_qvel.copy()])
         return DesStateTask(self.spec, state_des, ZeroPerStepRewFcn())
 
-    def _mujoco_step(self, act: np.ndarray):
+    def _mujoco_step(self, act: np.ndarray) -> dict:
         self.sim.data.qfrc_applied[:] = act
         self.sim.step()
 
@@ -144,53 +144,54 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         self._state_space = BoxSpace(-max_state, max_state)
 
         # Initial state space
-        # Set the actual stable initial position
-        # .. this position would be reached after a finite time using the internal controller
-        # .. to stabilize at self.init_des_pos
+        # Set the actual stable initial position. This position would be reached after som time using the internal
+        # PD controller to stabilize at self.init_des_pos
         np.put(self.init_qpos, [1, 3, 5, 6, 7], [0.6519, 1.409, -0.2827, -1.57, -0.2115])
         init_state = np.concatenate([self.init_qpos.copy(), self.init_qvel.copy()]).ravel()
         self._init_space = SingularStateSpace(init_state)
 
-        # Action space
-        max_act = np.full((6,), pyrado.inf)
+        # Action space (PD controller on 3 joint positions and velocities)
+        max_act = np.array([np.pi, np.pi, np.pi,  # [rad, rad, rad, ...
+                            10*np.pi, 10*np.pi, 10*np.pi])  # ... rad/s, rad/s, rad/s]
         self._act_space = BoxSpace(-max_act, max_act)
 
-        # Observation space
-        self._obs_space = BoxSpace(np.array([0.0]), np.array([1.0]))
+        # Observation space (normalized time)
+        self._obs_space = BoxSpace(np.array([0.]), np.array([1.]))
 
     def _create_task(self, task_args: [dict, None] = None) -> Task:
         return WAMBallInCupTask(self.spec, self.sim)
 
-    def _mujoco_step(self, act: np.ndarray):
-        # Extract desired position/velocity from the `act` attribute
-        # .. `self.init_des_pos` needs to be added because the desired trajectory is centered around zero
-        des_pos = self.init_des_pos.copy()
+    def _mujoco_step(self, act: np.ndarray) -> dict:
+        # Get the desired positions and velocities for the selected joints
+        des_pos = self.init_des_pos.copy()  # the desired trajectory is relative to self.init_des_pos
         np.add.at(des_pos, [1, 3, 5], act[:3])
         des_vel = np.zeros_like(des_pos)
         np.add.at(des_vel, [1, 3, 5], act[3:])
 
-        # Compute error on position and velocity
-        nq = len(self.init_qpos)
+        # Compute the position and velocity errors
         err_pos = des_pos - self.state[:7]
-        err_vel = des_vel - self.state[nq:nq+7]
+        err_vel = des_vel - self.state[self.model.nq:self.model.nq+7]
 
-        # Compute torques
+        # Compute the torques (PD controller)
         torque = self.p_gains * err_pos + self.d_gains * err_vel
         torque = self.torque_space.project_to(torque)
 
-        # Apply torque
+        # Apply the torques to the robot
         self.sim.data.qfrc_applied[:7] = torque
         try:
             self.sim.step()
-        except mujoco_py.builder.MujocoException as e:
-            print(e)
-            self.reset()
+            mjsim_crashed = False
+        except mujoco_py.builder.MujocoException:
+            # When MuJoCo recognized instabilities in the simulation, it simply kills it.
+            # Instead, we want the episode to end with a failure
+            mjsim_crashed = True
+            # self.reset()
 
         pos = self.sim.data.qpos.copy()
         vel = self.sim.data.qvel.copy()
         self.state = np.concatenate([pos, vel])
 
-        return dict(des_pos=des_pos, des_vel=des_vel, pos=pos[:7], vel=vel[:7])
+        return dict(des_pos=des_pos, des_vel=des_vel, pos=pos[:7], vel=vel[:7], failed=mjsim_crashed)
 
     def observe(self, state: np.ndarray) -> np.ndarray:
         return np.array([self._curr_step / self.max_steps])

@@ -94,7 +94,7 @@ class HopperSim(MujocoSimEnv, Serializable):
         ])
         return GoallessTask(self.spec, rew_fcn)
 
-    def _mujoco_step(self, act: np.ndarray):
+    def _mujoco_step(self, act: np.ndarray) -> dict:
         self.sim.data.ctrl[:] = act
         # Alternatively: pass `frame_skip` as `nsubsteps` argument in MjSim constructor..
         # ..instead of calling sim.step() multiple times

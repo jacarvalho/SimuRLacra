@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 
 from pyrado.environments.mujoco.wam import WAMBallInCupSim
 from pyrado.policies.base import Policy
+from pyrado.policies.environment_specific import DualRBFLinearPolicy
 from pyrado.utils.data_types import RenderMode, EnvSpec
 from pyrado.policies.features import FeatureStack, RBFFeat
 from pyrado.policies.linear import LinearPolicy
@@ -100,13 +101,11 @@ def compute_trajectory_pyrado(weights):
     pos_feat = rbf(time)
     q = pos_feat@weights
 
-    """ Explicit """
-
+    # Explicit
     vel_feat_E = rbf.derivative(time)
     qd_E = vel_feat_E@weights
 
-    """ Autograd """
-
+    # Autograd
     q1, q2, q3 = q.t()
     q1.backward(to.ones((1750,)), retain_graph=True)
     q1d = time.grad.clone()
@@ -116,10 +115,9 @@ def compute_trajectory_pyrado(weights):
     time.grad.fill_(0.)
     q3.backward(to.ones((1750,)))
     q3d = time.grad.clone()
-
     qd = to.cat([q1d, q2d, q3d], dim=1)
 
-    """ Check similarity """
+    # Check similarity
     assert to.norm(qd_E - qd) < 1e-6
 
     return q, qd
@@ -158,7 +156,7 @@ def check_feat_equality():
 
 def main_stabilization(env):
     env.reset()
-    act = np.zeros((6,))
+    act = np.zeros((6,))  # desired deltas from the initial pose
     for i in range(env.max_steps):
         env.step(act)
         env.render(mode=RenderMode(video=True))
@@ -168,14 +166,21 @@ def main_dummy_mp(env):
     env.reset()
 
     # Dummy Movement Primitive Policy
-    policy = DummyMovPrimPolicy(env.spec)
+    # policy = DummyMovPrimPolicy(env.spec)
 
-    res = rollout(env=env, policy=policy, eval=True, render_mode=RenderMode(video=True))
-    after_rollout_query(env, res)  # to plot rewards of newly added Task/Reward
-    des_pos_traj = res.env_infos['des_pos']
-    pos_traj = res.env_infos['pos']
-    des_vel_traj = res.env_infos['des_vel']
-    vel_traj = res.env_infos['vel']
+    width = 0.0035
+    rbf_hparam = dict(num_feat_per_dim=7, bounds=(np.array([0.]), np.array([1.])), scale=1/(2*width))
+    policy = DualRBFLinearPolicy(env.spec, rbf_hparam)
+
+    done = False
+    while not done:
+        ro = rollout(env, policy, render_mode=RenderMode(video=True), eval=True)
+        done, state, param = after_rollout_query(env, ro)
+
+    des_pos_traj = ro.env_infos['des_pos']
+    pos_traj = ro.env_infos['pos']
+    des_vel_traj = ro.env_infos['des_vel']
+    vel_traj = ro.env_infos['vel']
 
     # Plot trajectories of joints 1 and 3 and their corresponding desired trajectories
     for idx in [1, 3]:
@@ -190,7 +195,7 @@ if __name__ == '__main__':
     np.random.seed(101)
 
     # Check for function equality
-    # print(check_feat_equality())
+    print(check_feat_equality())
 
     # Environment
     env = WAMBallInCupSim(max_steps=1750)

@@ -64,13 +64,13 @@ class DualRBFLinearPolicy(LinearPolicy):
         """
         obs = obs.to(self.device)
         batched = obs.ndimension() == 2  # number of dim is 1 if unbatched, dim > 2 is cought by features
-        feats_val = self.eval_feats(obs)
+        feats_val = self._feats(obs)
         feats_dot = self._feats.derivative(obs)
 
         # Inner product between policy parameters and the value of the features
         act_pos = self.net(feats_val)
         act_vel = self.net(feats_dot)
-        act = to.cat([act_pos, act_vel], dim=0)
+        act = to.cat([act_pos, act_vel], dim=1)
 
         # Return the flattened tensor if not run in a batch mode to be compatible with the action spaces
         return act.flatten() if not batched else act

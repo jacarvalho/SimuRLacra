@@ -127,6 +127,7 @@ class MujocoSimEnv(SimEnv, ABC, Serializable):
         Apply the given action to the MuJoCo simulation. This executes one step of the physics simulation.
 
         :param act: action
+        :return: `dict` with optional information from MuJoCo
         """
 
     def _create_mujoco_model(self):
@@ -214,11 +215,16 @@ class MujocoSimEnv(SimEnv, ABC, Serializable):
         info = self._mujoco_step(act)
         info['t'] = self._curr_step*self._dt
 
-        # Check if the task or the environment is done
-        done = self._task.is_done(self.state)
+        # Check if the environment is done due to a failure within the mujoco simulation (e.g. bad inputs)
+        mjsim_done = info.get('failed', False)
+
+        # Check if the task is done
+        task_done = self._task.is_done(self.state)
+
+        # Handle done case
+        done = mjsim_done or task_done
         if self._curr_step >= self._max_steps:
             done = True
-
         if done:
             # Add final reward if done
             self._curr_rew += self._task.final_rew(self.state, remaining_steps)

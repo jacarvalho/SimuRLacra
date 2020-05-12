@@ -81,7 +81,7 @@ class HalfCheetahSim(MujocoSimEnv, Serializable):
             task_args = dict(fwd_rew_weight=1., ctrl_cost_weight=0.1)
         return GoallessTask(self.spec, ForwardVelocityRewFcn(self._dt, idx_fwd=0, **task_args))
 
-    def _mujoco_step(self, act: np.ndarray):
+    def _mujoco_step(self, act: np.ndarray) -> dict:
         self.sim.data.ctrl[:] = act
         # Alternatively: pass `frame_skip` as `nsubsteps` argument in MjSim constructor..
         # ..instead of calling sim.step() multiple times
