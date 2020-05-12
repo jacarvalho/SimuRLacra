@@ -162,15 +162,19 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
 
     def _create_task(self, task_args: [dict, None] = None) -> Task:
         # Create a DesStateTask that masks everything but the ball position
-        idcs = [40, 41, 42]  # TODO @Christian: which indices are the ball's x y z pos?
+        # Cartesian position of the ball is at index 42 and an array that consists of [x,y,z]
+        idcs = [42]
+
+        # TODO @Fabio: state_space consists of the joint position q, we need cartesian position x (self.sim.data.body_xpos)
         spec = EnvSpec(
             self.spec.obs_space,
             self.spec.act_space,
             self.spec.state_space.subspace(self.spec.state_space.create_mask(idcs))
         )
         self.sim.forward()  # need to call forward to get a non-zero body position
-        state_des = self.sim.data.body_xpos[10].copy()  # TODO @Christian: right body index? why is 'x_pos' 3-dim, do we need to reset?
-        # TODO @Christian: is there a way to visualize state_des? maybe create a sphere in the xml and move it accoring to the task's state des?
+        state_des = self.sim.data.body_xpos[10].copy()
+        # TODO @Christian: is there a way to visualize state_des?
+        # Answer: Yes, there are so-called "sites" in MuJoCo (see XML, e.g. "cup_goal").
         rew_fcn = ExpQuadrErrRewFcn(Q=np.eye(3), R=1e-6*np.eye(6))
         dst = DesStateTask(spec, state_des, rew_fcn)
 

@@ -168,6 +168,7 @@ def main_dummy_mp(env):
     # Dummy Movement Primitive Policy
     # policy = DummyMovPrimPolicy(env.spec)
 
+    # TODO: Init weights of the policy should be at a reasonable scale
     width = 0.0035
     rbf_hparam = dict(num_feat_per_dim=7, bounds=(np.array([0.]), np.array([1.])), scale=1/(2*width))
     policy = DualRBFLinearPolicy(env.spec, rbf_hparam)
@@ -192,7 +193,9 @@ def main_dummy_mp(env):
 
 
 if __name__ == '__main__':
+    # Fix seed for reproducibility
     np.random.seed(101)
+    to.manual_seed(101)
 
     # Check for function equality
     print(check_feat_equality())
