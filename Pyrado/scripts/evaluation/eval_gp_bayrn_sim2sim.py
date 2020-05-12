@@ -65,9 +65,9 @@ if __name__ == '__main__':
 
     if args.save_figures:
         for fmt in ['pdf', 'pgf']:
-            fig_hm_mean.savefig(osp.join(ex_dir, f'gp_posterior_ret_mean_hm.{fmt}'), dpi=500)
-            fig_cb_mean.savefig(osp.join(ex_dir, f'gp_posterior_ret_mean_cb.{fmt}'), dpi=500)
-            fig_hm_std.savefig(osp.join(ex_dir, f'gp_posterior_ret_std_hm.{fmt}'), dpi=500)
-            fig_cb_std.savefig(osp.join(ex_dir, f'gp_posterior_ret_std_cb.{fmt}'), dpi=500)
+            fig_hm_mean.savefig(osp.join(ex_dir, f'gp-posterior-ret-mean-hm.{fmt}'), dpi=500)
+            fig_cb_mean.savefig(osp.join(ex_dir, f'gp-posterior-ret-mean-cb.{fmt}'), dpi=500)
+            fig_hm_std.savefig(osp.join(ex_dir, f'gp-posterior-ret-std-hm.{fmt}'), dpi=500)
+            fig_cb_std.savefig(osp.join(ex_dir, f'gp-posterior-ret-std-cb.{fmt}'), dpi=500)
 
     plt.show()

@@ -79,6 +79,6 @@ if __name__ == '__main__':
 
     # Save and show
     if args.save_figures:
-        fig.savefig(osp.join(ex_dir, f'returns_{args.mode}plot.pdf'), dpi=500)
-        fig.savefig(osp.join(ex_dir, f'returns_{args.mode}plot.pgf'), dpi=500)
+        for fmt in ['pdf', 'pgf']:
+            fig.savefig(osp.join(ex_dir, f'returns-{args.mode}plot.{fmt}'), dpi=500)
     plt.show()
