@@ -166,6 +166,7 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         idcs = [42]
 
         # TODO @Fabio: state_space consists of the joint position q, we need cartesian position x (self.sim.data.body_xpos)
+        # TODO: possible solution: overwrite step() function and pass sim.data.body_xpos instead of state to the step reward
         spec = EnvSpec(
             self.spec.obs_space,
             self.spec.act_space,
