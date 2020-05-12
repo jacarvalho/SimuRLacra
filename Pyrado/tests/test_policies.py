@@ -3,7 +3,6 @@ import os.path as osp
 import torch as to
 from pytest_lazyfixture import lazy_fixture
 
-from rcsenv import ControlPolicy
 from tests.conftest import m_needs_cuda
 from pyrado.policies.adn import ADNPolicy, pd_cubic
 from pyrado.policies.dummy import DummyPolicy, IdlePolicy
@@ -533,7 +532,6 @@ def test_hidden_state_packing_nobatch():
     to.testing.assert_allclose(up, packed)
 
 
-@pytest.mark.nnpolicy
 @pytest.mark.parametrize('policy', lazy_fixture([
     'linpol_bobspec',
     'fnnpol_bobspec',
@@ -550,7 +548,6 @@ def test_trace(policy):
     to.testing.assert_allclose(act_reg, act_script)
 
 
-@pytest.mark.nnpolicy
 @pytest.mark.recurrent_policy
 @pytest.mark.parametrize('policy', lazy_fixture([
     'rnnpol_bobspec',
@@ -587,7 +584,7 @@ def test_trace_recurrent(policy):
 
 
 @to.no_grad()
-@pytest.mark.nnpolicy
+@pytest.mark.m_needs_libtorch
 @pytest.mark.parametrize('policy', lazy_fixture([
     'linpol_bobspec',
     'fnnpol_bobspec',
@@ -626,8 +623,8 @@ def test_export_cpp(policy, tmpdir):
 
 
 @to.no_grad()
-@pytest.mark.skipif('torch' not in ControlPolicy.types, reason='Requires RcsPySim compiled with libtorch!')
-@pytest.mark.nnpolicy
+@pytest.mark.m_needs_rcs
+@pytest.mark.m_needs_libtorch
 @pytest.mark.parametrize('policy', lazy_fixture([
     'linpol_bobspec',
     'fnnpol_bobspec',
@@ -637,6 +634,8 @@ def test_export_cpp(policy, tmpdir):
     'adnpol_bobspec',
 ]), ids=['lin', 'fnn', 'rnn', 'lstm', 'gru', 'adn'])
 def test_export_rcspysim(policy, tmpdir):
+    from rcsenv import ControlPolicy
+
     # Generate scripted version (in double mode for CPP compatibility)
     scripted = policy.double().trace()
     print(scripted.graph)

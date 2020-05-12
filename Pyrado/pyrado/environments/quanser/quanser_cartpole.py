@@ -7,7 +7,7 @@ import pyrado
 from pyrado.environments.quanser.base import RealEnv
 from pyrado.spaces.box import BoxSpace
 from pyrado.tasks.base import Task
-from pyrado.tasks.final_state import FinalRewTask, FinalRewMode
+from pyrado.tasks.final_reward import FinalRewTask, FinalRewMode
 from pyrado.tasks.desired_state import RadiallySymmDesStateTask
 from pyrado.tasks.reward_functions import UnderActuatedSwingUpRewFcn, ExpQuadrErrRewFcn
 from pyrado.utils.input_output import print_cbt

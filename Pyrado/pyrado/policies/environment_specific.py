@@ -1,7 +1,6 @@
 import math
 import numpy as np
 import torch as to
-from abc import ABC
 
 import pyrado
 from pyrado.utils.data_types import EnvSpec
@@ -172,7 +171,7 @@ class QCartPoleSwingUpAndBalanceCtrl(Policy):
         Constructor
 
         :param env_spec: environment specification
-        :param u_max:
+        :param u_max: maximum energy gain
         :param v_max: maximum voltage the control signal will be clipped to
         :param long: flag for long or short pole
         """
@@ -208,15 +207,14 @@ class QCartPoleSwingUpAndBalanceCtrl(Policy):
         theta = to.atan2(sin_th, cos_th)
         alpha = (theta - math.pi) if theta > 0 else (theta + math.pi)
 
-        J_pole = self.dp_nom['l_pole']**2*self.dp_nom['m_pole']/3.
-        J_eq = self.dp_nom['m_cart'] + (self.dp_nom['eta_g']*self.dp_nom['K_g']**2*
-                                        self.dp_nom['J_m'])/self.dp_nom['r_mp']**2
+        J_pole = self.dp_nom['l_pole'] ** 2*self.dp_nom['m_pole']/3.
+        J_eq = self.dp_nom['m_cart'] + (self.dp_nom['eta_g']*self.dp_nom['K_g'] ** 2*
+                                        self.dp_nom['J_m'])/self.dp_nom['r_mp'] ** 2
 
         # Energy terms
-        Ek = J_pole/2.*theta_dot**2
-        Ep = self.dp_nom['m_pole']*self.dp_nom['g']*self.dp_nom['l_pole']*(
-                1 - cos_th)  # E(0) = 0., E(pi) = E(-pi) = 2 mgl
-        Er = 2.*self.dp_nom['m_pole']*self.dp_nom['g']*self.dp_nom['l_pole']
+        E_kin = J_pole/2.*theta_dot ** 2
+        E_pot = self.dp_nom['m_pole']*self.dp_nom['g']*self.dp_nom['l_pole']*(1 - cos_th)  # E(0) = 0., E(pi) = E(-pi) = 2 mgl
+        E_ref = 2.*self.dp_nom['m_pole']*self.dp_nom['g']*self.dp_nom['l_pole']
 
         if to.abs(alpha) < 0.1745 or self.pd_control:
             # Stabilize at the top
@@ -224,7 +222,7 @@ class QCartPoleSwingUpAndBalanceCtrl(Policy):
             u = self.K_pd.dot(to.tensor([x, alpha, x_dot, theta_dot]))
         else:
             # Swing up
-            u = self.k_e*(Ek + Ep - Er)*to.sign(theta_dot*cos_th) + self.k_p*(0. - x) + self.k_d*(0. - x_dot)
+            u = self.k_e*(E_kin + E_pot - E_ref)*to.sign(theta_dot*cos_th) + self.k_p*(0. - x) + self.k_d*(0. - x_dot)
             u = u.clamp(-self.u_max, self.u_max)
 
             if self.pd_activated:
@@ -232,7 +230,7 @@ class QCartPoleSwingUpAndBalanceCtrl(Policy):
 
         act = (J_eq*self.dp_nom['R_m']*self.dp_nom['r_mp']*u)/ \
               (self.dp_nom['eta_g']*self.dp_nom['K_g']*self.dp_nom['eta_m']*self.dp_nom['k_m']) + \
-              self.dp_nom['K_g']*self.dp_nom['k_m']*x_dot/self.dp_nom['r_mp']
+               self.dp_nom['K_g']*self.dp_nom['k_m']*x_dot/self.dp_nom['r_mp']
 
         # Return the clipped action
         act = act.clamp(-self.v_max, self.v_max)
@@ -246,10 +244,10 @@ class QQubeSwingUpAndBalanceCtrl(Policy):
                  env_spec: EnvSpec,
                  ref_energy: float = 0.04,  # Quanser's value: 0.04
                  energy_gain: float = 30.,  # Quanser's value: 25.
+                 energy_th_gain: float = 0.4,
                  acc_max: float = 5.,  # Quanser's value: 5.
                  alpha_max_pd_enable: float = 10.,  # Quanser's value: 20
-                 pd_gains=to.tensor([-0.42, 18.45, -0.53, 1.53]),  # Quanser's value: [-2., 30., -2., 2.5]
-                 energy_th_gain=0.4):
+                 pd_gains: to.Tensor = to.tensor([-0.42, 18.45, -0.53, 1.53])):  # Quanser's value: [-2., 30., -2., 2.5]
         """
         Constructor
 
@@ -301,16 +299,16 @@ class QQubeEnergyCtrl(Policy):
                  env_spec: EnvSpec,
                  ref_energy: float,
                  energy_gain: float,
-                 acc_max: float,
-                 th_gain: float):
+                 th_gain: float,
+                 acc_max: float):
         """
         Constructor
 
         :param env_spec: environment specification
         :param ref_energy: reference energy level [J]
         :param energy_gain: P-gain on the energy [m/s/J]
-        :param acc_max: maximum linear acceleration of the pendulum pivot [m/s**2]
         :param th_gain: P-gain on angle theta
+        :param acc_max: maximum linear acceleration of the pendulum pivot [m/s**2]
         """
         super().__init__(env_spec)
 
@@ -342,7 +340,7 @@ class QQubeEnergyCtrl(Policy):
     def init_param(self, init_values: to.Tensor = None, **kwargs):
         pass
 
-    def forward(self, obs: to.Tensor):
+    def forward(self, obs: to.Tensor) -> to.Tensor:
         """
         Control step of energy-based controller which is used in the swing-up controller
 
@@ -353,8 +351,8 @@ class QQubeEnergyCtrl(Policy):
         th, al, thd, ald = obs
 
         # Compute energies
-        Jp = self.dp_nom['Mp']*self.dp_nom['Lp']**2/12.
-        E_kin = 0.5*Jp*ald**2
+        J_pole = self.dp_nom['Mp']*self.dp_nom['Lp'] ** 2/12.
+        E_kin = 0.5*J_pole*ald ** 2
         E_pot = 0.5*self.dp_nom['Mp']*self.dp_nom['g']*self.dp_nom['Lp']*(1. - to.cos(al))
         E = E_kin + E_pot
 

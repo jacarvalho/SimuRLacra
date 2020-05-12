@@ -178,7 +178,7 @@ class ADNPolicy(RecurrentPolicy):
         # Call custom initialization function after PyTorch network parameter initialization
         self._potentials = to.zeros(self._hidden_size)
         self._init_potentials = to.zeros_like(self._potentials)
-        self._potentials_max = 6.  # clip potentials symmetrically
+        self._potentials_max = 100.  # clip potentials symmetrically
         self._stimuli = to.zeros_like(self._potentials)
 
         # Potential dynamics

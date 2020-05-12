@@ -5,6 +5,9 @@ import torch as to
 from colorama import init
 from os import _exit
 
+# Pyrado version number
+VERSION = '0.1'
+
 # Provide global data directories
 PERMA_DIR = osp.join(osp.dirname(__file__), '..', 'data', 'perma')
 EVAL_DIR = osp.join(osp.dirname(__file__), '..', 'data', 'perma', 'evaluation')
@@ -65,7 +68,7 @@ np.set_printoptions(precision=4, sign=' ', linewidth=200)  # suppress=True
 from pyrado.utils.exceptions import BaseErr, ValueErr, PathErr, ShapeErr, TypeErr
 
 # Set the public API
-__all__ = ['TEMP_DIR', 'PERMA_DIR', 'EVAL_DIR', 'EXP_DIR', 'HPARAM_DIR',
+__all__ = ['VERSION', 'TEMP_DIR', 'PERMA_DIR', 'EVAL_DIR', 'EXP_DIR', 'HPARAM_DIR',
            'rcsenv_available', 'mujoco_available', 'use_pgf', 'inf', 'nan']
 
 

@@ -21,7 +21,7 @@ class ActorCritic(Algorithm, ABC):
     def __init__(self,
                  env: Env,
                  actor: Policy,
-                 critic: [to.nn.Module, Policy, GAE],
+                 critic: GAE,
                  save_dir: str,
                  max_iter: int,
                  logger: StepLogger = None):
@@ -37,6 +37,8 @@ class ActorCritic(Algorithm, ABC):
         """
         if not isinstance(env, Env):
             raise pyrado.TypeErr(given=env, expected_type=Env)
+        if not isinstance(critic, GAE):
+            raise pyrado.TypeErr(given=critic, expected_type=GAE)
 
         # Call Algorithm's constructor
         super().__init__(save_dir, max_iter, actor, logger)
@@ -52,15 +54,15 @@ class ActorCritic(Algorithm, ABC):
         self._lr_scheduler_hparam = None
 
     @property
-    def critic(self) -> [to.nn.Module, Policy, GAE]:
+    def critic(self) -> GAE:
         """ Get the critic. """
         return self._critic
 
     @critic.setter
-    def critic(self, critic: [to.nn.Module, Policy, GAE]):
+    def critic(self, critic: GAE):
         """ Set the critic. """
-        if not isinstance(critic, (to.nn.Module, GAE)):
-            pyrado.TypeErr(given=critic, expected_type=[to.nn.Module, Policy, GAE])
+        if not isinstance(critic, GAE):
+            pyrado.TypeErr(given=critic, expected_type=GAE)
         self._critic = critic
 
     @property

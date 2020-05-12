@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 
-<Experiment type="BallOnPlate"
+<Experiment envType="BallOnPlate"
             extraConfigDir="config/BallOnPlate"
             graphFileName="gBotKuka.xml"
             physicsConfigFile="physics.xml"

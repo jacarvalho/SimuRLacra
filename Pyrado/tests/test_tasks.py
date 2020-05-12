@@ -4,13 +4,13 @@ import numpy as np
 
 from pyrado.utils.data_types import EnvSpec
 from pyrado.spaces.box import BoxSpace
-from pyrado.tasks.final_state import FinalRewTask, FinalRewMode
+from pyrado.tasks.final_reward import FinalRewTask, FinalRewMode, BestStateFinalRewTask
 from pyrado.tasks.sequential import SequentialTasks
 from pyrado.tasks.utils import proximity_succeeded
 from pyrado.tasks.desired_state import DesStateTask, RadiallySymmDesStateTask
 from pyrado.tasks.parallel import ParallelTasks
 from pyrado.tasks.reward_functions import CombinedRewFcn, CosOfOneEleRewFcn, MinusOnePerStepRewFcn, QuadrErrRewFcn, \
-    ScaledExpQuadrErrRewFcn, RewFcn
+    ScaledExpQuadrErrRewFcn, RewFcn, PlusOnePerStepRewFcn
 
 
 @pytest.mark.parametrize(
@@ -212,7 +212,7 @@ def test_sequential_task_function(hold_rew_when_done):
         state = fixed_traj[i]*np.ones(3)
 
         # Get all sub-tasks step rew, check if they are done, and if so
-        r[i] = st.step_rew(state, act=np.zeros(2), remaining_steps=11 - i)
+        r[i] = st.step_rew(state, act=np.zeros(2), remaining_steps=num_steps - (i+1))
 
         # Check if reaching the sub-goals is recognized
         if np.all(state == state_des1):
@@ -248,3 +248,36 @@ def test_sequential_task_function(hold_rew_when_done):
             else:
                 assert r[i] == 0.
             assert st.final_rew(state, 0) == pytest.approx(0.)  # only yield once
+
+
+@pytest.mark.parametrize(
+    'rew_fcn', [
+        PlusOnePerStepRewFcn(),
+        QuadrErrRewFcn(np.eye(3), np.eye(2))
+    ], ids=['PlusOnePerStepRewFcn', 'QuadrErrRewFcn']
+)
+@pytest.mark.parametrize(
+    'factor', [1., 42.], ids=['factor_1', 'factor_42']
+)
+def test_best_state_final_rew_task(rew_fcn, factor):
+    # Create env spec and sub-tasks (state_space is necessary for the has_failed function)
+    env_spec = EnvSpec(obs_space=BoxSpace(-1., 1., 3), act_space=BoxSpace(-1., 1., 2), state_space=BoxSpace(-1., 1., 3))
+    num_steps = 5
+    state_des = np.array([0.05, 0.05, 0.05])
+    task = BestStateFinalRewTask(DesStateTask(env_spec, state_des, rew_fcn), max_steps=num_steps, factor=factor)
+    task.reset(env_spec=env_spec)
+
+    # Create artificial dynamics by hard-coding a sequence of states
+    fixed_traj = np.linspace(-.5, +.5, num_steps, endpoint=True)
+    r = [None]*num_steps
+
+    for i in range(num_steps):
+        # Advance the artificial state
+        state = fixed_traj[i]*np.ones(3)
+        r[i] = task.step_rew(state, act=np.zeros(2), remaining_steps=num_steps - (i+1))
+
+    last_state = fixed_traj[-1]*np.ones(3)
+    final_rew = task.final_rew(last_state, remaining_steps=0)
+    assert final_rew == pytest.approx(max(r) * num_steps * factor)
+    assert task.best_rew == pytest.approx(max(r))
+

@@ -17,8 +17,7 @@ TBD
 Where to start?
 ---------------
 
-.. literalinclude::  ../examples/basic_walkthrough.py
-   :language: python
+.. include:: examples/basic_walkthrough.rst
 
 
 How to create a new environment?
@@ -50,6 +49,8 @@ TBD
    spaces
    tasks
    utils
+
+   examples
 
    tests
 

@@ -162,6 +162,7 @@ class MultFeat:
         Evaluate the features.
 
         :param inp: input i.e. observations in the RL setting
+        :return: feature value
         """
         return reduce(to.mul, [inp[i] for i in self._idcs]).unsqueeze(0)  # unsqueeze for later concatenation
 
@@ -207,7 +208,7 @@ class RandFourierFeat:
             Only processing of 1-dim input (e.g., no images)! The input can be batched along the first dimension.
 
         :param inp: input i.e. observations in the RL setting
-        :return: value of all features given the observations
+        :return: 1-dim vector of all feature values given the observations
         """
         if inp.ndimension() > 2:
             raise pyrado.ShapeErr(msg='RBF class can only handle 1-dim or 2-dim input!')
@@ -233,7 +234,8 @@ class RBFFeat:
         :param bounds: lower and upper bound for the Gaussians' centers, the input dimension is inferred from them
         :param scale: scaling factor for the squared distance, if `None` the factor is determined such that two
                       neighboring RBFs have a value of 0.2 at the other center
-        :param state_wise_norm: apply the normalization across state dimensions separately (`True`) or jointly (`False`)
+        :param state_wise_norm: `True` to apply the normalization across input state dimensions separately (every
+                                 dimension sums to one), or `False` to jointly normalize them
         """
         if not num_feat_per_dim > 1:
             raise pyrado.ValueErr(given=num_feat_per_dim, g_constraint='1')
@@ -270,7 +272,7 @@ class RBFFeat:
             Only processing of 1-dim input (e.g., no images)! The input can be batched along the first dimension.
 
         :param inp: input i.e. observations in the RL setting
-        :return: value of all features given the observations
+        :return: 1-dim vector of all feature values given the observations
         """
         if inp.ndimension() > 2:
             raise pyrado.ShapeErr(msg='RBF class can only handle 1-dim or 2-dim input!')
@@ -283,7 +285,7 @@ class RBFFeat:
         for i, sample in enumerate(exp_sq_dist):
             if self._state_wise_norm:
                 # Normalize the features such that the activation for every state dimension sums up to one
-                feat_val[i, :] = normalize(sample, axis=0, order=1).reshape(-1, )
+                feat_val[i, :] = normalize(sample, axis=0, order=1).t().reshape(-1, )
             else:
                 # Turn the features into a vector and normalize over all of them
                 feat_val[i, :] = normalize(sample.t().reshape(-1, ), axis=-1, order=1)

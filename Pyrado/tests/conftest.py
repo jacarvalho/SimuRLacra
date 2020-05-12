@@ -37,7 +37,6 @@ try:
     from pyrado.environments.rcspysim.quanser_qube import QQubeRcsSim
     from pyrado.environments.rcspysim.target_tracking import TargetTrackingSim
 
-
     m_needs_vortex = pytest.mark.skipif(
         not rcsenv.supportsPhysicsEngine('Vortex'),
         reason='Vortex physics engine is not supported in this setup.'
@@ -48,10 +47,15 @@ try:
     )
     m_needs_rcs = pytest.mark.skipif(False)  # don't skip if rcsenv can be imported
 
-except ImportError:
+    m_needs_libtorch = pytest.mark.skipif(
+        'torch' not in rcsenv.ControlPolicy.types, reason='Requires RcsPySim compiled locally with libtorch!'
+    )
+
+except (ImportError, ModuleNotFoundError):
     m_needs_vortex = pytest.mark.skip
     m_needs_bullet = pytest.mark.skip
     m_needs_rcs = pytest.mark.skip
+    m_needs_libtorch = pytest.mark.skip
 
 # Check if MuJoCo i.e. mujoco-py is available
 try:
