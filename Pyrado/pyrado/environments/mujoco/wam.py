@@ -10,8 +10,10 @@ from pyrado.tasks.base import Task
 from pyrado.environments.mujoco.base import MujocoSimEnv
 from pyrado.spaces.box import BoxSpace
 from pyrado.tasks.desired_state import DesStateTask
-from pyrado.tasks.environment_specific import WAMBallInCupTask
-from pyrado.tasks.reward_functions import ZeroPerStepRewFcn
+from pyrado.tasks.final_reward import BestStateFinalRewTask
+from pyrado.tasks.masked import MaskedTask
+from pyrado.tasks.reward_functions import ZeroPerStepRewFcn, ExpQuadrErrRewFcn
+from pyrado.utils.data_types import EnvSpec
 
 
 class WAMSim(MujocoSimEnv, Serializable):
@@ -112,8 +114,8 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         model_path = osp.join(pyrado.MUJOCO_ASSETS_DIR, 'wam_cup.xml')
         super().__init__(model_path, frame_skip, max_steps, task_args)
 
-        # Desired position for the initial state
-        self.init_des_pos = np.array([0.0, 0.5876, 0.0, 1.36, 0.0, -0.321, -1.57])
+        # Desired joint position for the initial state
+        self.init_pose_des = np.array([0.0, 0.5876, 0.0, 1.36, 0.0, -0.321, -1.57])
 
         # Controller gains
         self.p_gains = np.array([200.0, 300.0, 100.0, 100.0, 10.0, 10.0, 2.5])
@@ -145,7 +147,7 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
 
         # Initial state space
         # Set the actual stable initial position. This position would be reached after som time using the internal
-        # PD controller to stabilize at self.init_des_pos
+        # PD controller to stabilize at self.init_pose_des
         np.put(self.init_qpos, [1, 3, 5, 6, 7], [0.6519, 1.409, -0.2827, -1.57, -0.2115])
         init_state = np.concatenate([self.init_qpos.copy(), self.init_qvel.copy()]).ravel()
         self._init_space = SingularStateSpace(init_state)
@@ -159,21 +161,38 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         self._obs_space = BoxSpace(np.array([0.]), np.array([1.]))
 
     def _create_task(self, task_args: [dict, None] = None) -> Task:
-        return WAMBallInCupTask(self.spec, self.sim)
+        # Create a DesStateTask that masks everything but the ball position
+        idcs = [40, 41, 42]  # TODO @Christian: which indices are the ball's x y z pos?
+        spec = EnvSpec(
+            self.spec.obs_space,
+            self.spec.act_space,
+            self.spec.state_space.subspace(self.spec.state_space.create_mask(idcs))
+        )
+        self.sim.forward()  # need to call forward to get a non-zero body position
+        state_des = self.sim.data.body_xpos[10].copy()  # TODO @Christian: right body index? why is 'x_pos' 3-dim, do we need to reset?
+        # TODO @Christian: is there a way to visualize state_des? maybe create a sphere in the xml and move it accoring to the task's state des?
+        rew_fcn = ExpQuadrErrRewFcn(Q=np.eye(3), R=1e-6*np.eye(6))
+        dst = DesStateTask(spec, state_des, rew_fcn)
+
+        # Wrap the masked DesStateTask to add a bonus for the best state in the rollout
+        return BestStateFinalRewTask(
+            MaskedTask(self.spec, dst, idcs),
+            max_steps=self.max_steps, factor=1.
+        )
 
     def _mujoco_step(self, act: np.ndarray) -> dict:
         # Get the desired positions and velocities for the selected joints
-        des_pos = self.init_des_pos.copy()  # the desired trajectory is relative to self.init_des_pos
+        des_pos = self.init_pose_des.copy()  # the desired trajectory is relative to self.init_pose_des
         np.add.at(des_pos, [1, 3, 5], act[:3])
         des_vel = np.zeros_like(des_pos)
         np.add.at(des_vel, [1, 3, 5], act[3:])
 
         # Compute the position and velocity errors
         err_pos = des_pos - self.state[:7]
-        err_vel = des_vel - self.state[self.model.nq:self.model.nq+7]
+        err_vel = des_vel - self.state[self.model.nq:self.model.nq + 7]
 
         # Compute the torques (PD controller)
-        torque = self.p_gains * err_pos + self.d_gains * err_vel
+        torque = self.p_gains*err_pos + self.d_gains*err_vel
         torque = self.torque_space.project_to(torque)
 
         # Apply the torques to the robot
@@ -185,7 +204,6 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
             # When MuJoCo recognized instabilities in the simulation, it simply kills it.
             # Instead, we want the episode to end with a failure
             mjsim_crashed = True
-            # self.reset()
 
         pos = self.sim.data.qpos.copy()
         vel = self.sim.data.qvel.copy()
@@ -194,4 +212,4 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         return dict(des_pos=des_pos, des_vel=des_vel, pos=pos[:7], vel=vel[:7], failed=mjsim_crashed)
 
     def observe(self, state: np.ndarray) -> np.ndarray:
-        return np.array([self._curr_step / self.max_steps])
+        return np.array([self._curr_step/self.max_steps])

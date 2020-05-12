@@ -201,7 +201,7 @@ if __name__ == '__main__':
     env = WAMBallInCupSim(max_steps=1750)
     env.reset()
     env.render(mode=RenderMode(video=True))
-    env.viewer._paused = True
+    # env.viewer._paused = True
 
     # Stabilize around initial position
     main_stabilization(env)
