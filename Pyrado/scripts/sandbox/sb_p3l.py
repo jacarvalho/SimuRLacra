@@ -10,7 +10,7 @@ import pyrado
 from pyrado.environment_wrappers.observation_normalization import ObsNormWrapper
 from pyrado.environments.rcspysim.planar_3_link import Planar3LinkIKSim, Planar3LinkTASim
 from pyrado.domain_randomization.utils import print_domain_params
-from pyrado.plotting.rollout_based import plot_adn_data, plot_observations, plot_rewards, plot_actions
+from pyrado.plotting.rollout_based import plot_adn_data, plot_rewards
 from pyrado.policies.adn import ADNPolicy, pd_cubic
 from pyrado.policies.time import TimePolicy
 from pyrado.sampling.rollout import rollout

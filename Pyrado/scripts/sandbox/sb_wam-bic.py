@@ -6,6 +6,7 @@ import torch as to
 import numpy as np
 import matplotlib.pyplot as plt
 
+import pyrado
 from pyrado.environments.mujoco.wam import WAMBallInCupSim
 from pyrado.policies.base import Policy
 from pyrado.policies.environment_specific import DualRBFLinearPolicy
@@ -170,13 +171,13 @@ def main_dummy_mp(env):
 
     # TODO: Init weights of the policy should be at a reasonable scale
     width = 0.0035
-    rbf_hparam = dict(num_feat_per_dim=7, bounds=(np.array([0.]), np.array([1.])), scale=1/(2*width))
+    rbf_hparam = dict(num_feat_per_dim=7, bounds=(np.array([0.]), np.array([1.])), scale=None)  # 1/(2*width)
     policy = DualRBFLinearPolicy(env.spec, rbf_hparam)
 
     done = False
     while not done:
         ro = rollout(env, policy, render_mode=RenderMode(video=True), eval=True)
-        done, state, param = after_rollout_query(env, ro)
+        done, state, param = after_rollout_query(env, policy, ro)
 
     des_pos_traj = ro.env_infos['des_pos']
     pos_traj = ro.env_infos['pos']
@@ -194,8 +195,7 @@ def main_dummy_mp(env):
 
 if __name__ == '__main__':
     # Fix seed for reproducibility
-    np.random.seed(101)
-    to.manual_seed(101)
+    pyrado.set_seed(101)
 
     # Check for function equality
     print(check_feat_equality())

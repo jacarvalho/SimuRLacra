@@ -77,5 +77,5 @@ if __name__ == '__main__':
                          reset_kwargs=dict(domain_param=param, init_state=state))  # calls env.reset()
             print_domain_params(env_sim.domain_param)
             print_cbt(f'Return: {ro.undiscounted_return()}', 'g', bright=True)
-            done, state, param = after_rollout_query(env_sim, ro)
+            done, state, param = after_rollout_query(env_sim, policy, ro)
     pyrado.close_vpython()

@@ -44,7 +44,7 @@ def sim_policy_fixed_env(env: SimEnv, policy: Policy, domain_param: [dict, list]
                      render_mode=RenderMode(video=True), eval=True)
         print_domain_params(env.domain_param)
         print_cbt(f'Return: {ro.undiscounted_return()}', 'g', bright=True)
-        done, state, _ = after_rollout_query(env, ro)
+        done, state, _ = after_rollout_query(env, policy, ro)
 
         if isinstance(domain_param, list):
             # Iterate over the list of domain parameter sets

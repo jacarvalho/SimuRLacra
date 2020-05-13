@@ -182,4 +182,4 @@ if __name__ == '__main__':
         ro = rollout(env, policy, render_mode=RenderMode(text=False, video=True), eval=True, max_steps=max_steps,
                      stop_on_done=False, reset_kwargs=dict(domain_param=param, init_state=state))
         print_cbt(f'Return: {ro.undiscounted_return()}', 'g', bright=True)
-        done, state, param = after_rollout_query(env, ro)
+        done, state, param = after_rollout_query(env, policy, ro)

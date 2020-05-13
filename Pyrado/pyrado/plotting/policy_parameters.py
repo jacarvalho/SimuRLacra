@@ -81,6 +81,7 @@ def render_policy_params(policy: Policy,
         `constrained_layout=True`.
 
     :param policy: policy to visualize
+    :param env_spec: environment specification
     :param cmap_name: name of the color map, e.g. 'inferno', 'RdBu', or 'viridis'
     :param ax_hm: axis to draw the heat map onto, if equal to None a new figure is opened
     :param annotate: select if the heat map should be annotated

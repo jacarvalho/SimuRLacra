@@ -26,4 +26,4 @@ if __name__ == '__main__':
                      reset_kwargs=dict(domain_param=param, init_state=env.state.copy()))
         print_domain_params(env.domain_param)
         print_cbt(f'init obs (after): {ro.observations[0]}', 'c')
-        done, state, param = after_rollout_query(env, ro)
+        done, state, param = after_rollout_query(env, policy, ro)

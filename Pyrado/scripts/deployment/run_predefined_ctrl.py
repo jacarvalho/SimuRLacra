@@ -51,4 +51,4 @@ if __name__ == '__main__':
     while not done:
         print_cbt('Running PD-controller ...', 'c')
         ro = rollout(env, policy, eval=True, render_mode=RenderMode(text=False))
-        done, _, _ = after_rollout_query(env, ro)
+        done, _, _ = after_rollout_query(env, policy, ro)
