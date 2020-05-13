@@ -206,8 +206,7 @@ class QCartPoleSwingUpAndBalanceCtrl(Policy, ABC):
         """
         Constructor
 
-        :param env_spec: environment specification
-        :param u_max: maximum energy gain
+env_spec        :param u_max: maximum energy gain
         :param v_max: maximum voltage the control signal will be clipped to
         :param long: flag for long or short pole
         """

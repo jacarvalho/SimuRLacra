@@ -1,8 +1,9 @@
 """
 Collection of plotting functions which take Rollouts as inputs and produce line plots
 """
-import numpy as np
 import functools
+import numpy as np
+import torch as to
 from matplotlib import gridspec
 from matplotlib import pyplot as plt
 from typing import Sequence
@@ -11,9 +12,11 @@ import pyrado
 from pyrado.environment_wrappers.action_normalization import ActNormWrapper
 from pyrado.environment_wrappers.utils import remove_env
 from pyrado.environments.base import Env
+from pyrado.policies.base import Policy
+from pyrado.policies.linear import LinearPolicy
 from pyrado.sampling.step_sequence import StepSequence
 from pyrado.utils.data_types import fill_list_of_arrays
-from pyrado.utils.input_output import ensure_math_mode
+from pyrado.utils.input_output import ensure_math_mode, print_cbt
 
 
 def _get_obs_label(rollout: StepSequence, idx: int):
@@ -38,7 +41,7 @@ def _get_act_label(rollout: StepSequence, idx: int):
 
 def plot_observations_actions_rewards(ro: StepSequence):
     """
-    Plot all observation, action, and reward trajectories of the given rollout (in different sub-plots).
+    Plot all observation, action, and reward trajectories of the given rollout.
 
     :param ro: input rollout
     """
@@ -107,6 +110,54 @@ def plot_observations(ro: StepSequence, idcs_sel: Sequence[int] = None):
                         # Omit the last observation for simplicity
                         axs[i, j].plot(t, ro.observations[:-1, j + i*num_cols],
                                        label=_get_obs_label(ro, j + i*num_cols), c=f'C{i%10}')
+                        axs[i, j].legend()
+                    else:
+                        # We might create more subplots than there are observations
+                        pass
+        plt.show()
+
+
+def plot_features(ro: StepSequence, policy: Policy):
+    """
+    Plot all features given the policy and the observation trajectories.
+
+    :param policy: linear policy used during the rollout
+    :param ro: input rollout
+    """
+    if not isinstance(policy, LinearPolicy):
+        print_cbt('Plotting of the feature values is only supports linear policies!', 'y')
+        return
+
+    if hasattr(ro, 'observations'):
+        # Use recorded time stamps if possible
+        t = ro.env_infos.get('t', np.arange(0, ro.length)) if hasattr(ro, 'env_infos') else np.arange(0, ro.length)
+
+        # Recover the features from the observations
+        feat_vals = policy.eval_feats(to.from_numpy(ro.observations))
+        dim_feat = range(feat_vals.shape[1])
+        if len(dim_feat) <= 6:
+            divisor = 2
+        elif len(dim_feat) <= 12:
+            divisor = 4
+        else:
+            divisor = 8
+        num_cols = int(np.ceil(len(dim_feat)/divisor))
+        num_rows = int(np.ceil(len(dim_feat)/num_cols))
+
+        fig, axs = plt.subplots(nrows=num_rows, ncols=num_cols, figsize=(num_cols*5, num_rows*3))
+        fig.suptitle('Feature values over Time')
+        plt.subplots_adjust(hspace=.5)
+
+        if len(dim_feat) == 1:
+            axs.plot(t, feat_vals[:-1, dim_feat[0]], label=_get_obs_label(ro, dim_feat[0]))
+            axs.legend()
+        else:
+            for i in range(num_rows):
+                for j in range(num_cols):
+                    if j + i*num_cols < len(dim_feat):
+                        # Omit the last observation for simplicity
+                        axs[i, j].plot(t, feat_vals[:-1, j + i*num_cols],
+                                       label=f'$\phi_{j + i*num_cols}$', c=f'C{i%10}')
                         axs[i, j].legend()
                     else:
                         # We might create more subplots than there are observations

@@ -11,8 +11,9 @@ from pyrado.environments.quanser.base import RealEnv
 from pyrado.environments.sim_base import SimEnv
 from pyrado.environment_wrappers.utils import inner_env, typed_env
 from pyrado.plotting.curve import plot_dts
+from pyrado.plotting.policy_parameters import render_policy_params
 from pyrado.plotting.rollout_based import plot_observations_actions_rewards, plot_actions, plot_observations, \
-    plot_rewards, plot_adn_data
+    plot_rewards, plot_adn_data, plot_features
 from pyrado.policies.adn import ADNPolicy
 from pyrado.policies.base import Policy
 from pyrado.policies.two_headed import TwoHeadedPolicy
@@ -257,11 +258,12 @@ def rollout(env: Env,
     return res
 
 
-def after_rollout_query(env: Env, rollout: StepSequence) -> tuple:
+def after_rollout_query(env: Env, policy: Policy, rollout: StepSequence) -> tuple:
     """
-    Function to aks the user what to do after a rollout has been animated
+    Ask the user what to do after a rollout has been animated.
 
-    :param env: environment
+    :param env: environment used for the rollout
+    :param policy: policy used for the rollout
     :param rollout: collected data from the rollout
     :return: done flag, initial state, and domain parameters
     """
@@ -276,6 +278,8 @@ def after_rollout_query(env: Env, rollout: StepSequence) -> tuple:
         ['PR', 'plot rewards'],
         ['PO', 'plot all observations'],
         ['PO idcs', 'plot selected observations (integers separated by whitespaces)'],
+        ['PF', 'plot features (for linear policy)'],
+        ['PP', 'plot policy parameters (not suggested for many parameters)'],
         ['PDT', 'plot time deltas (profiling of a real system)'],
         ['PADN', 'plot activation dynamic network data'],
         ['E', 'exit']
@@ -301,32 +305,42 @@ def after_rollout_query(env: Env, rollout: StepSequence) -> tuple:
 
     elif ans == 'p':
         plot_observations_actions_rewards(rollout)
-        return after_rollout_query(env, rollout)
+        return after_rollout_query(env, policy, rollout)
 
     elif ans == 'pa':
         plot_actions(rollout, env)
-        return after_rollout_query(env, rollout)
+        return after_rollout_query(env, policy, rollout)
 
     elif ans == 'po':
         plot_observations(rollout)
-        return after_rollout_query(env, rollout)
+        return after_rollout_query(env, policy, rollout)
 
     elif 'po' in ans and any(char.isdigit() for char in ans):
         idcs = [int(s) for s in ans.split() if s.isdigit()]
         plot_observations(rollout, idcs_sel=idcs)
-        return after_rollout_query(env, rollout)
+        return after_rollout_query(env, policy, rollout)
+
+    elif ans == 'pf':
+        plot_features(rollout, policy)
+        return after_rollout_query(env, policy, rollout)
+
+    elif ans == 'pp':
+        from matplotlib import pyplot as plt
+        render_policy_params(policy, env.spec, annotate=False)
+        plt.show()
+        return after_rollout_query(env, policy, rollout)
 
     elif ans == 'pr':
         plot_rewards(rollout)
-        return after_rollout_query(env, rollout)
+        return after_rollout_query(env, policy, rollout)
 
     elif ans == 'pdt':
         plot_dts(rollout.dts_policy, rollout.dts_step, rollout.dts_remainder)
-        return after_rollout_query(env, rollout),
+        return after_rollout_query(env, policy, rollout),
 
     elif ans == 'padn':
         plot_adn_data(rollout)
-        return after_rollout_query(env, rollout)
+        return after_rollout_query(env, policy, rollout)
 
     elif ans == 's':
         if isinstance(env, SimEnv):
@@ -346,7 +360,7 @@ def after_rollout_query(env: Env, rollout: StepSequence) -> tuple:
             return False, None, param
         except (ValueError, KeyError):
             print_cbt(f'Could not parse {strs} into a dict.', 'r')
-            after_rollout_query(env, rollout)
+            after_rollout_query(env, policy, rollout)
 
     elif ans == 'f':
         try:
@@ -365,11 +379,11 @@ def after_rollout_query(env: Env, rollout: StepSequence) -> tuple:
                     raise pyrado.TypeErr(given=state, expected_type=list)
                 return False, state, {}
         except (pyrado.TypeErr, pyrado.ShapeErr):
-            return after_rollout_query(env, rollout)
+            return after_rollout_query(env, policy, rollout)
 
     elif ans == 'e':
         env.close()
         return True, None, {}  # breaks the outer while loop
 
     else:
-        return after_rollout_query(env, rollout)  # recursion
+        return after_rollout_query(env, policy, rollout)  # recursion
