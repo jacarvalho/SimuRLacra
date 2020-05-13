@@ -67,13 +67,12 @@ def plot_observations_actions_rewards(ro: StepSequence):
         # Rewards
         axs[-1].plot(t, ro.rewards, label='reward')
         axs[-1].legend()
-
         plt.show()
 
 
 def plot_observations(ro: StepSequence, idcs_sel: Sequence[int] = None):
     """
-    Plot all observation trajectories of the given rollout (in individual sub-plots).
+    Plot all observation trajectories of the given rollout.
 
     :param ro: input rollout
     :param idcs_sel: indices of the selected selected observations, if `None` plot all
@@ -95,7 +94,6 @@ def plot_observations(ro: StepSequence, idcs_sel: Sequence[int] = None):
         num_rows = int(np.ceil(len(dim_obs)/num_cols))
 
         fig, axs = plt.subplots(nrows=num_rows, ncols=num_cols, figsize=(num_cols*5, num_rows*3))
-        axs = axs.reshape((num_rows, num_cols))
         fig.suptitle('Observations over Time')
         plt.subplots_adjust(hspace=.5)
 
@@ -113,13 +111,12 @@ def plot_observations(ro: StepSequence, idcs_sel: Sequence[int] = None):
                     else:
                         # We might create more subplots than there are observations
                         pass
-
         plt.show()
 
 
 def plot_actions(ro: StepSequence, env: Env = None):
     """
-    Plot all action trajectories of the given rollout (in individual sub-plots).
+    Plot all action trajectories of the given rollout.
 
     :param ro: input rollout
     :param env: environment (used for getting the clipped action values)
