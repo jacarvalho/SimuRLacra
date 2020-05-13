@@ -123,7 +123,7 @@ if __name__ == '__main__':
     # Choose setup
     setup_type = 'pos'  # idle, pos, or vel
     physicsEngine = 'Bullet'  # Bullet or Vortex
-    graphFileName = 'gBoxFlipping_trqCtrl.xml'  # gBoxFlipping_posCtrl.xml or gBoxFlipping_trqCtrl.xml
+    graphFileName = 'gBoxLifting_posCtrl.xml'  # gBoxFlipping_posCtrl.xml or gBoxFlipping_trqCtrl.xml
     dt = 1/100.
     max_steps = int(12/dt)
     ref_frame = 'table'  # world, box, table, or table

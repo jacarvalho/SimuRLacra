@@ -71,10 +71,8 @@ def create_position_mps_setup(physicsEngine, graphFileName, dt, max_steps, ref_f
 
 def create_velocity_mps_setup(physicsEngine, graphFileName, dt, max_steps, ref_frame, checkJointLimits):
     def policy(t: float):
-        return [1, 0, 0,  0, 0, 0,  1,
-                0, 1, 0,  0, 0, 0,  1]
-        # return [1, 1, 1,  1, 1, 1,  1,
-        #         1, 1, 1,  1, 1, 1,  1]
+        return [1, 1, 1,  1, 1, 1,  1,
+                1, 1, 1,  1, 1, 1,  1]
 
     # Set up environment
     env = BoxLiftingVelMPsSim(
@@ -109,7 +107,7 @@ def create_velocity_mps_setup(physicsEngine, graphFileName, dt, max_steps, ref_f
 
 if __name__ == '__main__':
     # Choose setup
-    setup_type = 'vel'  # idle, pos, vel
+    setup_type = 'pos'  # idle, pos, vel
     physicsEngine = 'Bullet'  # Bullet or Vortex
     graphFileName = 'gBoxLifting_posCtrl.xml'  # gBoxLifting_trqCtrl or gBoxLifting_posCtrl
     dt = 1/100.
