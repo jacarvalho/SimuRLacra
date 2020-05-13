@@ -17,12 +17,11 @@ from pyrado.utils.data_types import EnvSpec
 
 
 class WAMSim(MujocoSimEnv, Serializable):
-    # TODO: this class is work in progress...
     """
     WAM Arm from Barrett technologies.
 
     .. note::
-        If using `reset()` function, always pass a meaningful `init_state`
+        When using the `reset()` function, always pass a meaningful `init_state`
 
     .. seealso::
         https://github.com/jhu-lcsr/barrett_model
@@ -80,20 +79,18 @@ class WAMSim(MujocoSimEnv, Serializable):
         self.sim.data.qfrc_applied[:] = act
         self.sim.step()
 
-        pos = self.sim.data.qpos.copy()
-        vel = self.sim.data.qvel.copy()
-        self.state = np.concatenate([pos, vel])
-
+        qpos = self.sim.data.qpos.copy()
+        qvel = self.sim.data.qvel.copy()
+        self.state = np.concatenate([qpos, qvel])
         return dict()
 
 
 class WAMBallInCupSim(MujocoSimEnv, Serializable):
-    # TODO: this class is work in progress...
     """
     WAM Arm from Barrett technologies for the Ball-in-a-cup task.
 
     .. note::
-        If using `reset()` function, always pass a meaningful `init_state`
+        When using the `reset()` function, always pass a meaningful `init_state`
 
     .. seealso::
         https://github.com/psclklnk/self-paced-rl/tree/master/sprl/envs
@@ -141,7 +138,7 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         self._torque_space = BoxSpace(-max_torque, max_torque)
 
         # State space
-        state_shape = np.concatenate([self.sim.data.qpos, self.sim.data.qvel]).shape
+        state_shape = np.concatenate([self.sim.data.qpos, self.sim.data.qvel, self.sim.data.body_xpos[40]]).shape
         max_state = np.full(state_shape, pyrado.inf)
         self._state_space = BoxSpace(-max_state, max_state)
 
@@ -149,7 +146,8 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         # Set the actual stable initial position. This position would be reached after som time using the internal
         # PD controller to stabilize at self.init_pose_des
         np.put(self.init_qpos, [1, 3, 5, 6, 7], [0.6519, 1.409, -0.2827, -1.57, -0.2115])
-        init_state = np.concatenate([self.init_qpos.copy(), self.init_qvel.copy()]).ravel()
+        init_ball_pos = self.sim.data.body_xpos[40].copy()
+        init_state = np.concatenate([self.init_qpos.copy(), self.init_qvel.copy(), init_ball_pos])
         self._init_space = SingularStateSpace(init_state)
 
         # Action space (PD controller on 3 joint positions and velocities)
@@ -162,8 +160,7 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
 
     def _create_task(self, task_args: [dict, None] = None) -> Task:
         # Create a DesStateTask that masks everything but the ball position
-        # Cartesian position of the ball is at index 42 and an array that consists of [x,y,z]
-        idcs = [42]
+        idcs = list(range(self.state_space.flat_dim-3, self.state_space.flat_dim))  # Cartesian ball position of [x, y, z]
 
         # TODO @Fabio: state_space consists of the joint position q, we need cartesian position x (self.sim.data.body_xpos)
         # TODO: possible solution: overwrite step() function and pass sim.data.body_xpos instead of state to the step reward
@@ -173,9 +170,8 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
             self.spec.state_space.subspace(self.spec.state_space.create_mask(idcs))
         )
         self.sim.forward()  # need to call forward to get a non-zero body position
-        state_des = self.sim.data.body_xpos[10].copy()
-        # TODO @Christian: is there a way to visualize state_des?
-        # Answer: Yes, there are so-called "sites" in MuJoCo (see XML, e.g. "cup_goal").
+        state_des = self.sim.data.body_xpos[10].copy() # TODO @Christian: is there a "get_body_by_name" function? (That would be better than hard-coded indices)
+        # TODO @Christian: use site "cup_goal" during runtime to update the desired state (the goal will move, we have to check if the goal in our task moves accordingly)
         rew_fcn = ExpQuadrErrRewFcn(Q=np.eye(3), R=1e-6*np.eye(6))
         dst = DesStateTask(spec, state_des, rew_fcn)
 
@@ -187,14 +183,14 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
 
     def _mujoco_step(self, act: np.ndarray) -> dict:
         # Get the desired positions and velocities for the selected joints
-        des_pos = self.init_pose_des.copy()  # the desired trajectory is relative to self.init_pose_des
-        np.add.at(des_pos, [1, 3, 5], act[:3])
-        des_vel = np.zeros_like(des_pos)
-        np.add.at(des_vel, [1, 3, 5], act[3:])
+        des_qpos = self.init_pose_des.copy()  # the desired trajectory is relative to self.init_pose_des
+        np.add.at(des_qpos, [1, 3, 5], act[:3])
+        des_qvel = np.zeros_like(des_qpos)
+        np.add.at(des_qvel, [1, 3, 5], act[3:])
 
         # Compute the position and velocity errors
-        err_pos = des_pos - self.state[:7]
-        err_vel = des_vel - self.state[self.model.nq:self.model.nq + 7]
+        err_pos = des_qpos - self.state[:7]
+        err_vel = des_qvel - self.state[self.model.nq:self.model.nq + 7]
 
         # Compute the torques (PD controller)
         torque = self.p_gains*err_pos + self.d_gains*err_vel
@@ -210,11 +206,14 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
             # Instead, we want the episode to end with a failure
             mjsim_crashed = True
 
-        pos = self.sim.data.qpos.copy()
-        vel = self.sim.data.qvel.copy()
-        self.state = np.concatenate([pos, vel])
+        qpos = self.sim.data.qpos.copy()
+        qvel = self.sim.data.qvel.copy()
+        ball_pos = self.sim.data.body_xpos[40].copy()
+        self.state = np.concatenate([qpos, qvel, ball_pos])
 
-        return dict(des_pos=des_pos, des_vel=des_vel, pos=pos[:7], vel=vel[:7], failed=mjsim_crashed)
+        return dict(
+            des_qpos=des_qpos, des_vel=des_qvel, qpos=qpos[:7], qvel=qvel[:7], ball_pos=ball_pos, failed=mjsim_crashed
+        )
 
     def observe(self, state: np.ndarray) -> np.ndarray:
         return np.array([self._curr_step/self.max_steps])
