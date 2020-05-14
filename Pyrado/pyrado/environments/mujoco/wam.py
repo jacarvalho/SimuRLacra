@@ -141,8 +141,8 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         # Set the actual stable initial position. This position would be reached after som time using the internal
         # PD controller to stabilize at self.init_pose_des
         np.put(self.init_qpos, [1, 3, 5, 6, 7], [0.6519, 1.409, -0.2827, -1.57, -0.2115])
-        # TODO:
-        init_ball_pos = self.sim.data.get_body_xpos('ball').copy()
+        # init_ball_pos = self.sim.data.get_body_xpos('ball').copy()  # all zeros
+        init_ball_pos = np.array([0., -0.8566, 0.85391])
         init_state = np.concatenate([self.init_qpos, self.init_qvel, init_ball_pos])
         self._init_space = SingularStateSpace(init_state)
 
