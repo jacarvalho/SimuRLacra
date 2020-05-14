@@ -42,9 +42,10 @@ to.set_default_dtype(to.double)
 inf = float('inf')
 nan = float('nan')
 
-# Figure sizes (width, height) [inch]
+# Figure sizes (width, height) [inch]; measures are taken w.r.t. the document's line length
 figsize_thesis_2percol_18to10 = (2.9, 2.9/18*10)
 figsize_thesis_2percol_16to10 = (2.9, 2.9/16*10)
+figsize_thesis_2percol_square = (2.9, 2.9)
 figsize_IEEE_1col_18to10 = (3.5, 3.5/18*10)
 figsize_IEEE_2col_18to10 = (7.16, 7.16/18*10)
 figsize_IEEE_1col_square = (3.5, 3.5)
