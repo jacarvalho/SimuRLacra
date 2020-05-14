@@ -43,6 +43,8 @@ inf = float('inf')
 nan = float('nan')
 
 # Figure sizes (width, height) [inch]; measures are taken w.r.t. the document's line length
+figsize_thesis_1percol_18to10 = (5.8, 5.8/18*10)
+figsize_thesis_1percol_16to10 = (5.8, 5.8/16*10)
 figsize_thesis_2percol_18to10 = (2.9, 2.9/18*10)
 figsize_thesis_2percol_16to10 = (2.9, 2.9/16*10)
 figsize_thesis_2percol_square = (2.9, 2.9)
