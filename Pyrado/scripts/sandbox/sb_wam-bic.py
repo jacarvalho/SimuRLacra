@@ -179,10 +179,10 @@ def main_dummy_mp(env):
         ro = rollout(env, policy, render_mode=RenderMode(video=True), eval=True)
         done, state, param = after_rollout_query(env, policy, ro)
 
-    des_pos_traj = ro.env_infos['des_pos']
-    pos_traj = ro.env_infos['pos']
-    des_vel_traj = ro.env_infos['des_vel']
-    vel_traj = ro.env_infos['vel']
+    des_pos_traj = ro.env_infos['des_qpos']
+    pos_traj = ro.env_infos['qpos']
+    des_vel_traj = ro.env_infos['des_qvel']
+    vel_traj = ro.env_infos['qvel']
 
     # Plot trajectories of joints 1 and 3 and their corresponding desired trajectories
     for idx in [1, 3]:
