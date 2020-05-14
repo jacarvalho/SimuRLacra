@@ -131,7 +131,7 @@ def test_param_expl(env, linear_policy, ex_dir, algo_class, algo_hparam):
 @pytest.mark.parametrize(
     'env', [
         lazy_fixture('default_bob'),
-        lazy_fixture('default_bop2d_bt')
+        pytest.param(lazy_fixture('default_bop2d_bt'), marks=m_needs_bullet),
     ], ids=['bob', 'bop2d_bt']
 )
 @pytest.mark.parametrize(
