@@ -28,6 +28,6 @@ if __name__ == '__main__':
     fig = render_policy_params(policy, env.spec, annotate=args.verbose)
 
     if args.save_figures:
-        fig.savefig(osp.join(ex_dir, f'policy_nn_weights.pdf'), dpi=500)
+        fig.savefig(osp.join(ex_dir, f'policy-parameters.pdf'), dpi=500)
 
     plt.show()

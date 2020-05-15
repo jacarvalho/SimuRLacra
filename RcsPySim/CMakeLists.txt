@@ -18,6 +18,9 @@ SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
 set(PYBIND11_CPP_STANDARD -std=c++11)
 add_subdirectory("${CMAKE_SOURCE_DIR}/../thirdParty/pybind11" "${CMAKE_BINARY_DIR}/pybind11")
 
+# Find Qt
+FIND_PACKAGE(Qt5 COMPONENTS Core Gui Widgets QUIET)
+
 # Find RCS dependency
 find_package(Rcs REQUIRED 
   COMPONENTS RcsCore RcsPhysics

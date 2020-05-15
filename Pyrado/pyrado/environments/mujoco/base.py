@@ -212,7 +212,9 @@ class MujocoSimEnv(SimEnv, ABC, Serializable):
 
         # Apply the action and simulate the resulting dynamics
         self._mujoco_step(act)
+
         info = {'t': self._curr_step*self._dt}
+        self._curr_step += 1
 
         # Check if the task or the environment is done
         done = self._task.is_done(self.state)
@@ -222,9 +224,6 @@ class MujocoSimEnv(SimEnv, ABC, Serializable):
         if done:
             # Add final reward if done
             self._curr_rew += self._task.final_rew(self.state, remaining_steps)
-        else:
-            # Don't count the transition when done
-            self._curr_step += 1
 
         return self.observe(self.state), self._curr_rew, done, info
 

@@ -104,6 +104,8 @@ class QQubeReal(RealEnv, Serializable):
         # Construct the state from the measurements
         self.state = meas
 
+        self._curr_step += 1
+
         # Check if the task or the environment is done
         done = self._task.is_done(self.state)
         if self._curr_step >= self._max_steps:
@@ -112,9 +114,6 @@ class QQubeReal(RealEnv, Serializable):
         if done:
             # Add final reward if done
             self._curr_rew += self._task.final_rew(self.state, remaining_steps)
-        else:
-            # Don't count the transition when done
-            self._curr_step += 1
 
         return self.observe(self.state), self._curr_rew, done, info
 

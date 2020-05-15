@@ -78,7 +78,7 @@ if __name__ == '__main__':
                                    distr_labels=[f'iter\_{i}' for i in range(num_cand)])
 
         if args.save_figures:
-            fig.savefig(osp.join(ex_dir, f'distribution_evolution.pdf'), dpi=500)
-            fig.savefig(osp.join(ex_dir, f'distribution_evolution.png'), dpi=500)
+            for fmt in ['pdf', 'pgf']:
+                fig.savefig(osp.join(ex_dir, f'distribution-evolution.{fmt}'), dpi=500)
 
     plt.show()

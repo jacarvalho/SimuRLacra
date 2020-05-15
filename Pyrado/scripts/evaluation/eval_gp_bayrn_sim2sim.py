@@ -1,7 +1,6 @@
 """
 Script for the paper plot the GP's posterior after a Bayesian Domain Randomization sim-to-sim experiment
 """
-import numpy as np
 import os.path as osp
 import torch as to
 import seaborn as sns
@@ -33,14 +32,15 @@ if __name__ == '__main__':
     if len(args.idcs) != 2:
         raise pyrado.ShapeErr(msg='Select exactly 2 indices!')
 
-    fig_size = (pyrado.figsize_IEEE_1col_square[0]*0.75, pyrado.figsize_IEEE_1col_square[0]*0.75)
+    hm_fig_size = (pyrado.figsize_IEEE_1col_square[0]*0.75, pyrado.figsize_IEEE_1col_square[0]*0.75)
+    cb_fig_size = (pyrado.figsize_IEEE_1col_square[0]*0.15, pyrado.figsize_IEEE_1col_square[0]*0.55)
 
     # Plot 2D
-    fig_mean, ax_hm_mean = plt.subplots(1, figsize=fig_size, constrained_layout=True)
-    _, ax_cb_mean = plt.subplots(1, figsize=fig_size, constrained_layout=True)
+    fig_hm_mean, ax_hm_mean = plt.subplots(1, figsize=hm_fig_size, constrained_layout=True)
+    fig_cb_mean, ax_cb_mean = plt.subplots(1, figsize=cb_fig_size, constrained_layout=True)
 
-    fig_std, ax_hm_std = plt.subplots(1, figsize=fig_size, constrained_layout=True)
-    _, ax_cb_std = plt.subplots(1, figsize=fig_size, constrained_layout=True)
+    fig_hm_std, ax_hm_std = plt.subplots(1, figsize=hm_fig_size, constrained_layout=True)
+    fig_cb_std, ax_cb_std = plt.subplots(1, figsize=cb_fig_size, constrained_layout=True)
 
     # Nice color map from seaborn
     # hm_cmap = sns.cubehelix_palette(light=.9, dark=.1, reverse=True, as_cmap=True)
@@ -59,17 +59,15 @@ if __name__ == '__main__':
         show_legend_posterior=True, show_legend_std=True, show_legend_data=args.verbose, render_3D=False,
     )
 
-    # ax_hm_mean.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
-    # ax_hm_std.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
-
     # Plot the ground truth domain parameter configuration
     ax_hm_mean.scatter(0.026, 0.097, c='firebrick', marker='o', s=60)  # forestgreen
     ax_hm_std.scatter(0.026, 0.097, c='firebrick', marker='o', s=60)  # forestgreen
 
     if args.save_figures:
-        fig_mean.savefig(osp.join(ex_dir, f'gp_posterior_ret_mean.pdf'), dpi=500)
-        fig_mean.savefig(osp.join(ex_dir, f'gp_posterior_ret_mean.pgf'), dpi=500)
-        fig_std.savefig(osp.join(ex_dir, f'gp_posterior_ret_std.pdf'), dpi=500)
-        fig_std.savefig(osp.join(ex_dir, f'gp_posterior_ret_std.pgf'), dpi=500)
+        for fmt in ['pdf', 'pgf']:
+            fig_hm_mean.savefig(osp.join(ex_dir, f'gp-posterior-ret-mean-hm.{fmt}'), dpi=500)
+            fig_cb_mean.savefig(osp.join(ex_dir, f'gp-posterior-ret-mean-cb.{fmt}'), dpi=500)
+            fig_hm_std.savefig(osp.join(ex_dir, f'gp-posterior-ret-std-hm.{fmt}'), dpi=500)
+            fig_cb_std.savefig(osp.join(ex_dir, f'gp-posterior-ret-std-cb.{fmt}'), dpi=500)
 
     plt.show()

@@ -24,6 +24,7 @@ from pyrado.sampling.rollout import rollout
 from pyrado.sampling.sequences import *
 from pyrado.spaces import ValueFunctionSpace
 from pyrado.utils.data_types import EnvSpec
+from tests.conftest import m_needs_bullet
 
 
 # Fixture providing an experiment directory
@@ -131,7 +132,7 @@ def test_param_expl(env, linear_policy, ex_dir, algo_class, algo_hparam):
 @pytest.mark.parametrize(
     'env', [
         lazy_fixture('default_bob'),
-        lazy_fixture('default_bop2d_bt')
+        pytest.param(lazy_fixture('default_bop2d_bt'), marks=m_needs_bullet),
     ], ids=['bob', 'bop2d_bt']
 )
 @pytest.mark.parametrize(

@@ -8,8 +8,11 @@ from pyrado.environments.pysim.quanser_ball_balancer import QBallBalancerSim, QB
 from pyrado.environments.quanser.quanser_ball_balancer import QBallBalancerReal
 from pyrado.environments.quanser.quanser_cartpole import QCartPoleStabReal, QCartPoleSwingUpReal
 from pyrado.environments.quanser.quanser_qube import QQubeReal
+from pyrado.policies.dummy import DummyPolicy
+from pyrado.sampling.rollout import rollout
 from pyrado.spaces.discrete import DiscreteSpace
 from pyrado.utils.data_types import RenderMode
+from tests.conftest import m_needs_bullet, m_needs_mujoco, m_needs_vortex
 
 
 @pytest.mark.parametrize(
@@ -23,27 +26,34 @@ from pyrado.utils.data_types import RenderMode
         lazy_fixture('default_qq'),
         lazy_fixture('default_qcpst'),
         lazy_fixture('default_qcpsu'),
-        lazy_fixture('default_p3l_bt'),
-        lazy_fixture('default_p3l_vx'),
-        lazy_fixture('default_bop2d_bt'),
-        lazy_fixture('default_bop2d_vx'),
-        lazy_fixture('default_bop5d_bt'),
-        lazy_fixture('default_bop5d_vx'),
-        lazy_fixture('default_bspos_bt'),
-        lazy_fixture('default_bspos_vx'),
-        lazy_fixture('default_cth'),
-        lazy_fixture('default_hop'),
-        lazy_fixture('default_wambic')
+        pytest.param(lazy_fixture('default_p3l_bt'), marks=m_needs_bullet),
+        pytest.param(lazy_fixture('default_p3l_vx'), marks=m_needs_vortex),
+        pytest.param(lazy_fixture('default_bop2d_bt'), marks=m_needs_bullet),
+        pytest.param(lazy_fixture('default_bop2d_vx'), marks=m_needs_vortex),
+        pytest.param(lazy_fixture('default_bop5d_bt'), marks=m_needs_bullet),
+        pytest.param(lazy_fixture('default_bop5d_vx'), marks=m_needs_vortex),
+        pytest.param(lazy_fixture('default_bspos_bt'), marks=m_needs_bullet),
+        pytest.param(lazy_fixture('default_bspos_vx'), marks=m_needs_vortex),
+        pytest.param(lazy_fixture('default_cth'), marks=m_needs_mujoco),
+        pytest.param(lazy_fixture('default_hop'), marks=m_needs_mujoco),
+        pytest.param(lazy_fixture('default_wambic'), marks=m_needs_mujoco),
     ], ids=['cata', 'rosen', 'bob', 'omo', 'pend', 'qbb', 'qq', 'qcp-st', 'qcp-su', 'default_p3l_bt', 'default_p3l_vx',
             'bop2d_bt', 'bop2d_vx', 'bop5d_bt', 'bop5d_vx', 'bspos_bt', 'bspos_vx', 'cth', 'hop', 'wam-bic']
 )
-def test_rollout_dummy(env):
+def test_rollout(env):
     assert isinstance(env, SimEnv)
+
+    # Hand coded rollout
     env.reset()
     done = False
     while not done:
-        state, rew, done, info = env.step(0.5*env.act_space.sample_uniform())
+        state, rew, done, info = env.step(0.1*env.act_space.sample_uniform())
     assert env.curr_step <= env.max_steps
+
+    # Rollout function
+    policy = DummyPolicy(env.spec)
+    ro = rollout(env, policy, eval=True)
+    assert ro.length <= env.max_steps
 
 
 @pytest.mark.parametrize(
@@ -57,17 +67,17 @@ def test_rollout_dummy(env):
         lazy_fixture('default_qq'),
         lazy_fixture('default_qcpst'),
         lazy_fixture('default_qcpsu'),
-        lazy_fixture('default_p3l_bt'),
-        lazy_fixture('default_p3l_vx'),
-        lazy_fixture('default_bop2d_bt'),
-        lazy_fixture('default_bop2d_vx'),
-        lazy_fixture('default_bop5d_bt'),
-        lazy_fixture('default_bop5d_vx'),
-        lazy_fixture('default_bspos_bt'),
-        lazy_fixture('default_bspos_vx'),
-        lazy_fixture('default_cth'),
-        lazy_fixture('default_hop'),
-        lazy_fixture('default_wambic')
+        pytest.param(lazy_fixture('default_p3l_bt'), marks=m_needs_bullet),
+        pytest.param(lazy_fixture('default_p3l_vx'), marks=m_needs_vortex),
+        pytest.param(lazy_fixture('default_bop2d_bt'), marks=m_needs_bullet),
+        pytest.param(lazy_fixture('default_bop2d_vx'), marks=m_needs_vortex),
+        pytest.param(lazy_fixture('default_bop5d_bt'), marks=m_needs_bullet),
+        pytest.param(lazy_fixture('default_bop5d_vx'), marks=m_needs_vortex),
+        pytest.param(lazy_fixture('default_bspos_bt'), marks=m_needs_bullet),
+        pytest.param(lazy_fixture('default_bspos_vx'), marks=m_needs_vortex),
+        pytest.param(lazy_fixture('default_cth'), marks=m_needs_mujoco),
+        pytest.param(lazy_fixture('default_hop'), marks=m_needs_mujoco),
+        pytest.param(lazy_fixture('default_wambic'), marks=m_needs_mujoco),
     ], ids=['cata', 'rosen', 'bob', 'omo', 'pend', 'qbb', 'qq', 'qcp-st', 'qcp-su', 'default_p3l_bt', 'default_p3l_vx',
             'bop2d_bt', 'bop2d_vx', 'bop5d_bt', 'bop5d_vx', 'bspos_bt', 'bspos_vx', 'cth', 'hop', 'wam-bic']
 )
@@ -93,17 +103,17 @@ def test_init_spaces(env):
         lazy_fixture('default_qq'),
         lazy_fixture('default_qcpst'),
         lazy_fixture('default_qcpsu'),
-        lazy_fixture('default_p3l_bt'),
-        lazy_fixture('default_p3l_vx'),
-        lazy_fixture('default_bop2d_bt'),
-        lazy_fixture('default_bop2d_vx'),
-        lazy_fixture('default_bop5d_bt'),
-        lazy_fixture('default_bop5d_vx'),
-        lazy_fixture('default_bspos_bt'),
-        lazy_fixture('default_bspos_vx'),
-        lazy_fixture('default_cth'),
-        lazy_fixture('default_hop'),
-        lazy_fixture('default_wambic')
+        pytest.param(lazy_fixture('default_p3l_bt'), marks=m_needs_bullet),
+        pytest.param(lazy_fixture('default_p3l_vx'), marks=m_needs_vortex),
+        pytest.param(lazy_fixture('default_bop2d_bt'), marks=m_needs_bullet),
+        pytest.param(lazy_fixture('default_bop2d_vx'), marks=m_needs_vortex),
+        pytest.param(lazy_fixture('default_bop5d_bt'), marks=m_needs_bullet),
+        pytest.param(lazy_fixture('default_bop5d_vx'), marks=m_needs_vortex),
+        pytest.param(lazy_fixture('default_bspos_bt'), marks=m_needs_bullet),
+        pytest.param(lazy_fixture('default_bspos_vx'), marks=m_needs_vortex),
+        pytest.param(lazy_fixture('default_cth'), marks=m_needs_mujoco),
+        pytest.param(lazy_fixture('default_hop'), marks=m_needs_mujoco),
+        pytest.param(lazy_fixture('default_wambic'), marks=m_needs_mujoco),
     ], ids=['cata', 'rosen', 'bob', 'omo', 'pend', 'qbb', 'qq', 'qcp-st', 'qcp-su', 'default_p3l_bt', 'default_p3l_vx',
             'bop2d_bt', 'bop2d_vx', 'bop5d_bt', 'bop5d_vx', 'bspos_bt', 'bspos_vx', 'cth', 'hop', 'wam-bic']
 )
@@ -158,16 +168,16 @@ def test_vpython_animations(env):
 @pytest.mark.visualization
 @pytest.mark.parametrize(
     'env', [
-        lazy_fixture('default_p3l_bt'),
-        lazy_fixture('default_p3l_vx'),
-        lazy_fixture('default_pi_6l_bt'),
-        lazy_fixture('default_pi_5l_vx'),
-        lazy_fixture('default_bop2d_bt'),
-        lazy_fixture('default_bop2d_vx'),
-        lazy_fixture('default_bop5d_bt'),
-        lazy_fixture('default_bop5d_vx'),
-        lazy_fixture('default_bspos_bt'),
-        lazy_fixture('default_bspos_vx'),
+        pytest.param(lazy_fixture('default_p3l_bt'), marks=m_needs_bullet),
+        pytest.param(lazy_fixture('default_p3l_vx'), marks=m_needs_vortex),
+        pytest.param(lazy_fixture('default_pi_6l_bt'), marks=m_needs_bullet),
+        pytest.param(lazy_fixture('default_pi_5l_vx'), marks=m_needs_vortex),
+        pytest.param(lazy_fixture('default_bop2d_bt'), marks=m_needs_bullet),
+        pytest.param(lazy_fixture('default_bop2d_vx'), marks=m_needs_vortex),
+        pytest.param(lazy_fixture('default_bop5d_bt'), marks=m_needs_bullet),
+        pytest.param(lazy_fixture('default_bop5d_vx'), marks=m_needs_vortex),
+        pytest.param(lazy_fixture('default_bspos_bt'), marks=m_needs_bullet),
+        pytest.param(lazy_fixture('default_bspos_vx'), marks=m_needs_vortex),
     ], ids=['p3l_bt', 'p3l_vx', 'pi_6l_bt', 'pi_5l_vx', 'bop2d_bt', 'bop2d_vx', 'bop5d_bt', 'bop5d_vx',
             'bspos_bt', 'bspos_vx']
 )
