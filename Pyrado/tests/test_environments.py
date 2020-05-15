@@ -8,6 +8,8 @@ from pyrado.environments.pysim.quanser_ball_balancer import QBallBalancerSim, QB
 from pyrado.environments.quanser.quanser_ball_balancer import QBallBalancerReal
 from pyrado.environments.quanser.quanser_cartpole import QCartPoleStabReal, QCartPoleSwingUpReal
 from pyrado.environments.quanser.quanser_qube import QQubeReal
+from pyrado.policies.dummy import DummyPolicy
+from pyrado.sampling.rollout import rollout
 from pyrado.spaces.discrete import DiscreteSpace
 from pyrado.utils.data_types import RenderMode
 from tests.conftest import m_needs_bullet, m_needs_mujoco, m_needs_vortex
@@ -38,13 +40,20 @@ from tests.conftest import m_needs_bullet, m_needs_mujoco, m_needs_vortex
     ], ids=['cata', 'rosen', 'bob', 'omo', 'pend', 'qbb', 'qq', 'qcp-st', 'qcp-su', 'default_p3l_bt', 'default_p3l_vx',
             'bop2d_bt', 'bop2d_vx', 'bop5d_bt', 'bop5d_vx', 'bspos_bt', 'bspos_vx', 'cth', 'hop', 'wam-bic']
 )
-def test_rollout_dummy(env):
+def test_rollout(env):
     assert isinstance(env, SimEnv)
+
+    # Hand coded rollout
     env.reset()
     done = False
     while not done:
-        state, rew, done, info = env.step(0.5*env.act_space.sample_uniform())
+        state, rew, done, info = env.step(0.1*env.act_space.sample_uniform())
     assert env.curr_step <= env.max_steps
+
+    # Rollout function
+    policy = DummyPolicy(env.spec)
+    ro = rollout(env, policy, eval=True)
+    assert ro.length <= env.max_steps
 
 
 @pytest.mark.parametrize(
