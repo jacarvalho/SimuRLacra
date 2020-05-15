@@ -160,7 +160,9 @@ class CatapultSim(SimEnv, Serializable):
         # Current reward depending on the state after the step (since there is only one step) and the (unlimited) action
         self._curr_rew = self.task.step_rew(self.state, act, self._curr_step)
 
-        # Check if the task or the environment is done)
+        self._curr_step += 1
+
+        # Check if the task or the environment is done
         done = self._task.is_done(self.state)
         if self._curr_step >= self._max_steps:
             done = True
@@ -169,9 +171,6 @@ class CatapultSim(SimEnv, Serializable):
             # Add final reward if done
             remaining_steps = self._max_steps - (self._curr_step + 1) if self._max_steps is not pyrado.inf else 0
             self._curr_rew += self._task.final_rew(self.state, remaining_steps)
-        else:
-            # Don't count the transition when done
-            self._curr_step += 1
 
         return self.observe(self.state), self._curr_rew, done, {}
 

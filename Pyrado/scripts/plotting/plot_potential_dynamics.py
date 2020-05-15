@@ -96,8 +96,8 @@ if __name__ == '__main__':
 
     # Save
     if args.save_figures:
-        fig.savefig(osp.join(save_dir, 'potdyn_tau.pdf'), dpi=500)
-        fig.savefig(osp.join(save_dir, 'potdyn_tau.pgf'), dpi=500)
+        for fmt in ['pdf', 'pgf']:
+            fig.savefig(osp.join(save_dir, f'potdyn-tau.{fmt}'), dpi=500)
 
     ''' s '''
     fig, ax = plt.subplots(1, figsize=(12, 10))
@@ -127,8 +127,8 @@ if __name__ == '__main__':
 
     # Save
     if args.save_figures:
-        fig.savefig(osp.join(save_dir, 'potdyn_s.pdf'), dpi=500)
-        fig.savefig(osp.join(save_dir, 'potdyn_s.pgf'), dpi=500)
+        for fmt in ['pdf', 'pgf']:
+            fig.savefig(osp.join(save_dir, f'potdyn-s.{fmt}'), dpi=500)
 
     ''' c '''
     fig, ax = plt.subplots(1, figsize=(12, 10))
@@ -158,8 +158,8 @@ if __name__ == '__main__':
 
     # Save
     if args.save_figures:
-        fig.savefig(osp.join(save_dir, 'potdyn_c.pdf'), dpi=500)
-        fig.savefig(osp.join(save_dir, 'potdyn_c.pgf'), dpi=500)
+        for fmt in ['pdf', 'pgf']:
+            fig.savefig(osp.join(save_dir, f'potdyn-C.{fmt}'), dpi=500)
 
     ''' kappa '''
     fig, ax = plt.subplots(1, figsize=(12, 10))
@@ -184,7 +184,7 @@ if __name__ == '__main__':
 
     # Save
     if args.save_figures:
-        fig.savefig(osp.join(save_dir, 'potdyn_kappa.pdf'), dpi=500)
-        fig.savefig(osp.join(save_dir, 'potdyn_kappa.pgf'), dpi=500)
+        for fmt in ['pdf', 'pgf']:
+            fig.savefig(osp.join(save_dir, f'potdyn-kappa.{fmt}'), dpi=500)
 
     plt.show()

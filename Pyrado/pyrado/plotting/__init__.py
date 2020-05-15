@@ -38,6 +38,7 @@ def set_style(style_name: str = 'default'):
         plt.rc('image', cmap='inferno')  # default: viridis
         plt.rc('legend', frameon=False)
         plt.rc('legend', framealpha=0.4)
+        plt.rc('axes', xmargin=0.)  # disable margins by default
     elif style_name == 'ggplot':
         plt.style.use('ggplot')
     elif style_name == 'dark_background':
@@ -53,8 +54,8 @@ def set_style(style_name: str = 'default'):
     plt.rc('font', size=11)
     plt.rc('xtick', labelsize=11)
     plt.rc('ytick', labelsize=11)
-    plt.rc('savefig', bbox='tight')  # 'tight' is incompatible with pipe-based animation backends
-    plt.rc('savefig', pad_inches=0)
+    # plt.rc('savefig', bbox='tight')  # 'tight' is incompatible with pipe-based animation backends
+    # plt.rc('savefig', pad_inches=0)
 
 
 set_style()

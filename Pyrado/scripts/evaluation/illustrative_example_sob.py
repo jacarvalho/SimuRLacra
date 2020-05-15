@@ -14,6 +14,7 @@ from matplotlib import pyplot as plt
 from pyrado.environments.one_step.catapult import CatapultExample
 from pyrado.plotting.curve import render_data_mean_std
 from pyrado import set_seed
+from pyrado.utils.argparser import get_argparser
 
 
 def calc_E_n_Jhat(n, th):
@@ -75,6 +76,9 @@ def check_E_n_Jhat(th_n_opt, n):
 
 
 if __name__ == '__main__':
+    # Parse command line arguments
+    args = get_argparser().parse_args()
+
     # Set up the example
     ex_dir = osp.join(pyrado.EVAL_DIR, 'illustrative_example')
     env = CatapultExample(m=1., g_M=3.71, k_M=1000., x_M=0.5, g_V=8.87, k_V=3000., x_V=1.5)
@@ -82,8 +86,8 @@ if __name__ == '__main__':
     S = 100  # 100
     N = 30  # 30
     noise_th_scale = 0.15  # 0.15
-    set_seed(1001)  # 1001
-    verbose = False
+    set_seed(args.seed)
+    fig_size = tuple([0.75*x for x in pyrado.figsize_thesis_1percol_18to10])
 
     th_true_opt = env.opt_policy_param(1 - psi, psi)  # true probabilities instead of counts
     J_true_opt = env.opt_est_expec_return(1 - psi, psi)  # true probabilities instead of counts
@@ -112,19 +116,19 @@ if __name__ == '__main__':
             # Compute the optimal policy parameters
             th_n_opt = env.opt_policy_param(n_M, n_V)
             th_n_opt_hist[s, n - 1] = th_n_opt
-            if verbose:
+            if args.verbose:
                 print(f'th_{n}_opt:     {th_n_opt}')
 
             # Compute the estimated optimal objective function value for the n domains
             Jhat_th_n_opt = env.opt_est_expec_return(n_M, n_V)
             Jhat_th_n_opt_hist[s, n - 1] = Jhat_th_n_opt
-            if verbose:
+            if args.verbose:
                 print(f'Jhat_{n}_opt: {Jhat_th_n_opt}')
             Jhat_n_opt_check = env.est_expec_return(th_n_opt, n_M, n_V)
             assert abs(Jhat_th_n_opt - Jhat_n_opt_check) < 1e-8
 
             # Check if E_\xi[max_\theta \hat{J}_n(\theta)] == max_\theta \hat{J}_n(\theta)
-            if verbose:
+            if args.verbose:
                 check_E_n_Jhat(th_n_opt, n)
 
             # Compute the estimated objective function value for the tur optimum
@@ -142,19 +146,19 @@ if __name__ == '__main__':
             # Estimated optimality gap \hat{G}_n(\theta^c)
             G_n = Jhat_th_n_opt - Jhat_th_c
             G_n_hist[s, n - 1] = G_n
-            if verbose:
+            if args.verbose:
                 print(f'G_{n}(th_c):\t\t{G_n}')
 
             # True optimality gap G(\theta^c) (use true probabilities instead of counts)
             G_true = J_true_opt - env.est_expec_return(th_c, 1 - psi, psi)
             G_true_hist[s, n - 1] = G_true
-            if verbose:
+            if args.verbose:
                 print(f'G_true(th_c):\t{G_true}')
 
             # Compute the simulation optimization bias b[\hat{J}_n]
             b_Jhat_n = calc_E_n_Jhat_th_opt(n) - J_true_opt
             b_Jhat_n_hist[s, n - 1] = b_Jhat_n
-            if verbose:
+            if args.verbose:
                 print(f'b_Jhat_{n}:\t\t{b_Jhat_n}\n')
 
     print(f'At the last iteration (n={N})')
@@ -164,44 +168,47 @@ if __name__ == '__main__':
 
     # Plot
     os.makedirs(ex_dir, exist_ok=True)
-    fig, ax = plt.subplots(1, figsize=pyrado.figsize_IEEE_1col_18to10)
+    fig_n, ax = plt.subplots(1, figsize=fig_size, constrained_layout=True)
     render_data_mean_std(ax, np.arange(1, N + 1), n_M_hist, 'number of domains $n$', 'samples per domain', '$n_M$')
     render_data_mean_std(ax, np.arange(1, N + 1), n_V_hist, 'number of domains $n$', 'samples per domain', '$n_V$')
     ax.plot(np.arange(1, N + 1), np.arange(1, N + 1)*(1 - psi), c='C0', ls='--')
     ax.plot(np.arange(1, N + 1), np.arange(1, N + 1)*psi, c='C1', ls='--')
-    ax.legend(loc='upper left')
-    fig.savefig(osp.join(ex_dir, 'n.pdf'), dpi=500)
+    ax.legend(loc='upper left', handletextpad=0.2)
 
-    fig, ax = plt.subplots(1, figsize=pyrado.figsize_IEEE_1col_18to10)
+    fig_theta, ax = plt.subplots(1, figsize=fig_size, constrained_layout=True)
     render_data_mean_std(ax, np.arange(1, N + 1), th_n_opt_hist,
                          'number of domains $n$', 'policy parameter', r'$\theta_n^\star$')
     render_data_mean_std(ax, np.arange(1, N + 1), th_c_hist,
                          'number of domains $n$', 'policy parameter', r'$\theta^c$')
     ax.plot(np.arange(1, N + 1), np.ones(N)*th_true_opt, ls='--', label=r'$\theta^\star$')
-    ax.legend(loc='lower right', ncol=3)
-    fig.savefig(osp.join(ex_dir, 'theta.pdf'), dpi=500)
+    ax.legend(loc='lower right', ncol=3, handletextpad=0.2)
 
-    fig, ax = plt.subplots(1, figsize=pyrado.figsize_IEEE_1col_18to10)
+    fig_Jn, ax = plt.subplots(1, figsize=fig_size, constrained_layout=True)
     render_data_mean_std(ax, np.arange(1, N + 1), Jhat_th_n_opt_hist, 'number of domains $n$', 'return',
                          '$\\hat{J}_n(\\theta^\\star_n)$')
     render_data_mean_std(ax, np.arange(1, N + 1), Jhat_th_c_hist, 'number of domains $n$', 'return',
                          '$\\hat{J}_n(\\theta^c)$')
     render_data_mean_std(ax, np.arange(1, N + 1), Jhat_th_true_opt_hist, 'number of domains $n$', 'return',
                          '$\\hat{J}_n(\\theta^\\star)$')
-    ax.legend(loc='lower right', ncol=3)
+    ax.legend(loc='lower right', ncol=3, handletextpad=0.2)
     plt.ylim(bottom=-70)
-    fig.savefig(osp.join(ex_dir, 'Jn.pdf'), dpi=500)
 
-    fig, ax = plt.subplots(1, figsize=pyrado.figsize_IEEE_1col_18to10)
+    fig_SOB, ax = plt.subplots(1, figsize=fig_size, constrained_layout=True)
     render_data_mean_std(ax, np.arange(1, N + 1), G_true_hist, 'number of domains $n$', 'OG and SOB',
                          r'$G_{}^{}(\theta^c)$')
     render_data_mean_std(ax, np.arange(1, N + 1), G_n_hist, 'number of domains $n$', 'OG and SOB',
                          r'$\hat{G}_n^{}(\theta^c)$')
     ax.plot(np.arange(1, N + 1), np.mean(b_Jhat_n_hist, axis=0), label=r'$\mathrm{b}[J_n(\theta^\star_n)]$')
-    ax.legend(loc='upper right', ncol=3)
+    ax.legend(loc='upper right', ncol=3, handletextpad=0.2)
     # ax.legend(bbox_to_anchor=(0., 1.02, 1., .102), lo=3, ncol=3, mode='expand', borderaxespad=0.)
     plt.ylim(top=42)
-    fig.savefig(osp.join(ex_dir, 'OG_SOB.pdf'), dpi=500)
-    fig.savefig(osp.join(ex_dir, 'OG_SOB.pgf'), dpi=500)
+
+    # Save
+    if args.save_figures:
+        for fmt in ['pdf', 'pgf']:
+            fig_n.savefig(osp.join(ex_dir, f'n.{fmt}'), dpi=500)
+            fig_theta.savefig(osp.join(ex_dir, f'theta.{fmt}'), dpi=500)
+            fig_Jn.savefig(osp.join(ex_dir, f'Jn.{fmt}'), dpi=500)
+            fig_SOB.savefig(osp.join(ex_dir, f'OG_SOB.{fmt}'), dpi=500)
 
     plt.show()

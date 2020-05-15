@@ -3,7 +3,7 @@ import os.path as osp
 import torch as to
 from pytest_lazyfixture import lazy_fixture
 
-from tests.conftest import m_needs_cuda
+from tests.conftest import m_needs_cuda, m_needs_bullet
 from pyrado.policies.adn import ADNPolicy, pd_cubic
 from pyrado.policies.dummy import DummyPolicy, IdlePolicy
 from pyrado.policies.fnn import FNNPolicy
@@ -181,9 +181,12 @@ def test_rbf_feat_batched(batch_size, obs_dim, num_feat_per_dim, bounds):
 
 @pytest.mark.features
 @pytest.mark.parametrize(
-    'env', lazy_fixture(
-        ['default_bob', 'default_qq', 'default_qbb', 'default_bop5d_bt']
-    ), ids=['bob', 'qq', 'qbb', 'bop5D']
+    'env', [
+        lazy_fixture('default_bob'),
+        lazy_fixture('default_qq'),
+        lazy_fixture('default_qbb'),
+        pytest.param(lazy_fixture('default_bop5d_bt'), marks=m_needs_bullet),
+    ], ids=['bob', 'qq', 'qbb', 'bop5D']
 )
 @pytest.mark.parametrize(
     'num_feat_per_dim', [4, 100], ids=['4', '100']
@@ -200,9 +203,12 @@ def test_rff_policy_serial(env, num_feat_per_dim):
 
 @pytest.mark.features
 @pytest.mark.parametrize(
-    'env', lazy_fixture(
-        ['default_bob', 'default_qq', 'default_qbb', 'default_bop5d_bt']
-    ), ids=['bob', 'qq', 'qbb', 'bop5D']
+    'env', [
+        lazy_fixture('default_bob'),
+        lazy_fixture('default_qq'),
+        lazy_fixture('default_qbb'),
+        pytest.param(lazy_fixture('default_bop5d_bt'), marks=m_needs_bullet),
+    ], ids=['bob', 'qq', 'qbb', 'bop5D']
 )
 @pytest.mark.parametrize(
     'batch_size, num_feat_per_dim', [
@@ -222,9 +228,12 @@ def test_rff_policy_batch(env, batch_size, num_feat_per_dim):
 
 @pytest.mark.features
 @pytest.mark.parametrize(
-    'env', lazy_fixture(
-        ['default_bob', 'default_qq', 'default_qbb', 'default_bop5d_bt']
-    ), ids=['bob', 'qq', 'qbb', 'bop5D']
+    'env', [
+        lazy_fixture('default_bob'),
+        lazy_fixture('default_qq'),
+        lazy_fixture('default_qbb'),
+        pytest.param(lazy_fixture('default_bop5d_bt'), marks=m_needs_bullet),
+    ], ids=['bob', 'qq', 'qbb', 'bop5D']
 )
 @pytest.mark.parametrize(
     'num_feat_per_dim', [4, 100], ids=['4', '100']
@@ -241,9 +250,12 @@ def test_rfb_policy_serial(env, num_feat_per_dim):
 
 @pytest.mark.features
 @pytest.mark.parametrize(
-    'env', lazy_fixture(
-        ['default_bob', 'default_qq', 'default_qbb', 'default_bop5d_bt']
-    ), ids=['bob', 'qq', 'qbb', 'bop5D']
+    'env', [
+        lazy_fixture('default_bob'),
+        lazy_fixture('default_qq'),
+        lazy_fixture('default_qbb'),
+        pytest.param(lazy_fixture('default_bop5d_bt'), marks=m_needs_bullet),
+    ], ids=['bob', 'qq', 'qbb', 'bop5D']
 )
 @pytest.mark.parametrize(
     'batch_size, num_feat_per_dim', [

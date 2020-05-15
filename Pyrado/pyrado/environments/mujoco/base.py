@@ -213,11 +213,10 @@ class MujocoSimEnv(SimEnv, ABC, Serializable):
         self._curr_act = act  # just for the render function
 
         # Apply the action and simulate the resulting dynamics
-        info = self._mujoco_step(act)
-        info['t'] = self._curr_step*self._dt
+        self._mujoco_step(act)
 
-        # Check if the environment is done due to a failure within the mujoco simulation (e.g. bad inputs)
-        mjsim_done = info.get('failed', False)
+        info = {'t': self._curr_step*self._dt}
+        self._curr_step += 1
 
         # Check if the task is done
         task_done = self._task.is_done(self.state)
@@ -226,12 +225,10 @@ class MujocoSimEnv(SimEnv, ABC, Serializable):
         done = mjsim_done or task_done
         if self._curr_step >= self._max_steps:
             done = True
+
         if done:
             # Add final reward if done
             self._curr_rew += self._task.final_rew(self.state, remaining_steps)
-        else:
-            # Don't count the transition when done
-            self._curr_step += 1
 
         return self.observe(self.state), self._curr_rew, done, info
 

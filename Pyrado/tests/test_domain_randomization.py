@@ -4,10 +4,10 @@ import numpy as np
 from copy import deepcopy
 
 from pytest_lazyfixture import lazy_fixture
-
 from pyrado.domain_randomization.domain_parameter import NormalDomainParam, MultivariateNormalDomainParam, \
     BernoulliDomainParam
 from pyrado.domain_randomization.utils import param_grid
+from tests.conftest import m_needs_bullet
 
 
 @pytest.mark.sampling
@@ -132,7 +132,7 @@ def test_param_grid():
         lazy_fixture('default_qcpst'),
         lazy_fixture('default_qcpsu'),
         lazy_fixture('default_bop2d_bt'),
-        lazy_fixture('default_bop5d_bt'),
+        pytest.param(lazy_fixture('default_bop5d_bt'), marks=m_needs_bullet),
         lazy_fixture('default_blpos_bt'),
     ]
     , ids=['bob', 'omo', 'pend', 'qbb', 'qcp-st', 'qcp-su', 'bop2d', 'bop5d', 'bl_pos']

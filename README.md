@@ -197,22 +197,35 @@ In otder to solve this error, link the z library to the necessary targets by edi
 ```
 TARGET_LINK_LIBRARIES(Rcs RcsCore RcsGui RcsGraphics RcsPhysics)
 ```
-with
+by
 ```
 TARGET_LINK_LIBRARIES(Rcs RcsCore RcsGui RcsGraphics RcsPhysics z)
+```
+and
+```
+TARGET_LINK_LIBRARIES(TestGeometry RcsCore RcsGui RcsGraphics RcsPhysics)
+```
+by
+```
+TARGET_LINK_LIBRARIES(TestGeometry RcsCore RcsGui RcsGraphics RcsPhysics z)
 ```
 The same goes for `PATH_TO/SimuRLacra/Rcs/examples/CMakeLists.txt` where you replace
 ```
 TARGET_LINK_LIBRARIES(ExampleForwardKinematics RcsCore RcsGui RcsGraphics)
-and
-TARGET_LINK_LIBRARIES(ExampleKinetics RcsCore RcsGui RcsGraphics RcsPhysics)
 ```
-with 
+by
 ```
 TARGET_LINK_LIBRARIES(ExampleForwardKinematics RcsCore RcsGui RcsGraphics z)
-and
+```
+and 
+```
+TARGET_LINK_LIBRARIES(ExampleKinetics RcsCore RcsGui RcsGraphics RcsPhysics)
+```
+by
+```
 TARGET_LINK_LIBRARIES(ExampleKinetics RcsCore RcsGui RcsGraphics RcsPhysics z)
 ```
+
 
 ### Bullet `double` vs. `float`
 Check Rcs with which precision Bullet was build 
@@ -290,3 +303,4 @@ During executing `setup_deps.py`, mujoco-py is set up as a git submodule and ins
 If this fails, have a look at the mujoco-py's [canonical dependencies](https://github.com/openai/mujoco-py/blob/master/Dockerfile). Try again. If you get an error mentioning `patchelf`, run ` conda install -c anaconda patchelf`
 
 If you get visualization errors related to `GLEW` (render causes a frozen window and crashes) add `export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libGLEW.so` to your `~/.bashrc` or `~/.zshrc`.
+
