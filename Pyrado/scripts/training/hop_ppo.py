@@ -7,6 +7,7 @@ from pyrado.algorithms.ppo import PPO
 from pyrado.algorithms.advantage import GAE
 from pyrado.domain_randomization.domain_parameter import NormalDomainParam
 from pyrado.domain_randomization.domain_randomizer import DomainRandomizer
+from pyrado.environment_wrappers.action_normalization import ActNormWrapper
 from pyrado.environment_wrappers.domain_randomization import DomainRandWrapperLive
 from pyrado.spaces import ValueFunctionSpace
 from pyrado.environments.mujoco.openai_hopper import HopperSim
@@ -22,6 +23,7 @@ if __name__ == '__main__':
     # Environment
     env_hparams = dict()
     env = HopperSim(**env_hparams)
+    env = ActNormWrapper(env)
 
     # # Simple Randomizer
     # dp_nom = HopperSim.get_nominal_domain_param()
@@ -37,13 +39,13 @@ if __name__ == '__main__':
     value_fcn_hparam = dict(hidden_sizes=[64, 64], hidden_nonlin=to.tanh)
     value_fcn = FNNPolicy(spec=EnvSpec(env.obs_space, ValueFunctionSpace), **value_fcn_hparam)
     critic_hparam = dict(
-        gamma=0.998,
+        gamma=0.995,
         lamda=0.95,
         num_epoch=10,
         batch_size=512,
         standardize_adv=False,
         standardizer=None,
-        max_grad_norm=5.,
+        max_grad_norm=1.,
         lr=5e-4,
     )
     critic = GAE(value_fcn, **critic_hparam)
@@ -55,9 +57,9 @@ if __name__ == '__main__':
         num_epoch=10,
         eps_clip=0.15,
         batch_size=512,
-        max_grad_norm=5.,
+        max_grad_norm=1.,
         lr=3e-4,
-        num_sampler_envs=8,
+        num_sampler_envs=12,
     )
     algo = PPO(ex_dir, env, policy, critic, **algo_hparam)
 

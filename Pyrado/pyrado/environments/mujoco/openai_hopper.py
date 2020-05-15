@@ -25,7 +25,7 @@ class HopperSim(MujocoSimEnv, Serializable):
 
     name: str = 'hop'
 
-    def __init__(self, frame_skip: int = 5, max_steps: int = 1000, task_args: [dict, None] = None):
+    def __init__(self, frame_skip: int = 5, max_steps: int = 3000, task_args: [dict, None] = None):
         """
         Constructor
 
