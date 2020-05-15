@@ -249,13 +249,11 @@ class RcsSim(SimEnv, Serializable):
             done = True
 
         info = dict(t=self._curr_step*self._dt)
+        self._curr_step += 1
 
         if done:
             # Add final reward if done
             self._curr_rew += self._task.final_rew(self.state, remaining_steps)
-        else:
-            # Don't count the transition when done
-            self._curr_step += 1
 
         return obs, self._curr_rew, done, info
 

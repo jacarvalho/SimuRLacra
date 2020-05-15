@@ -92,15 +92,13 @@ class QCartPoleReal(RealEnv, Serializable):
 
         # Check if the task or the environment is done
         done = self._task.is_done(self.state)
+        self._curr_step += 1
         if self._curr_step >= self._max_steps:
             done = True
 
         if done:
             # Add final reward if done
             self._curr_rew += self._task.final_rew(self.state, remaining_steps)
-        else:
-            # Don't count the transition when done
-            self._curr_step += 1
 
         return self.observe(self.state), self._curr_rew, done, info
 

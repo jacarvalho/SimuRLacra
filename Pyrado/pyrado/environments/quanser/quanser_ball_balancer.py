@@ -85,6 +85,7 @@ class QBallBalancerReal(RealEnv, Serializable):
 
         # Check if the task or the environment is done
         done = self._task.is_done(self.state)
+        self._curr_step += 1
         if self._curr_step >= self._max_steps:
             done = True
 
@@ -92,8 +93,5 @@ class QBallBalancerReal(RealEnv, Serializable):
             # Add final reward if done
             remaining_steps = self._max_steps - (self._curr_step + 1) if self._max_steps is not pyrado.inf else 0
             self._curr_rew += self._task.final_rew(self.state, remaining_steps)
-        else:
-            # Don't count the transition when done
-            self._curr_step += 1
 
         return self.observe(self.state), self._curr_rew, done, info
