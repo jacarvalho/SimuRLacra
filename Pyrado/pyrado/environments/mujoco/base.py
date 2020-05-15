@@ -218,6 +218,9 @@ class MujocoSimEnv(SimEnv, ABC, Serializable):
         info = {'t': self._curr_step*self._dt}
         self._curr_step += 1
 
+        # Check if the environment is done due to a failure within the mujoco simulation (e.g. bad inputs)
+        mjsim_done = info.get('failed', False)
+
         # Check if the task is done
         task_done = self._task.is_done(self.state)
 
