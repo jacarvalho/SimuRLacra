@@ -24,6 +24,7 @@ from pyrado.sampling.rollout import rollout
 from pyrado.sampling.sequences import *
 from pyrado.spaces import ValueFunctionSpace
 from pyrado.utils.data_types import EnvSpec
+from tests.conftest import m_needs_bullet
 
 
 # Fixture providing an experiment directory

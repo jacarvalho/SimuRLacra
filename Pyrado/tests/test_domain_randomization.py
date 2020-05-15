@@ -4,10 +4,10 @@ import numpy as np
 from copy import deepcopy
 
 from pytest_lazyfixture import lazy_fixture
-
 from pyrado.domain_randomization.domain_parameter import NormalDomainParam, MultivariateNormalDomainParam, \
     BernoulliDomainParam
 from pyrado.domain_randomization.utils import param_grid
+from tests.conftest import m_needs_bullet
 
 
 @pytest.mark.sampling
