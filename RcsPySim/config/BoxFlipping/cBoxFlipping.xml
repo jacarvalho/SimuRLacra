@@ -4,6 +4,6 @@
   <Task name="RightCP XYZ" controlVariable="XYZ" effector="ContactPoint_R" active="true"/>
 
   <Task name="Distance L" controlVariable="Distance"  effector="ContactPoint_L" refBdy="Box" gainDX="1.0" active="true"/>
-  <Task name="Distance R" controlVariable="Distance"  effector="ContactPoint_R" refBdy="Box" gainDX="0.1" active="true"/>
+  <Task name="Distance R" controlVariable="Distance"  effector="ContactPoint_R" refBdy="Box" gainDX="1.0" active="true"/>
 
 </Controller>

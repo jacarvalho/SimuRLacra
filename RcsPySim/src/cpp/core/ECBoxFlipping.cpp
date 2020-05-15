@@ -23,10 +23,10 @@
 #include <Rcs_macros.h>
 #include <Rcs_typedef.h>
 #include <Rcs_Vec3d.h>
-#include <Rcs_shape.h>
 #include <TaskPosition1D.h>
 #include <TaskVelocity1D.h>
 #include <TaskDistance.h>
+#include <TaskDistance1D.h>
 
 #ifdef GRAPHICS_AVAILABLE
 #include <RcsViewer.h>
@@ -532,8 +532,9 @@ public:
         if (omGD)
         {
             linesOut.emplace_back(
-                string_format("goal distance:      [% 1.2f,% 1.2f,% 1.2f,% 1.2f] m",
-                              obs->ele[omGD.pos], obs->ele[omGD.pos + 1], obs->ele[omGD.pos + 2], obs->ele[omGD.pos + 3]));
+                string_format("goal distance:      [% 1.2f,% 1.2f,% 1.2f,% 1.2f,% 1.2f] m",
+                              obs->ele[omGD.pos], obs->ele[omGD.pos + 1], obs->ele[omGD.pos + 2],
+                              obs->ele[omGD.pos + 3], obs->ele[omGD.pos + 4]));
         }
 
         auto omTSD = observationModel->findOffsets<OMTaskSpaceDiscrepancy>();
