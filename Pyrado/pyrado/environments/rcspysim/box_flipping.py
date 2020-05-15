@@ -205,7 +205,8 @@ class BoxFlippingPosMPsSim(BoxFlippingSim, Serializable):
                 {'function': 'msd_nlin', 'attractorStiffness': 30., 'mass': 1., 'damping': 60.,
                  'goal': np.array([+0.2])},  # [m]
                 # Distance
-                {'function': 'msd', 'attractorStiffness': 30., 'mass': 1., 'damping': 60.,
+                # {'function': 'msd', 'attractorStiffness': 50., 'mass': 1., 'damping': 10.,
+                {'function': 'lin', 'errorDynamics': 1.,  # [m/s]
                  'goal': np.array([0.0])},  # [m]
             ]
 

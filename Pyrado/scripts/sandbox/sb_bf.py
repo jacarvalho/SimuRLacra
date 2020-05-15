@@ -14,7 +14,7 @@ from pyrado.utils.data_types import RenderMode
 from pyrado.utils.input_output import print_cbt
 
 
-rcsenv.setLogLevel(1)
+rcsenv.setLogLevel(6)
 
 
 def create_idle_setup(physicsEngine, graphFileName, dt, max_steps, ref_frame, checkJointLimits):
@@ -41,10 +41,10 @@ def create_idle_setup(physicsEngine, graphFileName, dt, max_steps, ref_frame, ch
 def create_position_mps_setup(physicsEngine, graphFileName, dt, max_steps, ref_frame, checkJointLimits):
     def policy(t: float):
         if t < 3.1:
-            return [0, 0.6, 0, 0,
+            return [0, 0, 0, 0,
                     0, 0, 0, 0, 1]
         elif t <= 4.5:
-            return [0, 0.6, 0, 1,
+            return [0, 0, 0, 0,
                     0, 0, 0, 0, 1]
         else:
             return [0, 0, 0, 0,

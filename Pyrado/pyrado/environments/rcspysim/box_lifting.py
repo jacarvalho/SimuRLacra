@@ -241,6 +241,10 @@ class BoxLiftingPosMPsSim(BoxLiftingSim, Serializable):
                 # Joints SDH
                 {'function': 'msd_nlin', 'attractorStiffness': 50., 'mass': 1., 'damping': 50.,
                  'goal': 10/180*np.pi*np.array([0, 1.5, -1, 1, 0, 1.5, 0])},
+                # Distance
+                # {'function': 'msd', 'attractorStiffness': 50., 'mass': 1., 'damping': 10.,
+                {'function': 'lin', 'errorDynamics': 1.,  # [m/s]
+                 'goal': np.array([0.0])},  # [m]
             ]
 
         # Forward to the BoxLiftingSim's constructor
