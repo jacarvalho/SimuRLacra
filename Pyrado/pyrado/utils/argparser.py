@@ -14,8 +14,8 @@ def get_argparser() -> argparse.ArgumentParser:
     parser.add_argument('--env_name', type=str, nargs='?',
                         help="name of the environment to use (e.g. 'qbb' or 'qcp-st')")
 
-    parser.add_argument('--dt', type=float, default=1/500.,
-                        help="environments time step size in seconds (default: 1/500)")
+    parser.add_argument('--dt', type=float,
+                        help="environments time step size in seconds (no default)")
 
     parser.add_argument('--idcs', nargs='+', type=int, default=[0, 1],
                         help="list of indices casted to integer (default: [0, 1])")

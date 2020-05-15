@@ -24,6 +24,10 @@ if __name__ == '__main__':
     # Load the environment and the policy
     env, policy, kwout = load_experiment(ex_dir, args)
 
+    # Override the time step size if specified
+    if args.dt is not None:
+        env.dt = args.dt
+
     if args.verbose:
         print('Hyper-parameters of the experiment')
         pprint.pprint(kwout.get('hparams', 'No hyperparams found!'))

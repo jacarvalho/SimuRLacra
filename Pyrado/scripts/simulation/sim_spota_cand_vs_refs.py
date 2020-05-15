@@ -72,6 +72,10 @@ if __name__ == '__main__':
     policy_refs = [to.load(osp.join(ex_dir, f'iter_{iter_sel}_policy_ref_{i}.pt'))
                    for i in range(hparams['SPOTA']['nG'])]
 
+    # Override the time step size if specified
+    if args.dt is not None:
+        env.dt = args.dt
+
     # Candidate
     # Load the domain parameters of the candidate solution
     domain_param_cand = joblib.load(osp.join(ex_dir, f'iter_{iter_sel}_env_params_cand.pkl'))
