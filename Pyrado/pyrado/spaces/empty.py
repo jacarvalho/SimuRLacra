@@ -1,9 +1,11 @@
 import numpy as np
 from abc import ABC
+from tabulate import tabulate
 from typing import Sequence
 
 import pyrado
 from pyrado.spaces.base import Space
+from pyrado.utils.input_output import color_validity
 
 
 class EmptySpace(Space, ABC):
@@ -33,7 +35,10 @@ class EmptySpace(Space, ABC):
         if not cand.shape == self.shape:
             raise pyrado.ShapeErr(given=cand, expected_match=self)
         if np.isnan(cand).any():
-            raise pyrado.ValueErr(msg=f'At least one value is NaN: {cand}')
+            raise pyrado.ValueErr(
+                msg=f'At least one value is NaN!' +
+                    tabulate([list(self.labels), [*color_validity(cand, np.invert(np.isnan(cand)))]], headers='firstrow')
+            )
         return True
 
     def sample_uniform(self, concrete_inf: float = 1e6) -> np.ndarray:

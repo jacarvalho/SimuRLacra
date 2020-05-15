@@ -1,8 +1,10 @@
 import numpy as np
+from tabulate import tabulate
 from typing import Sequence
 
 import pyrado
 from pyrado.spaces.base import Space
+from pyrado.utils.input_output import color_validity
 
 
 class DiscreteSpace(Space):
@@ -57,7 +59,7 @@ class DiscreteSpace(Space):
         return self._labels
 
     def _members(self) -> tuple:
-        # Compare eles, the upper and lower bound are derived and not enough.
+        # Compare elements, the upper and lower bound are derived and not enough.
         return self.eles, self.labels
 
     def shrink(self, new_lo: np.ndarray, new_up: np.ndarray):
@@ -68,7 +70,10 @@ class DiscreteSpace(Space):
         if not cand.shape == self.shape:
             raise pyrado.ShapeErr(given=cand, expected_match=self)
         if np.isnan(cand).any():
-            raise pyrado.ValueErr(msg=f'At least one value is NaN: {cand}')
+            raise pyrado.ValueErr(
+                msg=f'At least one value is NaN!' +
+                    tabulate([list(self.labels), [*color_validity(cand, np.invert(np.isnan(cand)))]], headers='firstrow')
+            )
 
         # Cast and approximately compare
         return np.any(np.isclose(self.eles, cand.astype(self.eles.dtype)))
