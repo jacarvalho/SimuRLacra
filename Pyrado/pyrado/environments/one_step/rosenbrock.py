@@ -111,8 +111,9 @@ class RosenSim(SimEnv, Serializable):
         # Current reward depending on the state after the step (since there is only one step)
         self._curr_rew = self.task.step_rew(self.state)
 
-        # Check if the task or the environment is done
         self._curr_step += 1
+
+        # Check if the task or the environment is done
         done = self.task.is_done(self.state)
         if self._curr_step >= self._max_steps:
             done = True

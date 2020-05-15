@@ -104,9 +104,10 @@ class QQubeReal(RealEnv, Serializable):
         # Construct the state from the measurements
         self.state = meas
 
+        self._curr_step += 1
+
         # Check if the task or the environment is done
         done = self._task.is_done(self.state)
-        self._curr_step += 1
         if self._curr_step >= self._max_steps:
             done = True
 

@@ -243,13 +243,13 @@ class RcsSim(SimEnv, Serializable):
 
         self.state = self._state_from_obs(obs)  # only for the Python side
 
+        info = dict(t=self._curr_step*self._dt)
+        self._curr_step += 1
+
         # Check if the task or the environment is done
         done = self._task.is_done(self.state)
         if self._curr_step >= self._max_steps:
             done = True
-
-        info = dict(t=self._curr_step*self._dt)
-        self._curr_step += 1
 
         if done:
             # Add final reward if done

@@ -185,13 +185,13 @@ class SimPyEnv(SimEnv, Serializable):
         # Apply the action and simulate the resulting dynamics
         self._step_dynamics(act)
 
+        info = dict(t=self._curr_step*self._dt)
+        self._curr_step += 1
+
         # Check if the task or the environment is done
         done = self._task.is_done(self.state)
-        self._curr_step += 1
         if self._curr_step >= self._max_steps:
             done = True
-
-        info = dict(t=self._curr_step*self._dt)
 
         if done:
             # Add final reward if done

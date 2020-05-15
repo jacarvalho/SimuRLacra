@@ -160,9 +160,10 @@ class CatapultSim(SimEnv, Serializable):
         # Current reward depending on the state after the step (since there is only one step) and the (unlimited) action
         self._curr_rew = self.task.step_rew(self.state, act, self._curr_step)
 
+        self._curr_step += 1
+
         # Check if the task or the environment is done
         done = self._task.is_done(self.state)
-        self._curr_step += 1
         if self._curr_step >= self._max_steps:
             done = True
 
