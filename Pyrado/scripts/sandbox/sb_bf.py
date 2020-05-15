@@ -42,13 +42,13 @@ def create_position_mps_setup(physicsEngine, graphFileName, dt, max_steps, ref_f
     def policy(t: float):
         if t < 3.1:
             return [0, 0.6, 0, 0,
-                    0, 0, 0, 0]
+                    0, 0, 0, 0, 1]
         elif t <= 4.5:
             return [0, 0.6, 0, 1,
-                    0, 0, 0, 0]
+                    0, 0, 0, 0, 1]
         else:
             return [0, 0, 0, 0,
-                    0, 0, 0, 0]
+                    0, 0, 0, 0, 1]
 
     # Set up environment
     env = BoxFlippingPosMPsSim(
@@ -69,7 +69,7 @@ def create_position_mps_setup(physicsEngine, graphFileName, dt, max_steps, ref_f
         observeManipulabilityIndex=True,
         observeCurrentManipulability=True,
         observeDynamicalSystemDiscrepancy=True,
-        observeTaskSpaceDiscrepancy=True,
+        observeTaskSpaceDiscrepancy=False,
         observeDSGoalDistance=True,
     )
 

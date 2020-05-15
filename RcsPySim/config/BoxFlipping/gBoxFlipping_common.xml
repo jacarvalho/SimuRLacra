@@ -7,12 +7,12 @@
 
 
   <Body name="Table" transform="1.5 0 0.76 0 0 0" physics="kinematic" >
-    <Shape type="BOX" extents="1.2 1.6 0.04" graphics="true" physics="true" material="table_mat" textureFile="textures/white-hardwood-floor.jpg" />
+    <Shape type="BOX" extents="1.2 1.6 0.04" graphics="true" physics="true" distance="true" material="table_mat" textureFile="textures/white-hardwood-floor.jpg" />
     <Shape type="FRAME" scale="0.8"/>
   </Body>
 
   <Body name="Box" rigid_body_joints="1.25 0 0.84 0 0 0" physics="dynamic" mass="0.3" color="BLUE"> <!-- in hand -->
-    <Shape type="BOX" extents="0.12 0.12 0.12" graphics="true" physics="true" material="box_mat" textureFile="textures/fMRT_bavaria.jpg"/>
+    <Shape type="BOX" extents="0.12 0.12 0.12" graphics="true" physics="true" distance="true" material="box_mat" textureFile="textures/fMRT_bavaria.jpg"/>
     <Shape type="FRAME" scale="0.20"/>
   </Body>
 
