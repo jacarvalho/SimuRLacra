@@ -167,11 +167,14 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
             self.spec.act_space,
             self.spec.state_space.subspace(self.spec.state_space.create_mask(idcs))
         )
-        self.sim.forward()  # need to call forward to get a non-zero body position
         # TODO @Christian: use site "cup_goal" instead auf B0
-        # If we do not use copy(), state_des is a reference to passed body and updates automatically at each step
-        state_des = self.sim.data.get_body_xpos('B0')  # This is a reference!
-        rew_fcn = ExpQuadrErrRewFcn(Q=np.eye(3), R=1e-6*np.eye(6))
+        # If we do not use copy(), state_des is a reference and updates automatically at each step
+        # sim.forward() + get_body_xpos() results in wrong output for state_des, as `sim` has not been updated to..
+        # ..init_space.sample() ; first called in reset()
+        # self.sim.forward()  # need to call forward to get a non-zero body position
+        # state_des = self.sim.data.get_body_xpos('B0').copy()
+        state_des = np.array([0., -0.8566, 1.164])
+        rew_fcn = ExpQuadrErrRewFcn(Q=10*np.eye(3), R=1e-6*np.eye(6))
         dst = DesStateTask(spec, state_des, rew_fcn)
 
         # Wrap the masked DesStateTask to add a bonus for the best state in the rollout
@@ -210,8 +213,14 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         ball_pos = self.sim.data.get_body_xpos('ball').copy()
         self.state = np.concatenate([qpos, qvel, ball_pos])
 
+        # Update task's desired state
+        # .. note: wrapped_task.state_des expects state_des to be same dimension as self.state
+        state_des = np.zeros_like(self.state)
+        state_des[-3:] = self.sim.data.get_body_xpos('B0').copy()
+        self._task.wrapped_task.state_des = state_des
+
         return dict(
-            des_qpos=des_qpos, des_qvel=des_qvel, qpos=qpos[:7], qvel=qvel[:7], ball_pos=ball_pos, failed=mjsim_crashed
+            des_qpos=des_qpos, des_qvel=des_qvel, qpos=qpos[:7], qvel=qvel[:7], ball_pos=ball_pos, state_des=state_des[-3:], failed=mjsim_crashed
         )
 
     def observe(self, state: np.ndarray) -> np.ndarray:
