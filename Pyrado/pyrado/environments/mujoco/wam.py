@@ -138,10 +138,9 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         self._torque_space = BoxSpace(-max_torque, max_torque)
 
         # Initial state space
-        # Set the actual stable initial position. This position would be reached after som time using the internal
-        # PD controller to stabilize at self.init_pose_des
+        # Set the actual stable initial position. This position would be reached after some time using the internal ...
+        # ... PD controller to stabilize at self.init_pose_des
         np.put(self.init_qpos, [1, 3, 5, 6, 7], [0.6519, 1.409, -0.2827, -1.57, -0.2115])
-        # init_ball_pos = self.sim.data.get_body_xpos('ball').copy()  # all zeros
         init_ball_pos = np.array([0., -0.8566, 0.85391])
         init_state = np.concatenate([self.init_qpos, self.init_qvel, init_ball_pos])
         self._init_space = SingularStateSpace(init_state)
@@ -167,10 +166,10 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
             self.spec.act_space,
             self.spec.state_space.subspace(self.spec.state_space.create_mask(idcs))
         )
-        # TODO @Christian: use site "cup_goal" instead auf B0
+        # TODO @Christian: use site "cup_goal" instead auf B0 (needs an error fix for Mujoco 1.5)
         # If we do not use copy(), state_des is a reference and updates automatically at each step
-        # sim.forward() + get_body_xpos() results in wrong output for state_des, as `sim` has not been updated to..
-        # ..init_space.sample() ; first called in reset()
+        # sim.forward() + get_body_xpos() results in wrong output for state_des, as `sim` has not been updated to ...
+        # ... init_space.sample() ; first called in reset()
         # self.sim.forward()  # need to call forward to get a non-zero body position
         # state_des = self.sim.data.get_body_xpos('B0').copy()
         state_des = np.array([0., -0.8566, 1.164])
@@ -180,7 +179,7 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         # Wrap the masked DesStateTask to add a bonus for the best state in the rollout
         return BestStateFinalRewTask(
             MaskedTask(self.spec, dst, idcs),
-            max_steps=self.max_steps, factor=1.
+            max_steps=self.max_steps, factor=1e-6
         )
 
     def _mujoco_step(self, act: np.ndarray) -> dict:
