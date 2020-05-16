@@ -213,9 +213,8 @@ class MujocoSimEnv(SimEnv, ABC, Serializable):
         self._curr_act = act  # just for the render function
 
         # Apply the action and simulate the resulting dynamics
-        self._mujoco_step(act)
-
-        info = {'t': self._curr_step*self._dt}
+        info = self._mujoco_step(act)
+        info['t'] = self._curr_step*self._dt
         self._curr_step += 1
 
         # Check if the environment is done due to a failure within the mujoco simulation (e.g. bad inputs)
