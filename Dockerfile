@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y \
     gcc g++ make cmake zlib1g-dev swig libsm6 libxext6 \
     build-essential libssl-dev zlib1g-dev libbz2-dev libreadline-dev \
     wget llvm libncurses5-dev xz-utils tk-dev libxrender1\
-    libxml2-dev libxmlsec1-dev libffi-dev libcairo2-dev libjpeg-dev libgif-dev
+    libxml2-dev libxmlsec1-dev libffi-dev libcairo2-dev libjpeg-dev libgif-dev chromium-browser
 
 RUN adduser --disabled-password --gecos '' --shell /bin/bash user && chown -R user:user /home/user
 RUN echo 'user ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers.d/90-pyrado
@@ -41,6 +41,8 @@ RUN python setup_deps.py dep_libraries -j4
 
 RUN python setup_deps.py separate_pytorch -j4
 RUN conda install pytorch torchvision cudatoolkit=10.1 -c pytorch
-ENV PATH /opt/conda/envs/$(head -1 /tmp/environment.yml | cut -d' ' -f2)/bin:$PATH
+RUN python setup_deps.py pytorch_based -j4
+ENV PATH /opt/conda/envs/pyrado/bin:$PATH
 ENV PYTHONPATH /home/user/SimuRLacra/RcsPySim/build/lib:/home/user/SimuRLacra/Pyrado/:$PYTHONPATH
-RUN sudo apt-get install -y chromium-browser && sudo rm -rf /var/lib/apt/lists/*
+ENV RCSVIEWER_SIMPLEGRAPHICS 1
+RUN sudo rm -rf /var/lib/apt/lists/*
