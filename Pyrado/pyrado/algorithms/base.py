@@ -166,11 +166,11 @@ class Algorithm(ABC, LoggerAware):
     @abstractmethod
     def step(self, snapshot_mode: str, meta_info: dict = None):
         """
-        Perform a single iteration of the algorithm. This inclued collecting the data, updating the parameter, and
+        Perform a single iteration of the algorithm. This includes collecting the data, updating the parameters, and
         adding the metrics of interest to the logger. Does not update the `curr_iter` attribute.
 
         :param snapshot_mode: determines when the snapshots are stored (e.g. on every iteration or on new highscore)
-        :param meta_info: is not None if this algorithm is run as a subroutine of a meta-algorithm,
+        :param meta_info: is not `None` if this algorithm is run as a subroutine of a meta-algorithm,
                           contains a dict of information about the current iteration of the meta-algorithm
         """
         raise NotImplementedError
