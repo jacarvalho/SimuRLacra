@@ -56,7 +56,7 @@ cmake_prefix_path = [
 # Required packages
 required_packages = [
     "g++-4.8",
-    "libqwt5-qt4-dev",
+    "libqwt-qt5-dev",
     "libbullet-dev",
     "libfreetype6-dev",
     "libxml2-dev",
