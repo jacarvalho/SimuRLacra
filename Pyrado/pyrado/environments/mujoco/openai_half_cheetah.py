@@ -12,7 +12,7 @@ from pyrado.tasks.reward_functions import ForwardVelocityRewFcn
 
 class HalfCheetahSim(MujocoSimEnv, Serializable):
     """
-    The Half-Cheetah MuJoCo simulation environment where a planar simplified cheetah-like robot tries to run forward.
+    The Half-Cheetah v3 MuJoCo simulation environment where a planar simplified cheetah-like robot tries to run forward.
 
     .. seealso::
         https://github.com/openai/gym/blob/master/gym/envs/mujoco/half_cheetah.py
@@ -83,8 +83,8 @@ class HalfCheetahSim(MujocoSimEnv, Serializable):
 
     def _mujoco_step(self, act: np.ndarray):
         self.sim.data.ctrl[:] = act
-        # Alternatively: pass `frame_skip` as `nsubsteps` argument in MjSim constructor..
-        # ..instead of calling sim.step() multiple times
+        # Alternatively we could pass frame_skip as nsubsteps argument in MjSim constructor instead of calling
+        # sim.step() multiple times. However, we stick with the solution from OpenAI here.
         for _ in range(self.frame_skip):
             self.sim.step()
 
@@ -93,5 +93,5 @@ class HalfCheetahSim(MujocoSimEnv, Serializable):
         self.state = np.concatenate([pos, vel])
 
     def observe(self, state: np.ndarray) -> np.ndarray:
-        # Ignore horizontal position to maintain translational invariance
+        # Ignore the horizontal position to maintain translational invariance
         return state[1:].copy()
