@@ -93,5 +93,5 @@ class HalfCheetahSim(MujocoSimEnv, Serializable):
         self.state = np.concatenate([pos, vel])
 
     def observe(self, state: np.ndarray) -> np.ndarray:
-        # Ignore the horizontal position to maintain translational invariance
+        # Ignore the horizontal position to obtain translational invariance
         return state[1:].copy()

@@ -25,7 +25,7 @@ class HopperSim(MujocoSimEnv, Serializable):
 
     name: str = 'hop'
 
-    def __init__(self, frame_skip: int = 5, max_steps: int = 3000, task_args: [dict, None] = None):
+    def __init__(self, frame_skip: int = 5, max_steps: int = 2000, task_args: [dict, None] = None):
         """
         Constructor
 
@@ -106,9 +106,8 @@ class HopperSim(MujocoSimEnv, Serializable):
         self.state = np.concatenate([pos, vel])
 
     def observe(self, state: np.ndarray) -> np.ndarray:
-        # Clip the velocity
-        pos = state[:self.model.nq]
-        vel = np.clip(state[self.model.nq:], -10., 10.)
+        pos = self.sim.data.qpos.copy()
+        vel = np.clip(self.sim.data.qvel.copy(), -10., 10.)
 
-        # Ignore the horizontal position to maintain translational invariance
+        # Ignore the horizontal position to obtain translational invariance
         return np.concatenate([pos[1:], vel])
