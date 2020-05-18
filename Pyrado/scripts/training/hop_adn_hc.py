@@ -1,24 +1,24 @@
 """
-Train an agent to solve the Half-Cheetah task using Activation Dynamics Networks and Natural Evolution Strategies.
+Train an agent to solve the Box Shelving task task using Activation Dynamics Networks and Hill Climbing.
 """
 import torch as to
 
-from pyrado.algorithms.nes import NES
+from pyrado.algorithms.hc import HCNormal
 from pyrado.environment_wrappers.action_normalization import ActNormWrapper
 from pyrado.environments.mujoco.openai_hopper import HopperSim
 from pyrado.logger.experiment import setup_experiment, save_list_of_dicts_to_yaml
-from pyrado.policies.adn import ADNPolicy, pd_cubic, pd_capacity_21_abs, pd_capacity_32_abs
+from pyrado.policies.adn import ADNPolicy, pd_cubic, pd_capacity_21_abs
 from pyrado.policies.fnn import FNN
-
 
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
-    ex_dir = setup_experiment(HopperSim.name, f'adn-{NES.name}', 'lin', seed=1002)
+    ex_dir = setup_experiment(HopperSim.name, f'adn-{HCNormal.name}', 'lin', seed=1001)
 
     # Environment
     env_hparams = dict()
     env = HopperSim(**env_hparams)
     env = ActNormWrapper(env)
+    print(env.act_space)
 
     # Policy
     policy_hparam = dict(
@@ -37,17 +37,14 @@ if __name__ == '__main__':
 
     # Algorithm
     algo_hparam = dict(
-        max_iter=5000,
-        pop_size=100,
-        num_rollouts=8,
-        eta_mean=2.,
-        eta_std=None,
+        max_iter=500,
+        pop_size=10*policy.num_param,
+        expl_factor=1.05,
+        num_rollouts=6,
         expl_std_init=2.0,
-        symm_sampling=False,
-        transform_returns=True,
-        num_sampler_envs=12,
+        num_sampler_envs=10,
     )
-    algo = NES(ex_dir, env, policy, **algo_hparam)
+    algo = HCNormal(ex_dir, env, policy, **algo_hparam)
 
     # Save the hyper-parameters
     save_list_of_dicts_to_yaml([
@@ -58,4 +55,4 @@ if __name__ == '__main__':
     )
 
     # Jeeeha
-    algo.train(seed=ex_dir.seed)
+    algo.train(snapshot_mode='best', seed=ex_dir.seed)
