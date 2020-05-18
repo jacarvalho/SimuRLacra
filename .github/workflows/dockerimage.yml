@@ -19,4 +19,4 @@ jobs:
       - name: Execute tests
         run: |
           mkdir cov
-          docker run --rm -i $(pwd):/cov simurlacra conda run -n pyrado bash -c "pytest Pyrado/tests/ --cov=/home/user/cov --cov-report=xml --verbose -m 'not visualisation and not longtime'"
+          docker run --rm -i -v $(pwd):/cov simurlacra conda run -n pyrado bash -c "pytest Pyrado/tests/ --cov=/cov --cov-report=xml --verbose -m 'not visualisation and not longtime'"
