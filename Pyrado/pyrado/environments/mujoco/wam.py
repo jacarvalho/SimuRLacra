@@ -166,20 +166,23 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
             self.spec.act_space,
             self.spec.state_space.subspace(self.spec.state_space.create_mask(idcs))
         )
-        # TODO @Christian: use site "cup_goal" instead auf B0 (needs an error fix for Mujoco 1.5)
-        # If we do not use copy(), state_des is a reference and updates automatically at each step
-        # sim.forward() + get_body_xpos() results in wrong output for state_des, as `sim` has not been updated to ...
-        # ... init_space.sample() ; first called in reset()
+        # Original idea
         # self.sim.forward()  # need to call forward to get a non-zero body position
         # state_des = self.sim.data.get_body_xpos('B0').copy()
+        # But
+        # If we do not use copy(), state_des is a reference and updates automatically at each step
+        # sim.forward() + get_body_xpos() results in wrong output for state_des, as sim has not been updated to
+        # init_space.sample(), which is first called in reset()
+        # Now
         state_des = np.array([0., -0.8566, 1.164])
         rew_fcn = ExpQuadrErrRewFcn(Q=10*np.eye(3), R=1e-6*np.eye(6))
         dst = DesStateTask(spec, state_des, rew_fcn)
 
         # Wrap the masked DesStateTask to add a bonus for the best state in the rollout
+        factor = task_args.get('factor', 1.)
         return BestStateFinalRewTask(
             MaskedTask(self.spec, dst, idcs),
-            max_steps=self.max_steps, factor=1e-6
+            max_steps=self.max_steps, factor=factor
         )
 
     def _mujoco_step(self, act: np.ndarray) -> dict:
@@ -203,7 +206,7 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
             self.sim.step()
             mjsim_crashed = False
         except mujoco_py.builder.MujocoException:
-            # When MuJoCo recognized instabilities in the simulation, it simply kills it.
+            # When MuJoCo recognized instabilities in the simulation, it simply kills it
             # Instead, we want the episode to end with a failure
             mjsim_crashed = True
 
@@ -213,14 +216,15 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         self.state = np.concatenate([qpos, qvel, ball_pos])
 
         # Update task's desired state
-        # .. note: wrapped_task.state_des expects state_des to be same dimension as self.state
-        state_des = np.zeros_like(self.state)
+        state_des = np.zeros_like(self.state)  # needs to be of same dimension as self.state since it is masked later
         state_des[-3:] = self.sim.data.get_body_xpos('B0').copy()
         self._task.wrapped_task.state_des = state_des
 
         return dict(
-            des_qpos=des_qpos, des_qvel=des_qvel, qpos=qpos[:7], qvel=qvel[:7], ball_pos=ball_pos, state_des=state_des[-3:], failed=mjsim_crashed
+            des_qpos=des_qpos, des_qvel=des_qvel, qpos=qpos[:7], qvel=qvel[:7], ball_pos=ball_pos,
+            state_des=state_des[-3:], failed=mjsim_crashed
         )
 
     def observe(self, state: np.ndarray) -> np.ndarray:
+        # Only observe the normalized time
         return np.array([self._curr_step/self.max_steps])
