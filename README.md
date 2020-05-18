@@ -19,8 +19,8 @@ __Cons__
 * _Hyper-parameters are not fully tuned._ Sometimes the most important part of reinforcement learning is the time-consuming search for the right hyper-parameters. I only did this for the environment-algorithm combinations reported in my papers. But, for all the other cases there is [Optuna](https://optuna.org/) and some optuna-based example scripts that you can start from.
 * _Unfinished GPU-support._ At the moment the porting of the policies is implemented but not fully tests. The GPU-enabled re-implementation of the simulation environments in the pysim folder (simple Python simulations) is at question. The environments based on [Rcs](https://github.com/HRI-EU/Rcs) which require the Bullet or Vortex physics engine will only be able to run on CPU.
 
-SimuRLacra was tested on Ubuntu 16.04, 18.04 (recommended), and 19.10, with PyTorch 1.3.  
-(From Ubuntu 20.04 on Qt4 is deprecated, thus you can not build Rcs.)
+SimuRLacra was tested on Ubuntu 16.04, 18.04 (recommended), 19.10, and 20.04, with PyTorch 1.3.
+The part without C++ dependencies (Pyrado) also works under Windows 10, but is not supported.
 
 __Not the right framework for you?__
 * If you are looking for even more modular code or simply want to see how much you can do with Python decorators, check out [vel](https://github.com/MillionIntegrals/vel/tree/master/vel). It is a really beautiful framework.
@@ -64,7 +64,7 @@ conda env create -f Pyrado/environment.yml
 >```
 >python setup_deps.py dep_libraries
 >```
->This command will install `g++-4.8`, `libqwt5-qt4-dev`, `libbullet-dev`, `libfreetype6-dev`, `libxml2-dev`, `libglu1-mesa-dev`, `freeglut3-dev`, `mesa-common-dev`, `libopenscenegraph-dev`, `openscenegraph`, and `liblapack-dev`.
+>This command will install `g++-4.8`, `libqwt-qt5-dev`, `libbullet-dev`, `libfreetype6-dev`, `libxml2-dev`, `libglu1-mesa-dev`, `freeglut3-dev`, `mesa-common-dev`, `libopenscenegraph-dev`, `openscenegraph`, and `liblapack-dev`.
 If you can't install the libraries, you can still use the part of this framework which is purely in Python, but no environments in the `sim_rcs` folder.
 
 Now you have __two options__:
