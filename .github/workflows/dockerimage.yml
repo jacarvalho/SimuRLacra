@@ -13,9 +13,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag simurlacra
-    - name: Execute tests
-      run: docker run --rm -it simurlacra conda run -n pyrado bash -c "pytest Pyrado/tests/ --ver
-bose -m 'not visualisation and not longtime'"
+      - uses: actions/checkout@v2
+      - name: Build the Docker image
+        run: docker build . --file Dockerfile --tag simurlacra
+      - name: Execute tests
+        run: docker run --rm -it simurlacra conda run -n pyrado bash -c "pytest Pyrado/tests/ --verbose -m 'not visualisation and not longtime'"
