@@ -198,14 +198,20 @@ class ADNPolicy(RecurrentPolicy):
             self._log_kappa = None
         # capacity
         self._capacity_learnable = capacity_learnable
-        if potentials_dyn_fcn in [pd_capacity_21, pd_capacity_21_abs]:
-            self._log_capacity_init = to.log(to.tensor([5.], dtype=to.get_default_dtype()))
-            self._log_capacity = nn.Parameter(self._log_capacity_init, requires_grad=True) \
-                if self._capacity_learnable else self._log_capacity_init
-        elif potentials_dyn_fcn in [pd_capacity_32, pd_capacity_32_abs]:
-            self._log_capacity_init = to.log(to.tensor([3.], dtype=to.get_default_dtype()))
-            self._log_capacity = nn.Parameter(self._log_capacity_init, requires_grad=True) \
-                if self._capacity_learnable else self._log_capacity_init
+        if potentials_dyn_fcn in [pd_capacity_21, pd_capacity_21_abs, pd_capacity_32, pd_capacity_32_abs]:
+            if self._output_nonlin is to.sigmoid:
+                # sigmoid(7.) approx 0.999
+                self._log_capacity_init = to.log(to.tensor([7.], dtype=to.get_default_dtype()))
+                self._log_capacity = nn.Parameter(self._log_capacity_init, requires_grad=True) \
+                    if self._capacity_learnable else self._log_capacity_init
+            elif self._output_nonlin is to.tanh:
+                # tanh(3.8) approx 0.999
+                self._log_capacity_init = to.log(to.tensor([3.8], dtype=to.get_default_dtype()))
+                self._log_capacity = nn.Parameter(self._log_capacity_init, requires_grad=True) \
+                    if self._capacity_learnable else self._log_capacity_init
+            else:
+                raise pyrado.TypeErr(msg='Only output nonlinearities of type torch.sigmoid and torch.tanh are supported'
+                                         'for capacity-based potential dynamics.')
         else:
             self._log_capacity = None
 
