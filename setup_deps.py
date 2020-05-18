@@ -55,6 +55,7 @@ cmake_prefix_path = [
 
 # Required packages
 required_packages = [
+    "qt5-default",
     "g++-4.8",
     "libqwt-qt5-dev",
     "libbullet-dev",
