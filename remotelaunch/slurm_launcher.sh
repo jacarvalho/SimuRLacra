@@ -21,7 +21,9 @@
 echo "Starting Job $SLURM_JOB_ID, Index $SLURM_ARRAY_TASK_ID"
 
 # Activate the pyrado anaconda environment
-SIMURLACRA_DIR="$HOME/Software"
+eval "$($HOME/Software/anaconda3/bin/conda shell.bash hook)"
+
+SIMURLACRA_DIR="$HOME/Software/SimuRLacra"
 conda activate pyrado
 
 # Move to scripts directory
