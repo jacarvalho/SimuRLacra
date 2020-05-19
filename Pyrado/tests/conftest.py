@@ -45,7 +45,7 @@ try:
         not rcsenv.supportsPhysicsEngine('Bullet'),
         reason='Bullet physics engine is not supported in this setup.'
     )
-    m_needs_rcs = pytest.mark.skipif(False)  # don't skip if rcsenv can be imported
+    m_needs_rcs = pytest.mark.skipif(False, reason='rcsenv can be imported.')
 
     m_needs_libtorch = pytest.mark.skipif(
         'torch' not in rcsenv.ControlPolicy.types, reason='Requires RcsPySim compiled locally with libtorch!'
@@ -64,7 +64,7 @@ try:
     from pyrado.environments.mujoco.openai_hopper import HopperSim
     from pyrado.environments.mujoco.wam import WAMBallInCupSim
 
-    m_needs_mujoco = pytest.mark.skipif(False)
+    m_needs_mujoco = pytest.mark.skipif(False, reason='mujoco-py can be imported.')
 
 except (ImportError, Exception):
     m_needs_mujoco = pytest.mark.skip(reason='mujoco-py is not supported in this setup.')
@@ -336,7 +336,7 @@ def default_hop():
 @m_needs_mujoco
 @pytest.fixture(scope='function')
 def default_wambic():
-    return WAMBallInCupSim()
+    return WAMBallInCupSim(max_steps=1750)
 
 
 # ---------------
