@@ -3,7 +3,8 @@ import os.path as osp
 import torch as to
 from pytest_lazyfixture import lazy_fixture
 
-from tests.conftest import m_needs_cuda, m_needs_bullet
+from pyrado.policies.environment_specific import DualRBFLinearPolicy
+from tests.conftest import m_needs_cuda, m_needs_bullet, m_needs_mujoco
 from pyrado.policies.adn import ADNPolicy, pd_cubic
 from pyrado.policies.dummy import DummyPolicy, IdlePolicy
 from pyrado.policies.fnn import FNNPolicy
@@ -271,6 +272,23 @@ def test_rfb_policy_batch(env, batch_size, num_feat_per_dim):
         obs = to.from_numpy(obs).repeat(batch_size, 1)
         act = policy(obs)
         assert act.shape == (batch_size, env.act_space.flat_dim)
+
+
+@pytest.mark.features
+@pytest.mark.parametrize(
+    'env', [
+        pytest.param(lazy_fixture('default_wambic'), marks=m_needs_mujoco),  # so far, the only use case
+    ], ids=['wambic']
+)
+@pytest.mark.parametrize('dim_mask', [0, 1, 2], ids=['0', '1', '2'])
+def test_dual_rbf_policy(env, dim_mask):
+    # Hyper-parameters for the RBF features are not important here
+    rbf_hparam = dict(num_feat_per_dim=7, bounds=(np.array([0.]), np.array([1.])), scale=None)
+    policy = DualRBFLinearPolicy(env.spec, rbf_hparam, dim_mask)
+    assert policy.num_param == policy.num_active_feat*env.act_space.flat_dim//2
+
+    ro = rollout(env, policy, eval=True)
+    assert ro is not None
 
 
 @pytest.mark.parametrize(

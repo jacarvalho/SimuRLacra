@@ -40,8 +40,10 @@ class DualRBFLinearPolicy(LinearPolicy):
                          RBF features. Masking out RBFs makes sense if you want to obtain a smooth starting behavior.
         :param init_param_kwargs: additional keyword arguments for the policy parameter initialization
         """
-        if not dim_mask >= 0:
-            raise pyrado.ValueErr(given=dim_mask, ge_constraint='0')
+        if not (0 <= dim_mask <= rbf_hparam['num_feat_per_dim']//2):
+            raise pyrado.ValueErr(
+                given=dim_mask, ge_constraint='0', le_constraint=f"{rbf_hparam['num_feat_per_dim']//2}"
+            )
 
         # Construct the RBF features
         self._feats = RBFFeat(**rbf_hparam)
@@ -49,7 +51,10 @@ class DualRBFLinearPolicy(LinearPolicy):
         # Call LinearPolicy's constructor (custom parts will be overridden later)
         super().__init__(spec, FeatureStack([self._feats]), init_param_kwargs, use_cuda)
         if not self._num_act%2 == 0:
-            raise pyrado.ShapeErr(msg='DualRBFLinearPolicy only works with an even number of actions')
+            raise pyrado.ShapeErr(msg='DualRBFLinearPolicy only works with an even number of actions,'
+                                      'since we are using the time derivative of the features to create the second'
+                                      'half of the outputs. This is done to use forward() in order to obtain'
+                                      'the joint position and the joint velocities.')
 
         # Override custom parts
         self._feats = RBFFeat(**rbf_hparam)
