@@ -29,9 +29,10 @@ if __name__ == '__main__':
         tau_init=1.,
         tau_learnable=True,
         kappa_learnable=True,
-        capacity_learnable=True,
+        capacity_learnable=False,
         output_nonlin=to.tanh,
         potentials_dyn_fcn=pd_capacity_21_abs,
+        scaling_layer=False,
     )
     policy = ADNPolicy(spec=env.spec, dt=env.dt, **policy_hparam)
 
@@ -39,13 +40,13 @@ if __name__ == '__main__':
     algo_hparam = dict(
         max_iter=5000,
         pop_size=100,
-        num_rollouts=8,
+        num_rollouts=4,
         eta_mean=2.,
         eta_std=None,
         expl_std_init=2.0,
         symm_sampling=False,
         transform_returns=True,
-        num_sampler_envs=12,
+        num_sampler_envs=8,
     )
     algo = NES(ex_dir, env, policy, **algo_hparam)
 

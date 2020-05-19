@@ -18,7 +18,6 @@ if __name__ == '__main__':
     env_hparams = dict()
     env = HopperSim(**env_hparams)
     env = ActNormWrapper(env)
-    print(env.act_space)
 
     # Policy
     policy_hparam = dict(
@@ -29,9 +28,10 @@ if __name__ == '__main__':
         tau_init=1.,
         tau_learnable=True,
         kappa_learnable=True,
-        capacity_learnable=True,
+        capacity_learnable=False,
         output_nonlin=to.tanh,
         potentials_dyn_fcn=pd_capacity_21_abs,
+        scaling_layer=False,
     )
     policy = ADNPolicy(spec=env.spec, dt=env.dt, **policy_hparam)
 
@@ -40,9 +40,9 @@ if __name__ == '__main__':
         max_iter=500,
         pop_size=10*policy.num_param,
         expl_factor=1.05,
-        num_rollouts=6,
-        expl_std_init=2.0,
-        num_sampler_envs=10,
+        num_rollouts=4,
+        expl_std_init=0.2,
+        num_sampler_envs=8,
     )
     algo = HCNormal(ex_dir, env, policy, **algo_hparam)
 
