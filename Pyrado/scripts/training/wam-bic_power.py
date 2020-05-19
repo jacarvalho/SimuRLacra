@@ -15,13 +15,13 @@ if __name__ == '__main__':
     # Environment
     env_hparams = dict(
         max_steps=1750,
-        task_args=dict(factor=1.)
+        task_args=dict(factor=0.1)
     )
     env = WAMBallInCupSim(**env_hparams)
 
     # Policy
     rbf_hparam = dict(num_feat_per_dim=7, bounds=(np.array([0.]), np.array([1.])), scale=None)
-    policy = DualRBFLinearPolicy(env.spec, rbf_hparam)
+    policy = DualRBFLinearPolicy(env.spec, rbf_hparam, dim_mask=2)
 
     # Algorithm
     algo_hparam = dict(
