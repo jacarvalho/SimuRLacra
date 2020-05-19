@@ -123,7 +123,7 @@ def render_policy_params(policy: Policy,
             ax.set_xticks(np.arange(env_spec.obs_space.flat_dim))
             ax.set_yticks(np.arange(env_spec.act_space.flat_dim))
             ax.set_xticklabels(ensure_no_subscript(env_spec.obs_space.labels))
-            ax.set_yticklabels(ensure_math_mode(env_spec.act_space.labels))
+            ax.set_yticklabels(reversed(ensure_math_mode(env_spec.act_space.labels)))
         elif name in ['obs_layer.bias', 'scaling_layer.log_weight']:
             # Set the labels in case of an ADN policy
             ax.set_xticks(np.arange(env_spec.act_space.flat_dim))
@@ -135,8 +135,8 @@ def render_policy_params(policy: Policy,
             ax.set_xticks(np.arange(env_spec.act_space.flat_dim))
             ax.set_yticks(np.arange(env_spec.act_space.flat_dim))
             ax.set_xticklabels(ensure_math_mode(env_spec.act_space.labels))
-            ax.set_yticklabels(ensure_math_mode(env_spec.act_space.labels))
-        elif name in ['_log_tau', '_log_kappa']:
+            ax.set_yticklabels(reversed(ensure_math_mode(env_spec.act_space.labels)))
+        elif name in ['_log_tau', '_log_kappa', '_log_capacity']:
             # Set the labels in case of an ADN policy
             ax.xaxis.set_major_locator(ticker.NullLocator())
             ax.yaxis.set_major_locator(ticker.NullLocator())
@@ -145,8 +145,6 @@ def render_policy_params(policy: Policy,
         else:
             ax.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
             ax.yaxis.set_major_locator(ticker.MaxNLocator(integer=True))
-            # ax.xaxis.set_minor_formatter(ticker.NullFormatter())
-            # ax.yaxis.set_minor_formatter(ticker.NullFormatter())
 
         # Add the color bar (call this within the loop to make the AccNorm scan every image)
         colorbar.ColorbarBase(ax_cb, cmap=cmap, norm=norm, label=colorbar_label)
