@@ -224,7 +224,7 @@ class RBFFeat:
 
     def __init__(self,
                  num_feat_per_dim: int,
-                 bounds: [Sequence[np.ndarray], Sequence[to.Tensor]],
+                 bounds: [Sequence[np.ndarray], Sequence[to.Tensor], Sequence[float]],
                  scale: float = None,
                  state_wise_norm: bool = True):
         """
@@ -239,9 +239,20 @@ class RBFFeat:
         """
         if not num_feat_per_dim > 1:
             raise pyrado.ValueErr(given=num_feat_per_dim, g_constraint='1')
+        if not len(bounds) == 2:
+            raise pyrado.ShapeErr(given=bounds, expected_match=np.empty(2))
 
         # Get the bounds, e.g. from the observation space and then clip them in case the
-        bounds_to = [to.from_numpy(b) if isinstance(b, np.ndarray) else b for b in bounds]
+        bounds_to = [None, None]
+        for i, b in enumerate(bounds):
+            if isinstance(b, np.ndarray):
+                bounds_to[i] = to.from_numpy(b)
+            elif isinstance(b, to.Tensor):
+                bounds_to[i] = b.clone()
+            elif isinstance(b, (int, float)):
+                bounds_to[i] = to.tensor(b, dtype=to.get_default_dtype()).view(1,)
+            else:
+                raise pyrado.TypeErr(given=b, expected_type=(np.ndarray, to.Tensor, int, float))
         if any([any(np.isinf(b)) for b in bounds_to]):
             bound_lo, bound_up = [to.clamp(b, min=-1e6, max=1e6) for b in bounds_to]
             print_cbt('Clipped the bounds of the RBF centers to [-1e6, 1e6].', 'y')
