@@ -177,7 +177,7 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         # init_space.sample(), which is first called in reset()
         # Now
         state_des = np.array([0., -0.8566, 1.164])
-        rew_fcn = ExpQuadrErrRewFcn(Q=10*np.eye(3), R=1e-6*np.eye(6))
+        rew_fcn = ExpQuadrErrRewFcn(Q=10.*np.eye(3), R=1e-2*np.eye(6))
         dst = DesStateTask(spec, state_des, rew_fcn)
 
         # Wrap the masked DesStateTask to add a bonus for the best state in the rollout
