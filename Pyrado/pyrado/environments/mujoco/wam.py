@@ -153,10 +153,12 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         # Action space (PD controller on 3 joint positions and velocities)
         max_act = np.array([np.pi, np.pi, np.pi,  # [rad, rad, rad, ...
                             10*np.pi, 10*np.pi, 10*np.pi])  # ... rad/s, rad/s, rad/s]
-        self._act_space = BoxSpace(-max_act, max_act)
+        self._act_space = BoxSpace(-max_act, max_act,
+                                   labels=[r'$q_{1,des}$', r'$q_{3,des}$', r'$q_{5,des}$',
+                                           r'$\dot{q}_{1,des}$', r'$\dot{q}_{3,des}$', r'$\dot{q}_{5,des}$'])
 
         # Observation space (normalized time)
-        self._obs_space = BoxSpace(np.array([0.]), np.array([1.]))
+        self._obs_space = BoxSpace(np.array([0.]), np.array([1.]), labels=['$t$'])
 
     def _create_task(self, task_args: [dict, None] = None) -> Task:
         # Create a DesStateTask that masks everything but the ball position
