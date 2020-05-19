@@ -30,8 +30,8 @@ class LinearPolicy(Policy):
         self._num_obs = spec.obs_space.flat_dim
 
         self._feats = feats
-        self._num_feat = feats.get_num_feat(self._num_obs)
-        self.net = to.nn.Linear(self._num_feat, self._num_act, bias=False)
+        self.num_active_feat = feats.get_num_feat(self._num_obs)
+        self.net = to.nn.Linear(self.num_active_feat, self._num_act, bias=False)
 
         # Call custom initialization function after PyTorch network parameter initialization
         init_param_kwargs = init_param_kwargs if init_param_kwargs is not None else dict()

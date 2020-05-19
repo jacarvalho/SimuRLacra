@@ -18,16 +18,16 @@ from pyrado.utils.tensor_utils import insert_tensor_col
 
 class DualRBFLinearPolicy(LinearPolicy):
     """
-    A linear policy with RBF features which are also used to get the derivative of the features.
-    The use-case in mind is a simple policy which generates the joint position and joint velocity commands for the
-    internal PD-controller of a robot (e.g. Barrett WAM). By re-using the RBF, we reduce the number of parameters,
-    while we can at the same time get the velocity information from the features, i.e. the derivative of the normalized
-    Gaussians.
+    A linear policy with RBF features which are also used to get the derivative of the features. The use-case in mind
+    is a simple policy which generates the joint position and joint velocity commands for the internal PD-controller
+    of a robot (e.g. Barrett WAM). By re-using the RBF, we reduce the number of parameters, while we can at the same
+    time get the velocity information from the features, i.e. the derivative of the normalized Gaussians.
     """
 
     def __init__(self,
                  spec: EnvSpec,
                  rbf_hparam: dict,
+                 dim_mask: int = 2,
                  init_param_kwargs: dict = None,
                  use_cuda: bool = False):
         """
@@ -35,8 +35,15 @@ class DualRBFLinearPolicy(LinearPolicy):
 
         :param spec: specification of environment
         :param rbf_hparam: hyper-parameters for the RBF-features, see `RBFFeat`
+        :param dim_mask: number of RBF features to mask out at the beginning and the end of every dimension,
+                         pass 1 to remove the first and the last features for the policy, pass 0 to use all
+                         RBF features. Masking out RBFs makes sense if you want to obtain a smooth starting behavior.
         :param init_param_kwargs: additional keyword arguments for the policy parameter initialization
         """
+        if not dim_mask >= 0:
+            raise pyrado.ValueErr(given=dim_mask, ge_constraint='0')
+
+        # Construct the RBF features
         self._feats = RBFFeat(**rbf_hparam)
 
         # Call LinearPolicy's constructor (custom parts will be overridden later)
@@ -46,8 +53,18 @@ class DualRBFLinearPolicy(LinearPolicy):
 
         # Override custom parts
         self._feats = RBFFeat(**rbf_hparam)
-        self._num_feat = self._feats.num_feat
-        self.net = to.nn.Linear(self._num_feat, self._num_act//2, bias=False)
+        self.dim_mask = dim_mask
+        if self.dim_mask > 0:
+            self.num_active_feat = self._feats.num_feat - 2*self.dim_mask*spec.obs_space.flat_dim
+        else:
+            self.num_active_feat = self._feats.num_feat
+        self.net = to.nn.Linear(self.num_active_feat, self._num_act//2, bias=False)
+
+        # Create mask to deactivate first and last feature of every input dimension
+        self.feats_mask = to.ones(self._feats.centers.shape, dtype=to.bool)
+        self.feats_mask[:self.dim_mask, :] = False
+        self.feats_mask[-self.dim_mask:, :] = False
+        self.feats_mask = self.feats_mask.t().reshape(-1, )  # reshape the same way as in RBFFeat
 
         # Call custom initialization function after PyTorch network parameter initialization
         init_param_kwargs = init_param_kwargs if init_param_kwargs is not None else dict()
@@ -65,6 +82,11 @@ class DualRBFLinearPolicy(LinearPolicy):
         batched = obs.ndimension() == 2  # number of dim is 1 if unbatched, dim > 2 is cought by features
         feats_val = self._feats(obs)
         feats_dot = self._feats.derivative(obs)
+
+        if self.dim_mask > 0:
+            # Mask out first and last feature of every input dimension
+            feats_val = feats_val[:, self.feats_mask]
+            feats_dot = feats_dot[:, self.feats_mask]
 
         # Inner product between policy parameters and the value of the features
         act_pos = self.net(feats_val)
