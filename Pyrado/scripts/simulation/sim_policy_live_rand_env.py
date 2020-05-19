@@ -24,6 +24,10 @@ if __name__ == '__main__':
     # Get the simulation environment
     env, policy, kwout = load_experiment(ex_dir)
 
+    # Override the time step size if specified
+    if args.dt is not None:
+        env.dt = args.dt
+
     if not isinstance(env, DomainRandWrapperLive):
         # Add default domain randomization wrapper with action delay
         randomizer = get_default_randomizer(env)

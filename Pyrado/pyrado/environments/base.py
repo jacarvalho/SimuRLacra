@@ -68,23 +68,14 @@ class Env(ABC, Serializable):
         """ Get the time step size. """
         return self._dt
 
-    @abstractmethod
-    def _create_task(self, state_des: [np.ndarray, None]) -> Task:
-        """
-        Create task based on the domain parameters and spaces.
-
-        .. note::
-            This function should be called from the environment's constructor.
-
-        :param state_des: desired state for the task, or `None` for default value
-        :return: task
-        """
-
-    @property
-    @abstractmethod
-    def task(self) -> Task:
-        """ Get the task describing what the agent should do in the environment. """
-        raise NotImplementedError
+    @dt.setter
+    def dt(self, dt: [int, float]):
+        """ Set the time step size. """
+        if not dt > 0:
+            raise pyrado.ValueErr(given=dt, g_constraint='0')
+        if not isinstance(dt, (float, int)):
+            raise pyrado.TypeErr(given=dt, expected_type=[float, int])
+        self._dt = float(dt)
 
     @property
     def max_steps(self) -> (int, float):
@@ -116,6 +107,24 @@ class Env(ABC, Serializable):
     def curr_step(self) -> int:
         """ Get the number of the current simulation step (0 for the initial step). """
         return self._curr_step
+
+    @abstractmethod
+    def _create_task(self, state_des: [np.ndarray, None]) -> Task:
+        """
+        Create task based on the domain parameters and spaces.
+
+        .. note::
+            This function should be called from the environment's constructor.
+
+        :param state_des: desired state for the task, or `None` for default value
+        :return: task
+        """
+
+    @property
+    @abstractmethod
+    def task(self) -> Task:
+        """ Get the task describing what the agent should do in the environment. """
+        raise NotImplementedError
 
     @abstractmethod
     def reset(self, init_state: np.ndarray = None, domain_param: dict = None) -> np.ndarray:

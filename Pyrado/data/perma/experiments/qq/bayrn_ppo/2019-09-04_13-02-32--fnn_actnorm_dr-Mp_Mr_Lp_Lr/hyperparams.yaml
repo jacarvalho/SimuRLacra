@@ -1,0 +1,67 @@
+env:
+  dt: 0.01
+  max_steps: 600
+seed: 111
+policy:
+  hidden_nonlin: <built-in method tanh of type object at 0x7fe8eda85520>
+  hidden_sizes:
+  - 64
+  - 64
+critic:
+  batch_size: 60
+  gamma: 0.9885
+  lamda: 0.9648
+  lr: 0.0005792
+  max_grad_norm: 1.0
+  num_epoch: 2
+  standardize_adv: false
+value_fcn:
+  hidden_nonlin: <built-in method tanh of type object at 0x7fe8eda85520>
+  hidden_sizes:
+  - 64
+  - 64
+subroutine:
+  batch_size: 60
+  eps_clip: 0.0744
+  lr: 0.0003446
+  max_grad_norm: 1.0
+  max_iter: 300
+  min_steps: 13800
+  num_epoch: 7
+  num_sampler_envs: 16
+  std_init: 0.9074
+subroutine_name: ppo
+algo:
+  acq_fc: EI
+  acq_restarts: 500
+  acq_samples: 1000
+  max_iter: 15
+  num_init_cand: 10
+  thold_succ: 300.0
+  warmstart: false
+algo_name: bayrn
+dp_map:
+  0: !!python/tuple
+  - Mp
+  - mean
+  1: !!python/tuple
+  - Mp
+  - std
+  2: !!python/tuple
+  - Mr
+  - mean
+  3: !!python/tuple
+  - Mr
+  - std
+  4: !!python/tuple
+  - Lp
+  - mean
+  5: !!python/tuple
+  - Lp
+  - std
+  6: !!python/tuple
+  - Lr
+  - mean
+  7: !!python/tuple
+  - Lr
+  - std

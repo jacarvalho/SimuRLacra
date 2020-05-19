@@ -7,10 +7,12 @@ import torch as to
 from matplotlib import pyplot as plt
 from warnings import warn
 
+import pyrado
 from pyrado.logger.experiment import ask_for_experiment
 from pyrado.plotting.surface import render_surface
 from pyrado.utils.argparser import get_argparser
 from pyrado.utils.experiments import load_experiment
+from pyrado.utils.input_output import ensure_math_mode
 
 
 class wrap_value_fcn:
@@ -52,12 +54,11 @@ if __name__ == '__main__':
     ex_dir = ask_for_experiment()
 
     # Load the environment and the value function
-    env, _, kwout = load_experiment(ex_dir)
-    value_fcn = kwout['value_fcn']
+    env, _, kwout = load_experiment(ex_dir, args)
+    value_fcn = kwout['critic'].value_fcn
 
-    if len(args.idcs) > 2:
-        warn('Received more than two indices. This will most likely affect the behavior in an undesired way.',
-             UserWarning)
+    if not len(args.idcs) == 2:
+        pyrado.ShapeErr(msg='Please provide exactly two indices to slice the value function input space (obs_space)!')
 
     # Use the environments lower and upper bounds to parametrize the mesh grid
     lb, ub = env.obs_space.bounds
@@ -75,10 +76,10 @@ if __name__ == '__main__':
 
     # Create labels for the plot based on the labels of the environment
     space_labels = env.obs_space.labels
-    # if space_labels is not None:
-    #     state_labels = [space_labels[args.idcs[0]], space_labels[args.idcs[1]]]
-    # else:
-    state_labels = ['s_' + str(args.idcs[0]), 's_' + str(args.idcs[1])]
+    if space_labels is not None:
+        state_labels = [space_labels[args.idcs[0]], space_labels[args.idcs[1]]]
+    else:
+        state_labels = ['s_' + str(args.idcs[0]), 's_' + str(args.idcs[1])]
 
     # Provide the state at which the value function should be evaluated (partially overwritten by the evaluation gird)
     fixed_state = to.zeros(env.obs_space.shape)
@@ -87,7 +88,8 @@ if __name__ == '__main__':
     w_value_fcn = wrap_value_fcn(value_fcn, fixed_state, args.idcs)
 
     fig = render_surface(to.from_numpy(x), to.from_numpy(y), w_value_fcn,
-                         f'${state_labels[0]}$', f'${state_labels[1]}$', f'$V({state_labels[0]},{state_labels[1]})$',
+                         f'{ensure_math_mode(state_labels[0])}', f'{ensure_math_mode(state_labels[1])}',
+                         f'$V(${ensure_math_mode(state_labels[0])},{ensure_math_mode(state_labels[1])}$)$',
                          data_format='torch')
 
     if args.save_figures:

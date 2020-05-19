@@ -6,32 +6,24 @@ The implementations are focus on modularity rather than on performance.
 
 Installation
 ------------
-Please see the root-level readme file of SimuRLacra.
-
-
-Structure
----------
-
-TBD
+Please see the root-level `readme file of SimuRLacra <https://github.com/famura/SimuRLacra/blob/master/README.md>`_.
 
 Where to start?
 ---------------
+Check out the provided examples or run some of the existing scripts in `Pyrado/scripts`.
 
-.. include:: examples/basic_walkthrough.rst
+.. toctree::
+   :hidden:
+   :caption: Examples:
+   :maxdepth: 1
+   :glob:
 
-
-How to create a new environment?
---------------------------------
-TBD
-
-How it implement a new algorithm?
----------------------------------
-TBD
+   examples/*
 
 
 .. toctree::
-   :maxdepth: 1
    :caption: Package Overview:
+   :maxdepth: 1
 
    algorithms
    domain_randomization

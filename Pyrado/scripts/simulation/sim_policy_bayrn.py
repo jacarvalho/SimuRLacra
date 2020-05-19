@@ -31,6 +31,10 @@ if __name__ == '__main__':
     env_sim = joblib.load(osp.join(ex_dir, 'env_sim.pkl'))
     hparam = load_dict_from_yaml(osp.join(ex_dir, 'hyperparams.yaml'))
 
+    # Override the time step size if specified
+    if args.dt is not None:
+        env_sim.dt = args.dt
+
     # Crawl through the given directory and check how many init policies and candidates there are
     for root, dirs, files in os.walk(ex_dir):
         if args.load_all:

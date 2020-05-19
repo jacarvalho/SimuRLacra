@@ -35,6 +35,7 @@ author = 'Fabio Muratore & Felix Treede & Robin Menzenbach'
 # They can be extensions coming with Sphinx (named 'sphinx.ext.*') or your custom ones
 extensions = [
     'sphinx.ext.inheritance_diagram',
+    'sphinx.ext.autosectionlabel',
     'sphinx_math_dollar',
     'sphinx.ext.mathjax',
     'sphinx.ext.autosummary',

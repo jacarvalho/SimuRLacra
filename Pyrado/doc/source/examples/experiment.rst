@@ -1,5 +1,5 @@
-How to Create a Training Script
-===============================
+How to run an experiment
+------------------------
 
 This file provides a step-by-step example of how to write a training script in Pyrado.
 There are many valid possibilities to deviate from this scheme. However, the following sequence is battle-tested.
