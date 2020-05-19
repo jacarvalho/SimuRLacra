@@ -179,10 +179,11 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         dst = DesStateTask(spec, state_des, rew_fcn)
 
         # Wrap the masked DesStateTask to add a bonus for the best state in the rollout
-        factor = task_args.get('factor', 1.)
+        if task_args is None:
+            task_args = dict(factor=1.)
         return BestStateFinalRewTask(
             MaskedTask(self.spec, dst, idcs),
-            max_steps=self.max_steps, factor=factor
+            max_steps=self.max_steps, factor=task_args.get('factor', 1.)
         )
 
     def _mujoco_step(self, act: np.ndarray) -> dict:
