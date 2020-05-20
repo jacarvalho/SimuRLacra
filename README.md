@@ -231,6 +231,9 @@ by
 TARGET_LINK_LIBRARIES(ExampleKinetics RcsCore RcsGui RcsGraphics RcsPhysics z)
 ```
 
+### Qt5 and Vortex (`libpng15.so`)
+If you are using Vortex, which itself has a Qt5-based GUI, RcsPySim may look for the wrong `libpng` version. Make sure that if finds the same one as Rcs (`libpng16.so`) and __not__ the one from Vortex (`libpng15.so`). You can investigate this using the `ldd` (or `lddtree` if installed) command on the generated RcsPySim executables.
+An easy fix is to go to your Vortex library directory and move all Qt5-related libs to a newly generated folder, such that they cant be found. This solution is perfectly fine since we are not using the Vortex GUI anyway. Next, clear the `RcsPySim/build` folder and build it again.
 
 ### Bullet `double` vs. `float`
 Check Rcs with which precision Bullet was build 
