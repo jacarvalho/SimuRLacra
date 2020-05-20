@@ -129,7 +129,7 @@
 <!--        <geom name="cup_geom12" pos="0 0.05 [pos_mesh]" euler="-1.57 0 0" solref="-10000 -100" type="mesh" mesh="cup12" />-->
 <!--        <geom name="cup_geom13" pos="0 0.05 [pos_mesh]" euler="-1.57 0 0" solref="-10000 -100" type="mesh" mesh="cup13" />-->
 <!--        <geom name="cup_geom14" pos="0 0.05 [pos_mesh]" euler="-1.57 0 0" solref="-10000 -100" type="mesh" mesh="cup14" />-->
-        <geom name="cup_base" pos="0 -0.035 [pos_goal]" euler="-1.57 0 0" type="cylinder" size="[size_cup] 0.0045" solref="-10000 -100"/>
+        <geom name="cup_base" pos="0 -0.035 [pos_goal]" euler="-1.57 0 0" type="cylinder" size="[size_cup] 0.0045" />
         <geom name="cup_geom15" pos="0 0.05 [pos_mesh]" euler="-1.57 0 0" solref="-10000 -100" type="mesh" mesh="cup15" />
         <geom name="cup_geom16" pos="0 0.05 [pos_mesh]" euler="-1.57 0 0" solref="-10000 -100" type="mesh" mesh="cup16" />
         <geom name="cup_geom17" pos="0 0.05 [pos_mesh]" euler="-1.57 0 0" solref="-10000 -100" type="mesh" mesh="cup17" />
