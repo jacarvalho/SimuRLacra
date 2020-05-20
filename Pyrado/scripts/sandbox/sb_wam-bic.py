@@ -116,15 +116,15 @@ if __name__ == '__main__':
     env = WAMBallInCupSim(max_steps=1750)
 
     # Stabilize around initial position
-    env.reset()
+    env.reset(domain_param=dict(cup_scale=1.))
     act = np.zeros((6,))  # desired deltas from the initial pose
     for i in range(env.max_steps):
         env.step(act)
         env.render(mode=RenderMode(video=True))
 
     # Apply DualRBFLinearPolicy
-    rbf_hparam = dict(num_feat_per_dim=7, bounds=(np.array([0.]), np.array([1.])), scale=None)
-    policy = DualRBFLinearPolicy(env.spec, rbf_hparam)
+    rbf_hparam = dict(num_feat_per_dim=7, bounds=(np.array([0.]), np.array([1.])))
+    policy = DualRBFLinearPolicy(env.spec, rbf_hparam, dim_mask=1)
     ro = rollout(env, policy, render_mode=RenderMode(video=True), eval=True)
     after_rollout_query(env, policy, ro)
 

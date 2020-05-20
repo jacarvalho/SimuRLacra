@@ -130,7 +130,9 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
 
     @classmethod
     def get_nominal_domain_param(cls) -> dict:
-        return dict()
+        return dict(
+            cup_scale=1.
+        )
 
     def _create_spaces(self):
         # Torque space

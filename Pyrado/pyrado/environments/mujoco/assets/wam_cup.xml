@@ -43,22 +43,22 @@
     <mesh name="wrist_palm_link_convex" file="wrist_palm_link_convex.stl" />
     <mesh name="cup1" file="cup_split1.stl" scale="0.001 0.001 0.001" />
     <mesh name="cup2" file="cup_split2.stl" scale="0.001 0.001 0.001" />
-    <mesh name="cup3" file="cup_split3.stl" scale="0.002 0.002 0.001" />
-    <mesh name="cup4" file="cup_split4.stl" scale="0.002 0.002 0.001" />
-    <mesh name="cup5" file="cup_split5.stl" scale="0.002 0.002 0.001" />
-    <mesh name="cup6" file="cup_split6.stl" scale="0.002 0.002 0.001" />
-    <mesh name="cup7" file="cup_split7.stl" scale="0.002 0.002 0.001" />
-    <mesh name="cup8" file="cup_split8.stl" scale="0.002 0.002 0.001" />
-    <mesh name="cup9" file="cup_split9.stl" scale="0.002 0.002 0.001" />
-    <mesh name="cup10" file="cup_split10.stl" scale="0.002 0.002 0.001" />
-    <mesh name="cup11" file="cup_split11.stl" scale="0.002 0.002 0.001" />
-    <mesh name="cup12" file="cup_split12.stl" scale="0.002 0.002 0.001" />
-    <mesh name="cup13" file="cup_split13.stl" scale="0.002 0.002 0.001" />
-    <mesh name="cup14" file="cup_split14.stl" scale="0.002 0.002 0.001" />
-    <mesh name="cup15" file="cup_split15.stl" scale="0.002 0.002 0.001" />
-    <mesh name="cup16" file="cup_split16.stl" scale="0.002 0.002 0.001" />
-    <mesh name="cup17" file="cup_split17.stl" scale="0.002 0.002 0.001" />
-    <mesh name="cup18" file="cup_split18.stl" scale="0.002 0.002 0.001" />
+    <mesh name="cup3" file="cup_split3.stl" scale="[scale_mesh] [scale_mesh] 0.001" />
+    <mesh name="cup4" file="cup_split4.stl" scale="[scale_mesh] [scale_mesh] 0.001" />
+    <mesh name="cup5" file="cup_split5.stl" scale="[scale_mesh] [scale_mesh] 0.001" />
+    <mesh name="cup6" file="cup_split6.stl" scale="[scale_mesh] [scale_mesh] 0.001" />
+    <mesh name="cup7" file="cup_split7.stl" scale="[scale_mesh] [scale_mesh] 0.001" />
+    <mesh name="cup8" file="cup_split8.stl" scale="[scale_mesh] [scale_mesh] 0.001" />
+    <mesh name="cup9" file="cup_split9.stl" scale="[scale_mesh] [scale_mesh] 0.001" />
+    <mesh name="cup10" file="cup_split10.stl" scale="[scale_mesh] [scale_mesh] 0.001" />
+    <mesh name="cup11" file="cup_split11.stl" scale="[scale_mesh] [scale_mesh] 0.001" />
+    <mesh name="cup12" file="cup_split12.stl" scale="[scale_mesh] [scale_mesh] 0.001" />
+    <mesh name="cup13" file="cup_split13.stl" scale="[scale_mesh] [scale_mesh] 0.001" />
+    <mesh name="cup14" file="cup_split14.stl" scale="[scale_mesh] [scale_mesh] 0.001" />
+    <mesh name="cup15" file="cup_split15.stl" scale="[scale_mesh] [scale_mesh] 0.001" />
+    <mesh name="cup16" file="cup_split16.stl" scale="[scale_mesh] [scale_mesh] 0.001" />
+    <mesh name="cup17" file="cup_split17.stl" scale="[scale_mesh] [scale_mesh] 0.001" />
+    <mesh name="cup18" file="cup_split18.stl" scale="[scale_mesh] [scale_mesh] 0.001" />
 </asset>
 
 <worldbody>
@@ -117,26 +117,26 @@
         <inertial pos="-3.75236e-10 8.27811e-05 0.0947015" quat="0.999945 -0.0104888 0 0" mass="0.132" diaginertia="0.000285643 0.000270485 9.65696e-05" />
         <geom name="cup_geom1" pos="0 0.05 0.055" euler="-1.57 0 0" solref="-10000 -100" type="mesh" mesh="cup1" />
         <geom name="cup_geom2" pos="0 0.05 0.055" euler="-1.57 0 0" solref="-10000 -100" type="mesh" mesh="cup2" />
-        <geom name="cup_geom3" pos="0 0.05 0.032" euler="-1.57 0 0" solref="-10000 -100" type="mesh" mesh="cup3" />
-        <geom name="cup_geom4" pos="0 0.05 0.032" euler="-1.57 0 0" solref="-10000 -100" type="mesh" mesh="cup4" />
-        <geom name="cup_geom5" pos="0 0.05 0.032" euler="-1.57 0 0" solref="-10000 -100" type="mesh" mesh="cup5" />
-        <geom name="cup_geom6" pos="0 0.05 0.032" euler="-1.57 0 0" solref="-10000 -100" type="mesh" mesh="cup6" />
-        <geom name="cup_geom7" pos="0 0.05 0.032" euler="-1.57 0 0" solref="-10000 -100" type="mesh" mesh="cup7" />
-        <geom name="cup_geom8" pos="0 0.05 0.032" euler="-1.57 0 0" solref="-10000 -100" type="mesh" mesh="cup8" />
-        <geom name="cup_geom9" pos="0 0.05 0.032" euler="-1.57 0 0" solref="-10000 -100" type="mesh" mesh="cup9" />
-        <geom name="cup_geom10" pos="0 0.05 0.032" euler="-1.57 0 0" solref="-10000 -100" type="mesh" mesh="cup10" />
-<!--        <geom name="cup_geom11" pos="0 0.05 0.032" euler="-1.57 0 0" solref="-10000 -100" type="mesh" mesh="cup11" />-->
-<!--        <geom name="cup_geom12" pos="0 0.05 0.032" euler="-1.57 0 0" solref="-10000 -100" type="mesh" mesh="cup12" />-->
-<!--        <geom name="cup_geom13" pos="0 0.05 0.032" euler="-1.57 0 0" solref="-10000 -100" type="mesh" mesh="cup13" />-->
-<!--        <geom name="cup_geom14" pos="0 0.05 0.032" euler="-1.57 0 0" solref="-10000 -100" type="mesh" mesh="cup14" />-->
-        <geom name="cup_base" pos="0 -0.035 0.155" euler="-1.57 0 0" type="cylinder" size="0.076 0.0045" solref="-10000 -100"/>
-        <geom name="cup_geom15" pos="0 0.05 0.032" euler="-1.57 0 0" solref="-10000 -100" type="mesh" mesh="cup15" />
-        <geom name="cup_geom16" pos="0 0.05 0.032" euler="-1.57 0 0" solref="-10000 -100" type="mesh" mesh="cup16" />
-        <geom name="cup_geom17" pos="0 0.05 0.032" euler="-1.57 0 0" solref="-10000 -100" type="mesh" mesh="cup17" />
-        <geom name="cup_geom18" pos="0 0.05 0.032" euler="-1.57 0 0" solref="-10000 -100" type="mesh" mesh="cup18" />
-<!--        <site name="cup_goal" pos="0 0.05 0.155" />-->
-<!--        <site name="cup_goal_final" pos="0 -0.025 0.155" />-->
-    <body name="B0" pos="0 -0.045 0.155" quat="0.707388 0 0 -0.706825">
+        <geom name="cup_geom3" pos="0 0.05 [pos_mesh]" euler="-1.57 0 0" solref="-10000 -100" type="mesh" mesh="cup3" />
+        <geom name="cup_geom4" pos="0 0.05 [pos_mesh]" euler="-1.57 0 0" solref="-10000 -100" type="mesh" mesh="cup4" />
+        <geom name="cup_geom5" pos="0 0.05 [pos_mesh]" euler="-1.57 0 0" solref="-10000 -100" type="mesh" mesh="cup5" />
+        <geom name="cup_geom6" pos="0 0.05 [pos_mesh]" euler="-1.57 0 0" solref="-10000 -100" type="mesh" mesh="cup6" />
+        <geom name="cup_geom7" pos="0 0.05 [pos_mesh]" euler="-1.57 0 0" solref="-10000 -100" type="mesh" mesh="cup7" />
+        <geom name="cup_geom8" pos="0 0.05 [pos_mesh]" euler="-1.57 0 0" solref="-10000 -100" type="mesh" mesh="cup8" />
+        <geom name="cup_geom9" pos="0 0.05 [pos_mesh]" euler="-1.57 0 0" solref="-10000 -100" type="mesh" mesh="cup9" />
+        <geom name="cup_geom10" pos="0 0.05 [pos_mesh]" euler="-1.57 0 0" solref="-10000 -100" type="mesh" mesh="cup10" />
+<!--        <geom name="cup_geom11" pos="0 0.05 [pos_mesh]" euler="-1.57 0 0" solref="-10000 -100" type="mesh" mesh="cup11" />-->
+<!--        <geom name="cup_geom12" pos="0 0.05 [pos_mesh]" euler="-1.57 0 0" solref="-10000 -100" type="mesh" mesh="cup12" />-->
+<!--        <geom name="cup_geom13" pos="0 0.05 [pos_mesh]" euler="-1.57 0 0" solref="-10000 -100" type="mesh" mesh="cup13" />-->
+<!--        <geom name="cup_geom14" pos="0 0.05 [pos_mesh]" euler="-1.57 0 0" solref="-10000 -100" type="mesh" mesh="cup14" />-->
+        <geom name="cup_base" pos="0 -0.035 [pos_goal]" euler="-1.57 0 0" type="cylinder" size="[size_cup] 0.0045" solref="-10000 -100"/>
+        <geom name="cup_geom15" pos="0 0.05 [pos_mesh]" euler="-1.57 0 0" solref="-10000 -100" type="mesh" mesh="cup15" />
+        <geom name="cup_geom16" pos="0 0.05 [pos_mesh]" euler="-1.57 0 0" solref="-10000 -100" type="mesh" mesh="cup16" />
+        <geom name="cup_geom17" pos="0 0.05 [pos_mesh]" euler="-1.57 0 0" solref="-10000 -100" type="mesh" mesh="cup17" />
+        <geom name="cup_geom18" pos="0 0.05 [pos_mesh]" euler="-1.57 0 0" solref="-10000 -100" type="mesh" mesh="cup18" />
+<!--        <site name="cup_goal" pos="0 0.05 [pos_goal]" size="0.1" />-->
+<!--        <site name="cup_goal_final" pos="0 -0.025 [pos_goal]" size="0.1" />-->
+    <body name="B0" pos="0 -0.045 [pos_goal]" quat="0.707388 0 0 -0.706825">
         <inertial pos="0 0 0" quat="0.707107 0 0.707107 0" mass="7.4927e-05" diaginertia="5.87e-10 5.87e-10 3.74635e-11" />
         <geom name="G0" size="0.001 0.00427" quat="0.707107 0 0.707107 0" type="capsule" rgba="0.8 0.2 0.1 1" />
     <body name="B1" pos="0.0107 0 0">
