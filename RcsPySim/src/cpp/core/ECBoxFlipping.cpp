@@ -96,9 +96,9 @@ protected:
             innerAM->addTask(new TaskPosition1D("Y", graph, leftCP, refBody, refFrame));
             innerAM->addTask(new TaskPosition1D("Z", graph, leftCP, refBody, refFrame));
             // Right
-            innerAM->addTask(new TaskPosition1D("Y", graph, rightCP, refBody, refFrame));
-//            innerAM->addTask(new TaskPosition1D("Z", graph, rightCP, refBody, refFrame));
-            innerAM->addTask(new TaskDistance1D(graph, rightCP, box, 1));
+//            innerAM->addTask(new TaskPosition1D("Y", graph, rightCP, refBody, refFrame));
+            innerAM->addTask(new TaskPosition1D("Z", graph, rightCP, refBody, refFrame));
+            innerAM->addTask(new TaskDistance(graph, rightCP, box));
 
             // Obtain task data (depends on the order of the MPs coming from Pyrado)
             // Left
@@ -576,7 +576,7 @@ public:
                 string_format("box mass:   %1.2f kg      box frict coeff: %1.3f  ",
                     box_bpi->body->m, box_bpi->material.getFrictionCoefficient()));
             linesOut.emplace_back(
-                string_format("table mass: %1.2f kg   table frict coeff: %1.3f  ",
+                string_format("table mass: %1.2f kg    table frict coeff: %1.3f  ",
                     table_bpi->body->m, table_bpi->material.getFrictionCoefficient()));
         }
     }
