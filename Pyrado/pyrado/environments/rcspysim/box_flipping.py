@@ -195,19 +195,19 @@ class BoxFlippingPosMPsSim(BoxFlippingSim, Serializable):
         if mps_right is None:
             mps_right = [
                 # Y
-                {'function': 'msd_nlin', 'attractorStiffness': 30., 'mass': 1., 'damping': 60.,
-                 'goal': np.array([-0.8])},  # [m]
-                {'function': 'msd_nlin', 'attractorStiffness': 30., 'mass': 1., 'damping': 60.,
-                 'goal': np.array([+0.8])},  # [m]
-                # Z
-                {'function': 'msd_nlin', 'attractorStiffness': 30., 'mass': 1., 'damping': 60.,
-                 'goal': np.array([-0.0])},  # [m]
-                {'function': 'msd_nlin', 'attractorStiffness': 30., 'mass': 1., 'damping': 60.,
-                 'goal': np.array([+0.2])},  # [m]
+                # {'function': 'msd_nlin', 'attractorStiffness': 30., 'mass': 1., 'damping': 60.,
+                #  'goal': np.array([-0.8])},  # [m]
+                # {'function': 'msd_nlin', 'attractorStiffness': 30., 'mass': 1., 'damping': 60.,
+                #  'goal': np.array([+0.8])},  # [m]
+                # # Z
+                # {'function': 'msd_nlin', 'attractorStiffness': 30., 'mass': 1., 'damping': 60.,
+                #  'goal': np.array([-0.0])},  # [m]
+                # {'function': 'msd_nlin', 'attractorStiffness': 30., 'mass': 1., 'damping': 60.,
+                #  'goal': np.array([+0.2])},  # [m]
                 # Distance
                 # {'function': 'msd', 'attractorStiffness': 50., 'mass': 1., 'damping': 10.,
                 {'function': 'lin', 'errorDynamics': 1.,  # [m/s]
-                 'goal': np.array([0.0])},  # [m]
+                 'goal': np.array([0.2])},  # [m]
             ]
 
         # Forward to the BoxFlippingSim's constructor
