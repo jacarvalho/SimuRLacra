@@ -1,27 +1,28 @@
 """
-Train an agent to solve the WAM Ball-in-cup environment using Policy learning by Weighting Exploration with the Returns.
+Train an agent to solve the WAM Ball-in-cup environment using Hill Climbing.
 """
 import numpy as np
 
-from pyrado.algorithms.power import PoWER
+from pyrado.algorithms.hc import HCNormal
 from pyrado.environments.mujoco.wam import WAMBallInCupSim
 from pyrado.logger.experiment import setup_experiment, save_list_of_dicts_to_yaml
 from pyrado.policies.environment_specific import DualRBFLinearPolicy
 
+
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
-    ex_dir = setup_experiment(WAMBallInCupSim.name, PoWER.name, seed=101)
+    ex_dir = setup_experiment(WAMBallInCupSim.name, HCNormal.name, seed=1001)
 
     # Environment
     env_hparams = dict(
-        max_steps=1750,
-        task_args=dict(factor=0.1)
+        max_steps=2000,
+        task_args=dict(factor=0.05)
     )
     env = WAMBallInCupSim(**env_hparams)
 
     # Policy
     policy_hparam = dict(
-        rbf_hparam=dict(num_feat_per_dim=7, bounds=(0., 1.), scale=None),
+        rbf_hparam=dict(num_feat_per_dim=8, bounds=(0., 1.), scale=None),
         dim_mask=2
     )
     policy = DualRBFLinearPolicy(env.spec, **policy_hparam)
@@ -29,14 +30,13 @@ if __name__ == '__main__':
     # Algorithm
     algo_hparam = dict(
         max_iter=100,
-        pop_size=100,
+        pop_size=5*policy.num_param,
+        expl_factor=1.05,
         num_rollouts=1,
-        num_is_samples=10,
-        expl_std_init=0.5,
-        expl_std_min=0.05,
+        expl_std_init=0.2,
         num_sampler_envs=12,
     )
-    algo = PoWER(ex_dir, env, policy, **algo_hparam)
+    algo = HCNormal(ex_dir, env, policy, **algo_hparam)
 
     # Save the hyper-parameters
     save_list_of_dicts_to_yaml([
@@ -47,4 +47,4 @@ if __name__ == '__main__':
     )
 
     # Jeeeha
-    algo.train(seed=ex_dir.seed)
+    algo.train(snapshot_mode='best', seed=ex_dir.seed)
