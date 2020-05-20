@@ -106,9 +106,14 @@ python --version  # should return Python 3.6.5 :: Anaconda, Inc._
 ```
 
 ### Final notes
-If the install script crashes, this is most likely due to missing (or not found) libraries or your OS version (only tested on Ubuntu 16.04 and 18.04). Please see the most common pitfalls below.
+If the install script crashes, this is most likely due to missing (or not found, or incomatible) libraries or your OS version. Please see the most common pitfalls below.
+In case you are struggeling with the dependencies, or only want to use the Python part, try setting it up using
+```
+conda activate pyrado
+python setup_deps.py no_rcs -j12
+```
 
-In the end, OpenSceneGraph, eigen3, pybind11, WM5, catch2, Rcs, Kuka iiwa meshes, Schunk SDH meshes, Barrett WAM meshes, PyTorch, as well as RcsPySim should be downloaded and installed.
+In the end (given you chose a full install), OpenSceneGraph, eigen3, pybind11, WM5, catch2, Rcs, Kuka iiwa meshes, Schunk SDH meshes, Barrett WAM meshes, PyTorch, mujoco-py, as well as RcsPySim and Pyrado should be downloaded and installed.
 
 >__Optional:__ Create an activation script which also sets the `PYTHONPATH`.
 > Replace the `PATH_TO` snippets in the template for activating the anaconda environment with the paths in your system
