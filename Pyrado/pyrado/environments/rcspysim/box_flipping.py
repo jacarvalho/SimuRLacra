@@ -195,8 +195,8 @@ class BoxFlippingPosMPsSim(BoxFlippingSim, Serializable):
         if mps_right is None:
             mps_right = [
                 # Y
-                # {'function': 'msd_nlin', 'attractorStiffness': 30., 'mass': 1., 'damping': 60.,
-                #  'goal': np.array([-0.8])},  # [m]
+                {'function': 'msd_nlin', 'attractorStiffness': 30., 'mass': 1., 'damping': 60.,
+                 'goal': np.array([-0.8])},  # [m]
                 # {'function': 'msd_nlin', 'attractorStiffness': 30., 'mass': 1., 'damping': 60.,
                 #  'goal': np.array([+0.8])},  # [m]
                 # # Z

@@ -96,9 +96,9 @@ protected:
             innerAM->addTask(new TaskPosition1D("Y", graph, leftCP, refBody, refFrame));
             innerAM->addTask(new TaskPosition1D("Z", graph, leftCP, refBody, refFrame));
             // Right
-//            innerAM->addTask(new TaskPosition1D("Y", graph, rightCP, refBody, refFrame));
+            innerAM->addTask(new TaskPosition1D("Y", graph, rightCP, refBody, refFrame));
 //            innerAM->addTask(new TaskPosition1D("Z", graph, rightCP, refBody, refFrame));
-            innerAM->addTask(new TaskDistance1D(graph, rightCP, box, 2));
+            innerAM->addTask(new TaskDistance1D(graph, rightCP, box, 1));
 
             // Obtain task data (depends on the order of the MPs coming from Pyrado)
             // Left
@@ -115,10 +115,10 @@ protected:
             // Right
             i = 0;
 //            std::vector<unsigned int> taskDimsRight{1, 1, 1, 1, 1};
-            std::vector<unsigned int> taskDimsRight{1};
+            std::vector<unsigned int> taskDimsRight{1, 1};
             unsigned int oL = offsetsLeft.back() + taskDimsLeft.back();
 //            std::vector<unsigned int> offsetsRight{oL, oL, oL + 1, oL + 1, oL + 2};
-            std::vector<unsigned int> offsetsRight{oL};
+            std::vector<unsigned int> offsetsRight{oL, oL + 1};
             auto& tsRight = properties->getChildList("tasksRight");
             for (auto tsk : tsRight)
             {

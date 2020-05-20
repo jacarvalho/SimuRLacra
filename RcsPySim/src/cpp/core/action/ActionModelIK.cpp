@@ -200,8 +200,11 @@ namespace Rcs
         
         // Compute joint space position error with IK
         MatNd_constMulSelf(dH, alpha);
-        solver->solveRightInverse(dq_ref, dx_des, dH, NULL, lambda);
-        
+//        solver->solveRightInverse(dq_ref, dx_des, dH, NULL, lambda); // tries to solve everython exactly
+        MatNd* activation = MatNd_create(dx_des->m, dx_des->n);
+        MatNd_setElementsTo(activation, 1.);
+        solver->solveLeftInverse(dq_ref, dx_des, dH, activation, 1e-3); // needs activation arg != NULL
+
         // Check for speed limit violations
         RcsGraph_limitJointSpeeds(desiredGraph, dq_ref, dt, RcsStateFull);
         

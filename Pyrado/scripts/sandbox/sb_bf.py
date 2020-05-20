@@ -52,10 +52,10 @@ def create_position_mps_setup(physicsEngine, graphFileName, dt, max_steps, ref_f
     def policy(t: float):
         if t <= 5:
             return [0.2, 0, 0, 0,
-                    0]
+                    0, 0]
         else:
             return [0, 0, 0, 0,
-                    1.]
+                    0, 1.]
 
     # Set up environment
     env = BoxFlippingPosMPsSim(
