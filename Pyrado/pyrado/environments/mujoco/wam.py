@@ -39,7 +39,7 @@ class WAMSim(MujocoSimEnv, Serializable):
         :param max_steps: max number of simulation time steps
         :param task_args: arguments for the task construction
         """
-        model_path = osp.join(pyrado.MUJOCO_ASSETS_DIR, 'wam_7dof.xml')
+        model_path = osp.join(pyrado.MUJOCO_ASSETS_DIR, 'wam_7dof_base.xml')
         super().__init__(model_path, frame_skip, max_steps, task_args)
 
         self.camera_config = dict(
@@ -108,7 +108,7 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         :param max_steps: max number of simulation time steps
         :param task_args: arguments for the task construction
         """
-        model_path = osp.join(pyrado.MUJOCO_ASSETS_DIR, 'wam_cup.xml')
+        model_path = osp.join(pyrado.MUJOCO_ASSETS_DIR, 'wam_7dof_bic.xml')
         super().__init__(model_path, frame_skip, max_steps, task_args)
 
         # Desired joint position for the initial state
