@@ -147,12 +147,19 @@ class MujocoSimEnv(SimEnv, ABC, Serializable):
             # The WAMBallInCupSim class has special domain parameters that modify multiple keys in the XML file.
             # Note: cannot use from ... import as it results in circular import
             if isinstance(self, pyrado.environments.mujoco.wam.WAMBallInCupSim):
-                # Reference: https://github.com/psclklnk/self-paced-rl/blob/master/sprl/envs/ball_in_a_cup.py l.93-96
                 if key == 'cup_scale':
+                    # Reference: https://github.com/psclklnk/self-paced-rl/blob/master/sprl/envs/ball_in_a_cup.py l.93-96
                     xml_model = xml_model.replace('[scale_mesh]', str(value * 0.001))
                     xml_model = xml_model.replace('[pos_mesh]', str(0.055 - (value - 1.) * 0.023))
                     xml_model = xml_model.replace('[pos_goal]', str(0.1165 + (value - 1.) * 0.0385))
                     xml_model = xml_model.replace('[size_cup]', str(value * 0.038))
+                if key == 'rope_length':
+                    # The rope consists of 29 capsules
+                    xml_model = xml_model.replace('[pos_capsule]', str(value / 29))
+                    # Each joint is at the top of each capsule (therefore negative direction from center)
+                    xml_model = xml_model.replace('[pos_capsule_joint]', str(-value / 58))
+                    # Pure visualization component
+                    xml_model = xml_model.replace('[size_capsule_geom]', str(value / 72))
             xml_model = xml_model.replace(f'[{key}]', str(value))
 
         # Create MuJoCo model from parsed XML file

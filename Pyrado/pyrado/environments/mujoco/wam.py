@@ -131,7 +131,9 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
     @classmethod
     def get_nominal_domain_param(cls) -> dict:
         return dict(
-            cup_scale=1.
+            cup_scale=1.,  # scaling factor for the radius of the cup
+            rope_length=0.3103,  # length of the rope
+            ball_mass=0.021  # mass of the ball
         )
 
     def _create_spaces(self):

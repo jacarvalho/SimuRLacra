@@ -116,7 +116,7 @@ if __name__ == '__main__':
     env = WAMBallInCupSim(max_steps=1750)
 
     # Stabilize around initial position
-    env.reset(domain_param=dict(cup_scale=1.))
+    env.reset(domain_param=dict(cup_scale=1., rope_length=0.3103, ball_mass=0.021))
     act = np.zeros((6,))  # desired deltas from the initial pose
     for i in range(env.max_steps):
         env.step(act)
