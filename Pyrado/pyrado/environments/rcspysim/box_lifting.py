@@ -420,9 +420,9 @@ class BoxLiftingSimpleSim(RcsSim, Serializable):
 
     @classmethod
     def get_nominal_domain_param(cls):
-        return dict(box_length=0.18,
-                    box_width=0.14,
-                    box_mass=0.3,
+        return dict(box_length=0.14,  # x_world dimension
+                    box_width=0.18,  # y_world dimension
+                    box_mass=0.4,
                     box_friction_coefficient=1.4,
                     basket_mass=0.5,
                     basket_friction_coefficient=0.6)
