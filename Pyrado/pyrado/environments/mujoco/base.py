@@ -191,11 +191,12 @@ class MujocoSimEnv(SimEnv, ABC, Serializable):
         nq = self.init_qpos.size
         if not init_state[:nq].shape == old_state.qpos.shape:  # check joint positions dimension
             raise pyrado.ShapeErr(given=init_state[:nq], expected_match=old_state.qpos)
-        if not init_state[nq:-3].shape == old_state.qvel.shape:  # check joint velocities dimension
-            raise pyrado.ShapeErr(given=init_state[nq:-3], expected_match=old_state.qvel)
+        # Exclude everything that is added to the state (at the end), e.g. the ball position for WAMBallInCupSim
+        if not init_state[nq:2*nq].shape == old_state.qvel.shape:  # check joint velocities dimension
+            raise pyrado.ShapeErr(given=init_state[nq:2*nq], expected_match=old_state.qvel)
         new_state = mujoco_py.MjSimState(
-            old_state.time, init_state[:nq], init_state[nq:-3], old_state.act, old_state.udd_state  # exclude ball posc
-
+            # Exclude everything that is added to the state (at the end), e.g. the ball position for WAMBallInCupSim
+            old_state.time, init_state[:nq], init_state[nq:2*nq], old_state.act, old_state.udd_state
         )
         self.sim.set_state(new_state)
         self.sim.forward()
