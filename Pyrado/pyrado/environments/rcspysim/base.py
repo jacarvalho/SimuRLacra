@@ -146,7 +146,8 @@ class RcsSim(SimEnv, Serializable):
         Get the nominal a.k.a. default domain parameters.
 
         .. note::
-            It is highly recommended to have the same values as in the associated physics config file (p<NAME>.xml)
+            It is highly recommended to have the same values as in the associated physics config file (p<NAME>.xml),
+            since the nominal domain parameters are not set explicitly from Pyrado (only when randomizing).
         """
         raise NotImplementedError
 

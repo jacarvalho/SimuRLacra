@@ -423,9 +423,9 @@ class BoxLiftingSimpleSim(RcsSim, Serializable):
         return dict(box_length=0.14,  # x_world dimension
                     box_width=0.18,  # y_world dimension
                     box_mass=0.4,
-                    box_friction_coefficient=1.4,
+                    box_friction_coefficient=1.3,
                     basket_mass=0.5,
-                    basket_friction_coefficient=0.6)
+                    basket_friction_coefficient=0.9)
 
 
 class BoxLiftingSimplePosMPsSim(BoxLiftingSimpleSim, Serializable):
