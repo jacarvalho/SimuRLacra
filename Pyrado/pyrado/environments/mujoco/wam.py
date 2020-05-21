@@ -45,7 +45,7 @@ class WAMSim(MujocoSimEnv, Serializable):
         self.camera_config = dict(
             trackbodyid=0,  # id of the body to track
             elevation=-30,  # camera rotation around the axis in the plane
-            azimuth=180  # camera rotation around the camera's vertical axis
+            azimuth=-90  # camera rotation around the camera's vertical axis
         )
 
     @classmethod
@@ -121,7 +121,7 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         self.camera_config = dict(
             trackbodyid=0,  # id of the body to track
             elevation=-30,  # camera rotation around the axis in the plane
-            azimuth=180  # camera rotation around the camera's vertical axis
+            azimuth=-90  # camera rotation around the camera's vertical axis
         )
 
     @property
