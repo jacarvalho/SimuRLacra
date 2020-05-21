@@ -175,3 +175,18 @@ def num_iter_from_rollouts(ros: [Sequence[StepSequence], None],
     else:
         assert concat_ros is not None
         return (concat_ros.length + batch_size - 1)//batch_size
+
+
+def color_validity(data: np.ndarray, valids: np.ndarray) -> list:
+    """
+    Color the entries of an data array red or green depending on the if the entries are valid.
+
+    :param data: ndarray containing the data to print
+    :param valids: ndarray containing boolian integer values deciding gor the color (1 --> green, 0 --> red)
+    :return: list of stings
+    """
+
+    def color_validity(v: int) -> str:
+        return Fore.GREEN if v == 1 else Fore.RED
+
+    return [color_validity(v) + str(ele) + Style.RESET_ALL for (ele, v) in zip(data, valids)]

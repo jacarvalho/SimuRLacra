@@ -16,7 +16,6 @@
 #include "physics/PhysicsParameterManager.h"
 #include "physics/PPDBoxExtents.h"
 #include "physics/PPDMassProperties.h"
-#include "physics/PPDSphereRadius.h"
 #include "physics/PPDMaterialProperties.h"
 #include "physics/ForceDisturber.h"
 #include "util/string_format.h"
@@ -24,21 +23,13 @@
 #include <Rcs_macros.h>
 #include <Rcs_typedef.h>
 #include <Rcs_Vec3d.h>
-#include <TaskJoints.h>
-#include <TaskJoint.h>
-#include <TaskPosition3D.h>
+#include <TaskPosition1D.h>
 #include <TaskVelocity1D.h>
-#include <TaskOmega1D.h>
-#include <TaskEuler3D.h>
-#include <TaskEuler1D.h>
-#include <TaskPositionForce1D.h>
-#include <TaskFactory.h>
-#include <CompositeTask.h>
+#include <TaskDistance.h>
+#include <TaskDistance1D.h>
 
 #ifdef GRAPHICS_AVAILABLE
-
 #include <RcsViewer.h>
-
 #endif
 
 #include <memory>
@@ -98,12 +89,16 @@ protected:
         {
             RcsBody* table = RcsGraph_getBodyByName(graph, "Table");
             RCHECK(table);
+            RcsBody* box = RcsGraph_getBodyByName(graph, "Box");
+            RCHECK(box);
+
             // Left
             innerAM->addTask(new TaskPosition1D("Y", graph, leftCP, refBody, refFrame));
             innerAM->addTask(new TaskPosition1D("Z", graph, leftCP, refBody, refFrame));
             // Right
-            innerAM->addTask(new TaskPosition1D("Y", graph, rightCP, refBody, refFrame));
+//            innerAM->addTask(new TaskPosition1D("Y", graph, rightCP, refBody, refFrame));
             innerAM->addTask(new TaskPosition1D("Z", graph, rightCP, refBody, refFrame));
+            innerAM->addTask(new TaskDistance(graph, rightCP, box));
 
             // Obtain task data (depends on the order of the MPs coming from Pyrado)
             // Left
@@ -119,9 +114,11 @@ protected:
             }
             // Right
             i = 0;
-            std::vector<unsigned int> taskDimsRight{1, 1, 1, 1};
+//            std::vector<unsigned int> taskDimsRight{1, 1, 1, 1, 1};
+            std::vector<unsigned int> taskDimsRight{1, 1};
             unsigned int oL = offsetsLeft.back() + taskDimsLeft.back();
-            std::vector<unsigned int> offsetsRight{oL, oL, oL + 1, oL + 1};
+//            std::vector<unsigned int> offsetsRight{oL, oL, oL + 1, oL + 1, oL + 2};
+            std::vector<unsigned int> offsetsRight{oL, oL + 1};
             auto& tsRight = properties->getChildList("tasksRight");
             for (auto tsk : tsRight)
             {
@@ -537,8 +534,9 @@ public:
         if (omGD)
         {
             linesOut.emplace_back(
-                string_format("goal distance:      [% 1.2f,% 1.2f,% 1.2f,% 1.2f] m",
-                              obs->ele[omGD.pos], obs->ele[omGD.pos + 1], obs->ele[omGD.pos + 2], obs->ele[omGD.pos + 3]));
+                string_format("goal distance:      [% 1.2f,% 1.2f,% 1.2f,% 1.2f,% 1.2f] m",
+                              obs->ele[omGD.pos], obs->ele[omGD.pos + 1], obs->ele[omGD.pos + 2],
+                              obs->ele[omGD.pos + 3], obs->ele[omGD.pos + 4]));
         }
 
         auto omTSD = observationModel->findOffsets<OMTaskSpaceDiscrepancy>();
@@ -578,7 +576,7 @@ public:
                 string_format("box mass:   %1.2f kg      box frict coeff: %1.3f  ",
                     box_bpi->body->m, box_bpi->material.getFrictionCoefficient()));
             linesOut.emplace_back(
-                string_format("table mass: %1.2f kg   table frict coeff: %1.3f  ",
+                string_format("table mass: %1.2f kg    table frict coeff: %1.3f  ",
                     table_bpi->body->m, table_bpi->material.getFrictionCoefficient()));
         }
     }

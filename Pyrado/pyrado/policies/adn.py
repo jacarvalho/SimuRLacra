@@ -10,8 +10,8 @@ from pyrado.policies.initialization import init_param
 
 
 def pd_linear(p: to.Tensor, s: to.Tensor, tau: to.Tensor, **kwargs) -> to.Tensor:
-    """
-    Basic proportional dynamics
+    r"""
+    Basic proportional dynamics $\tau \dot{p} = -(s+p)$
 
     :param p: potential, higher values lead to higher activations
     :param s: stimulus, higher values lead to larger changes of the potentials (depends on the dynamics function)
@@ -24,8 +24,8 @@ def pd_linear(p: to.Tensor, s: to.Tensor, tau: to.Tensor, **kwargs) -> to.Tensor
 
 
 def pd_cubic(p: to.Tensor, s: to.Tensor, tau: to.Tensor, **kwargs) -> to.Tensor:
-    """
-    Basic proportional dynamics with additional cubic decay
+    r"""
+    Basic proportional dynamics with additional cubic decay $\tau \dot{p} = -(s+p) - \kappa p^3$
 
     :param p: potential, higher values lead to higher activations
     :param s: stimulus, higher values lead to larger changes of the potentials (depends on the dynamics function)
@@ -40,7 +40,7 @@ def pd_cubic(p: to.Tensor, s: to.Tensor, tau: to.Tensor, **kwargs) -> to.Tensor:
 
 
 def pd_capacity_21(p: to.Tensor, s: to.Tensor, tau: to.Tensor, **kwargs) -> to.Tensor:
-    """
+    r"""
     Capacity-based dynamics with 2 stable ($p=-C$, $p=C$) and 1 unstable fix points ($p=0$) for $s=0$
 
     .. note::
@@ -57,7 +57,7 @@ def pd_capacity_21(p: to.Tensor, s: to.Tensor, tau: to.Tensor, **kwargs) -> to.T
 
 
 def pd_capacity_21_abs(p: to.Tensor, s: to.Tensor, tau: to.Tensor, **kwargs) -> to.Tensor:
-    """
+    r"""
     Capacity-based dynamics with 2 stable ($p=-C$, $p=C$) and 1 unstable fix points ($p=0$) for $s=0$
     The "absolute version" has a lower magnitude and a lower oder of the resulting polynomial.
 
@@ -75,7 +75,7 @@ def pd_capacity_21_abs(p: to.Tensor, s: to.Tensor, tau: to.Tensor, **kwargs) -> 
 
 
 def pd_capacity_32(p: to.Tensor, s: to.Tensor, tau: to.Tensor, **kwargs) -> to.Tensor:
-    """
+    r"""
     Capacity-based dynamics with 3 stable ($p=-C$, $p=0$, $p=C$) and 2 unstable fix points ($p=-C/2$, $p=C/2$) for $s=0$
 
     .. note::
@@ -93,7 +93,7 @@ def pd_capacity_32(p: to.Tensor, s: to.Tensor, tau: to.Tensor, **kwargs) -> to.T
 
 
 def pd_capacity_32_abs(p: to.Tensor, s: to.Tensor, tau: to.Tensor, **kwargs) -> to.Tensor:
-    """
+    r"""
     Capacity-based dynamics with 3 stable ($p=-C$, $p=0$, $p=C$) and 2 unstable fix points ($p=-C/2$, $p=C/2$) for $s=0$
     The "absolute version" is less skewed and symmetric due to a lower oder of the resulting polynomial.
 
@@ -113,10 +113,11 @@ def pd_capacity_32_abs(p: to.Tensor, s: to.Tensor, tau: to.Tensor, **kwargs) -> 
 
 class ADNPolicy(RecurrentPolicy):
     """
-    Activation Dynamic Network
-    similar to the work in
-    [1] T. Luksch, M. Gineger, M. Mühlig, T. Yoshiike, "Adaptive Movement Sequences and Predictive Decisions based on
-    Hierarchical Dynamical Systems", IROS, 2012
+    Activation Dynamic Network (ADN)
+    
+    .. seealso::
+        [1] T. Luksch, M. Gineger, M. Mühlig, T. Yoshiike, "Adaptive Movement Sequences and Predictive Decisions based
+        on Hierarchical Dynamical Systems", IROS, 2012
     """
 
     def __init__(self,
@@ -197,14 +198,20 @@ class ADNPolicy(RecurrentPolicy):
             self._log_kappa = None
         # capacity
         self._capacity_learnable = capacity_learnable
-        if potentials_dyn_fcn in [pd_capacity_21, pd_capacity_21_abs]:
-            self._log_capacity_init = to.log(to.tensor([5.], dtype=to.get_default_dtype()))
-            self._log_capacity = nn.Parameter(self._log_capacity_init, requires_grad=True) \
-                if self._capacity_learnable else self._log_capacity_init
-        elif potentials_dyn_fcn in [pd_capacity_32, pd_capacity_32_abs]:
-            self._log_capacity_init = to.log(to.tensor([3.], dtype=to.get_default_dtype()))
-            self._log_capacity = nn.Parameter(self._log_capacity_init, requires_grad=True) \
-                if self._capacity_learnable else self._log_capacity_init
+        if potentials_dyn_fcn in [pd_capacity_21, pd_capacity_21_abs, pd_capacity_32, pd_capacity_32_abs]:
+            if self._output_nonlin is to.sigmoid:
+                # sigmoid(7.) approx 0.999
+                self._log_capacity_init = to.log(to.tensor([7.], dtype=to.get_default_dtype()))
+                self._log_capacity = nn.Parameter(self._log_capacity_init, requires_grad=True) \
+                    if self._capacity_learnable else self._log_capacity_init
+            elif self._output_nonlin is to.tanh:
+                # tanh(3.8) approx 0.999
+                self._log_capacity_init = to.log(to.tensor([3.8], dtype=to.get_default_dtype()))
+                self._log_capacity = nn.Parameter(self._log_capacity_init, requires_grad=True) \
+                    if self._capacity_learnable else self._log_capacity_init
+            else:
+                raise pyrado.TypeErr(msg='Only output nonlinearities of type torch.sigmoid and torch.tanh are supported'
+                                         'for capacity-based potential dynamics.')
         else:
             self._log_capacity = None
 

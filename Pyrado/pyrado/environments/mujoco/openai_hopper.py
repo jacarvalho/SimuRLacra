@@ -12,7 +12,7 @@ from pyrado.tasks.reward_functions import ForwardVelocityRewFcn, CombinedRewFcn,
 
 class HopperSim(MujocoSimEnv, Serializable):
     """
-    The Hopper MuJoCo simulation environment where a planar simplified one-legged robot tries to run forward.
+    The Hopper v3 MuJoCo simulation environment where a planar simplified one-legged robot tries to run forward.
 
     .. note::
         In contrast to the OpenAI Gym MoJoCo environments, Pyrado enables the randomization of the hoppers "healthy"
@@ -25,7 +25,7 @@ class HopperSim(MujocoSimEnv, Serializable):
 
     name: str = 'hop'
 
-    def __init__(self, frame_skip: int = 5, max_steps: int = 1000, task_args: [dict, None] = None):
+    def __init__(self, frame_skip: int = 5, max_steps: int = 2000, task_args: [dict, None] = None):
         """
         Constructor
 
@@ -90,14 +90,14 @@ class HopperSim(MujocoSimEnv, Serializable):
             task_args = dict(fwd_rew_weight=1., ctrl_cost_weight=1e-3)
         rew_fcn = CombinedRewFcn([
             ForwardVelocityRewFcn(self._dt, idx_fwd=0, **task_args),
-            PlusOnePerStepRewFcn()  # equivalent to the "healthy_reward"
+            PlusOnePerStepRewFcn()  # equivalent to the "healthy_reward" since we terminate if unhealthy
         ])
         return GoallessTask(self.spec, rew_fcn)
 
     def _mujoco_step(self, act: np.ndarray) -> dict:
         self.sim.data.ctrl[:] = act
-        # Alternatively: pass `frame_skip` as `nsubsteps` argument in MjSim constructor..
-        # ..instead of calling sim.step() multiple times
+        # Alternatively we could pass frame_skip as nsubsteps argument in MjSim constructor instead of calling
+        # sim.step() multiple times. However, we stick with the solution from OpenAI here.
         for _ in range(self.frame_skip):
             self.sim.step()
 
@@ -108,9 +108,8 @@ class HopperSim(MujocoSimEnv, Serializable):
         return dict()
 
     def observe(self, state: np.ndarray) -> np.ndarray:
-        # Clip velocity
-        pos = state[:self.model.nq]
-        vel = np.clip(state[self.model.nq:], -10., 10.)
+        pos = self.sim.data.qpos.copy()
+        vel = np.clip(self.sim.data.qvel.copy(), -10., 10.)
 
-        # Ignore horizontal position to maintain translational invariance
+        # Ignore the horizontal position to obtain translational invariance
         return np.concatenate([pos[1:], vel])

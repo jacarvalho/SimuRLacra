@@ -16,7 +16,6 @@
 #include "physics/PhysicsParameterManager.h"
 #include "physics/PPDBoxExtents.h"
 #include "physics/PPDMassProperties.h"
-#include "physics/PPDSphereRadius.h"
 #include "physics/PPDMaterialProperties.h"
 #include "physics/ForceDisturber.h"
 #include "util/string_format.h"
@@ -24,16 +23,12 @@
 #include <Rcs_macros.h>
 #include <Rcs_typedef.h>
 #include <Rcs_Vec3d.h>
-#include <TaskJoints.h>
-#include <TaskJoint.h>
 #include <TaskPosition3D.h>
 #include <TaskVelocity1D.h>
+#include <TaskDistance.h>
 #include <TaskOmega1D.h>
 #include <TaskEuler3D.h>
-#include <TaskEuler1D.h>
-#include <TaskPositionForce1D.h>
 #include <TaskFactory.h>
-#include <CompositeTask.h>
 
 #ifdef GRAPHICS_AVAILABLE
 #include <RcsViewer.h>
@@ -106,6 +101,9 @@ protected:
             innerAM->addTask(TaskFactory::createTask(
                 "<Task name=\"Hand R Joints\" effector=\"PowerGrasp_R\" controlVariable=\"Joints\" jnts=\"fing1-knuck1_R tip1-fing1_R fing2-knuck2_R tip2-fing2_R fing3-knuck3_R tip3-fing3_R knuck1-base_R\" tmc=\"0.1\" vmax=\"1000\" active=\"untrue\"/>", graph)
             );
+            innerAM->addTask(TaskFactory::createTask(
+                "<Task name=\"Distance R\" controlVariable=\"Distance\"  effector=\"tip2_R\" refBdy=\"Box\" gainDX=\"1.\" active=\"true\"/>", graph)
+            );
 
             // Obtain task data (depends on the order of the MPs coming from Pyrado)
             // Left
@@ -125,11 +123,11 @@ protected:
             }
             // Right
             std::vector<unsigned int> taskDimsRight{
-                3, 3, 3, 3, 7
+                3, 3, 3, 3, 7, 1
             };
             unsigned int oL = offsetsLeft.back() + taskDimsLeft.back();
             std::vector<unsigned int> offsetsRight{
-                oL, oL, oL + 3, oL + 3, oL + 6
+                oL, oL, oL + 3, oL + 3, oL + 6, oL + 13,
             };
             i = 0;
             auto& tsRight = properties->getChildList("tasksRight");
@@ -522,10 +520,16 @@ public:
         auto omGD = observationModel->findOffsets<OMGoalDistance>();
         if (omGD)
         {
-            linesOut.emplace_back(
-                string_format("goal distance: [% 1.2f,% 1.2f,% 1.2f,% 1.2f,% 1.2f,% 1.2f] m",
-                    obs->ele[omGD.pos], obs->ele[omGD.pos + 1], obs->ele[omGD.pos + 2],
-                    obs->ele[omGD.pos + 3], obs->ele[omGD.pos + 4], obs->ele[omGD.pos + 5]));
+            if (properties->getPropertyBool("positionTasks", false))
+            {
+                linesOut.emplace_back(
+                    string_format("goal distance: [% 1.2f,% 1.2f,% 1.2f,% 1.2f,% 1.2f,\n"
+                                          "               % 1.2f,% 1.2f,% 1.2f,% 1.2f,% 1.2f,% 1.2f]",
+                        obs->ele[omGD.pos], obs->ele[omGD.pos + 1], obs->ele[omGD.pos + 2],
+                        obs->ele[omGD.pos + 3], obs->ele[omGD.pos + 4],
+                        obs->ele[omGD.pos + 5],  obs->ele[omGD.pos + 6],  obs->ele[omGD.pos + 7],
+                        obs->ele[omGD.pos + 8],  obs->ele[omGD.pos + 9],  obs->ele[omGD.pos + 10]));
+            }
         }
 
         auto omTSD = observationModel->findOffsets<OMTaskSpaceDiscrepancy>();

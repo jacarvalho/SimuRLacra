@@ -1,14 +1,12 @@
 """
-Train an agent to solve the Half-Cheetah environment using Proximal Policy Optimization.
+Train an agent to solve the Hopper environment using Proximal Policy Optimization.
 """
 import torch as to
 
 from pyrado.algorithms.ppo import PPO
 from pyrado.algorithms.advantage import GAE
-from pyrado.domain_randomization.domain_parameter import NormalDomainParam
-from pyrado.domain_randomization.domain_randomizer import DomainRandomizer
 from pyrado.environment_wrappers.action_normalization import ActNormWrapper
-from pyrado.environment_wrappers.domain_randomization import DomainRandWrapperLive
+from pyrado.policies.adn import ADNPolicy, pd_capacity_21
 from pyrado.spaces import ValueFunctionSpace
 from pyrado.environments.mujoco.openai_hopper import HopperSim
 from pyrado.logger.experiment import setup_experiment, save_list_of_dicts_to_yaml
@@ -18,23 +16,27 @@ from pyrado.utils.data_types import EnvSpec
 
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
-    ex_dir = setup_experiment(HopperSim.name, PPO.name, 'fnn', seed=1001)
+    ex_dir = setup_experiment(HopperSim.name, PPO.name, 'adn_lin', seed=1001)
 
     # Environment
     env_hparams = dict()
     env = HopperSim(**env_hparams)
     env = ActNormWrapper(env)
 
-    # # Simple Randomizer
-    # dp_nom = HopperSim.get_nominal_domain_param()
-    # randomizer = DomainRandomizer(
-    #     NormalDomainParam(name='total_mass', mean=dp_nom['total_mass'], std=dp_nom['total_mass']/10, clip_lo=1e-3)
-    # )
-    # env = DomainRandWrapperLive(env, randomizer)
-
     # Policy
-    policy_hparam = dict(hidden_sizes=[64, 64], hidden_nonlin=to.tanh)
-    policy = FNNPolicy(spec=env.spec, **policy_hparam)
+    policy_hparam = dict(
+        # obs_layer=FNN(input_size=env.obs_space.flat_dim,
+        #               output_size=env.act_space.flat_dim,
+        #               hidden_sizes=[32, 32],
+        #               hidden_nonlin=to.tanh),
+        tau_init=1.,
+        tau_learnable=True,
+        capacity_learnable=False,
+        output_nonlin=to.tanh,
+        potentials_dyn_fcn=pd_capacity_21,
+    )
+    policy = ADNPolicy(spec=env.spec, dt=env.dt, **policy_hparam)
+
     # Critic
     value_fcn_hparam = dict(hidden_sizes=[64, 64], hidden_nonlin=to.tanh)
     value_fcn = FNNPolicy(spec=EnvSpec(env.obs_space, ValueFunctionSpace), **value_fcn_hparam)

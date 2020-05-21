@@ -125,16 +125,16 @@ class BoxFlippingSim(RcsSim, Serializable):
         continuous_rew_fcn = task_args.get('continuous_rew_fcn', True)
         task_box = create_box_flip_task(self.spec, continuous_rew_fcn)
         task_check_bounds = create_check_all_boundaries_task(self.spec, penalty=1e3)
-        task_collision = create_collision_task(self.spec, factor=1e-2)
-        task_ts_discrepancy = create_task_space_discrepancy_task(self.spec,
-                                                                 AbsErrRewFcn(q=1e-2*np.ones(2),
-                                                                              r=np.zeros(self.act_space.shape)))
+        # task_collision = create_collision_task(self.spec, factor=1e-2)
+        # task_ts_discrepancy = create_task_space_discrepancy_task(self.spec,
+        #                                                          AbsErrRewFcn(q=1e-2*np.ones(2),
+        #                                                                       r=np.zeros(self.act_space.shape)))
 
         return ParallelTasks([
             task_box,
-            # task_check_bounds,
-            task_collision,
-            task_ts_discrepancy
+            task_check_bounds,
+            # task_collision,
+            # task_ts_discrepancy
         ], hold_rew_when_done=False)
 
     @classmethod
@@ -195,15 +195,19 @@ class BoxFlippingPosMPsSim(BoxFlippingSim, Serializable):
         if mps_right is None:
             mps_right = [
                 # Y
-                {'function': 'msd_nlin', 'attractorStiffness': 30., 'mass': 1., 'damping': 60.,
-                 'goal': np.array([-0.8])},  # [m]
-                {'function': 'msd_nlin', 'attractorStiffness': 30., 'mass': 1., 'damping': 60.,
-                 'goal': np.array([+0.8])},  # [m]
-                # Z
-                {'function': 'msd_nlin', 'attractorStiffness': 30., 'mass': 1., 'damping': 60.,
-                 'goal': np.array([-0.0])},  # [m]
+                # {'function': 'msd_nlin', 'attractorStiffness': 30., 'mass': 1., 'damping': 60.,
+                #  'goal': np.array([-0.8])},  # [m]
+                # {'function': 'msd_nlin', 'attractorStiffness': 30., 'mass': 1., 'damping': 60.,
+                #  'goal': np.array([+0.8])},  # [m]
+                # # Z
+                # {'function': 'msd_nlin', 'attractorStiffness': 30., 'mass': 1., 'damping': 60.,
+                #  'goal': np.array([-0.0])},  # [m]
                 {'function': 'msd_nlin', 'attractorStiffness': 30., 'mass': 1., 'damping': 60.,
                  'goal': np.array([+0.2])},  # [m]
+                # Distance
+                # {'function': 'msd', 'attractorStiffness': 50., 'mass': 1., 'damping': 10.,
+                {'function': 'lin', 'errorDynamics': 1.,  # [m/s]
+                 'goal': np.array([0.0])},  # [m]
             ]
 
         # Forward to the BoxFlippingSim's constructor

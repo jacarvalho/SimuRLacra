@@ -241,6 +241,10 @@ class BoxLiftingPosMPsSim(BoxLiftingSim, Serializable):
                 # Joints SDH
                 {'function': 'msd_nlin', 'attractorStiffness': 50., 'mass': 1., 'damping': 50.,
                  'goal': 10/180*np.pi*np.array([0, 1.5, -1, 1, 0, 1.5, 0])},
+                # Distance
+                # {'function': 'msd', 'attractorStiffness': 50., 'mass': 1., 'damping': 10.,
+                {'function': 'lin', 'errorDynamics': 1.,  # [m/s]
+                 'goal': np.array([0.0])},  # [m]
             ]
 
         # Forward to the BoxLiftingSim's constructor
@@ -416,12 +420,12 @@ class BoxLiftingSimpleSim(RcsSim, Serializable):
 
     @classmethod
     def get_nominal_domain_param(cls):
-        return dict(box_length=0.18,
-                    box_width=0.14,
-                    box_mass=0.3,
-                    box_friction_coefficient=1.4,
+        return dict(box_length=0.14,  # x_world dimension
+                    box_width=0.18,  # y_world dimension
+                    box_mass=0.4,
+                    box_friction_coefficient=1.3,
                     basket_mass=0.5,
-                    basket_friction_coefficient=0.6)
+                    basket_friction_coefficient=0.9)
 
 
 class BoxLiftingSimplePosMPsSim(BoxLiftingSimpleSim, Serializable):

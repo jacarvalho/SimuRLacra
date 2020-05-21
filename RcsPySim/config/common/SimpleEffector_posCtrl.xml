@@ -23,6 +23,7 @@
   </Body>
 
   <Body name="ContactPoint" prev="Hand" transform="0 0 -0.13 0 0 0" color="RED" >
+    <Shape type="POINT" distance="true" />
     <Shape type="FRAME" scale="0.1" />
   </Body>
 

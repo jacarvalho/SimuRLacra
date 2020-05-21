@@ -1,25 +1,10 @@
 import numpy as np
-from colorama import Fore, Style
 from tabulate import tabulate
 from typing import Sequence
 
 import pyrado
 from pyrado.spaces.base import Space
-
-
-def _get_color(data: np.ndarray, valids: np.ndarray) -> list:
-    """
-    Color the entries of an data array red or green depending on the entries of an a secon
-
-    :param data: ndarray containing the data to print
-    :param valids: ndarray containing boolian integer values deciding gor the color (1 --> green, 0 --> red)
-    :return: list of stings
-    """
-
-    def _get_color(v: int) -> str:
-        return Fore.GREEN if v == 1 else Fore.RED
-
-    return [_get_color(v) + str(ele) + Style.RESET_ALL for (ele, v) in zip(data, valids)]
+from pyrado.utils.input_output import color_validity
 
 
 class BoxSpace(Space):
@@ -121,11 +106,14 @@ class BoxSpace(Space):
         return shrinked_box
 
     def contains(self, cand: np.ndarray, verbose: bool = False) -> bool:
-        # Check the candidate
+        # Check the candidate validity (shape and NaN values)
         if not cand.shape == self.shape:
             raise pyrado.ShapeErr(given=cand, expected_match=self)
         if np.isnan(cand).any():
-            raise pyrado.ValueErr(msg=f'At least one value is NaN: {cand}')
+            raise pyrado.ValueErr(
+                msg=f'At least one value is NaN!' +
+                    tabulate([list(self.labels), [*color_validity(cand, np.invert(np.isnan(cand)))]], headers='firstrow')
+            )
 
         # Check upper and lower bound separately
         check_lo = (cand >= self.bound_lo).astype(int)
@@ -137,9 +125,9 @@ class BoxSpace(Space):
         else:
             if verbose:
                 print(tabulate([
-                    ['lower bound ', *_get_color(self.bound_lo, check_lo)],
-                    ['candidate ', *_get_color(cand, idcs_valid)],
-                    ['upper bound ', *_get_color(self.bound_up, check_up)]
+                    ['lower bound ', *color_validity(self.bound_lo, check_lo)],
+                    ['candidate ', *color_validity(cand, idcs_valid)],
+                    ['upper bound ', *color_validity(self.bound_up, check_up)]
                 ], headers=[""] + list(self.labels)))
             return False
 
