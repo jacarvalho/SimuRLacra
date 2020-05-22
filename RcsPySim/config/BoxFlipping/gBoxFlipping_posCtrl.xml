@@ -10,13 +10,4 @@
     <xi:include href="../common/SimpleEffector_posCtrl.xml"/>
   </Group>
 
-  <model_state model="BoxFlipping" time_stamp="0">
-    <joint_state joint="DofX_L" position="1.25" />
-    <joint_state joint="DofX_R" position="1.25" />
-    <joint_state joint="DofY_L" position="0.3" />
-    <joint_state joint="DofY_R" position="-0.3" />
-    <joint_state joint="DofZ_L" position="1.0" />
-    <joint_state joint="DofZ_R" position="1.0" />
-  </model_state>
-
 </Graph>

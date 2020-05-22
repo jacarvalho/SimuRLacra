@@ -12,11 +12,11 @@
 
   <Body name="Wrist3" prev="Wrist2" mass="1.0" physics="dynamic" color="BRASS">
     <Joint name="DofZ" type="TransZ" range="-2 0 2" torqueLimit="10000" ctrlType="Position"/> <!-- torqueLimit is in N because of linear joint -->
-    <Shape type="CYLINDER" radius="0.05" length="0.04" transform="0 0 0.02 0 0 0" graphics="true" physics="true" distance="true"/>
+    <Shape type="CYLINDER" radius="0.04" length="0.04" transform="0 0 0.02 0 0 0" graphics="true" physics="true" distance="true"/>
   </Body>
 
   <Body name="Hand" prev="Wrist3" transform="0 0 -0.02 0 0 0" physics="fixed" mass="1.0" inertia="0.001757 0 0   0 0.001757 0   0 0 0.001757" color="PEWTER" >
-    <Shape type="CYLINDER" radius="0.05" length="0.02" transform="0 0 0.01 0 0 0" graphics="true" physics="true" distance="true" />
+    <Shape type="CYLINDER" radius="0.04" length="0.02" transform="0 0 0.01 0 0 0" graphics="true" physics="true" distance="true" />
     <Shape type="CYLINDER" radius="0.01" length="0.1"  transform="0 0 -0.05 0 0 0" graphics="true" physics="true" distance="true" />
     <Shape type="SPHERE"   radius="0.02" transform="0 0 -0.11 0 0 0" graphics="true" physics="true" distance="true" />
     <Sensor type="LOADCELL" name="WristLoadCell" />
