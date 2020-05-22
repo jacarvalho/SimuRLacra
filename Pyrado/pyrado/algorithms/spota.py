@@ -237,7 +237,9 @@ class SPOTA(Algorithm):
         # Solve the (approx) stochastic program SP_nc for the sampled physics parameter sets
         print_cbt(f'\nIteration {self._curr_iter} | Candidate solution\n', 'c', bright=True)
         pol_param_before = self._subrtn_cand.policy.param_values.clone()
-        self._subrtn_cand.train(snapshot_mode='latest', meta_info=dict(prefix=f'iter_{self._curr_iter}', suffix='cand'))
+        self._subrtn_cand.train(
+            snapshot_mode='best', meta_info=dict(prefix=f'iter_{self._curr_iter}', suffix='cand')
+        )
 
         if (self._subrtn_cand.policy.param_values == pol_param_before).all():
             warn("The candidate's policy parameters did not change during training!", UserWarning)
@@ -303,8 +305,9 @@ class SPOTA(Algorithm):
 
             # Solve the (approx) stochastic program SP_n for the samples physics parameter sets
             pol_param_before = self._subrtn_refs.policy.param_values.clone()
-            self._subrtn_refs.train(snapshot_mode='latest', meta_info=dict(prefix=f'iter_{self._curr_iter}',
-                                                                           suffix=f'ref_{k}'))
+            self._subrtn_refs.train(
+                snapshot_mode='best', meta_info=dict(prefix=f'iter_{self._curr_iter}', suffix=f'ref_{k}')
+            )
 
             if (self._subrtn_refs.policy.param_values == pol_param_before).all():
                 warn("The reference's policy parameters did not change during training!", UserWarning)
@@ -363,7 +366,7 @@ class SPOTA(Algorithm):
             env_params_ref = joblib.load(osp.join(self._save_dir, f'iter_{self._curr_iter}_env_params_ref_{k}.pkl'))
             self._env_dr.buffer = env_params_ref
 
-            # Load the policies (makes a difference for snapshot_mode = best)
+            # Load the policies (makes a difference for snapshot_mode = best). They are set to eval mode by rollout()
             self._subrtn_cand.policy.load_state_dict(
                     to.load(osp.join(self._save_dir, f'iter_{self._curr_iter}_policy_cand.pt')).state_dict()
             )
@@ -475,7 +478,7 @@ class SPOTA(Algorithm):
             np.save(osp.join(self._save_dir, f'iter_{self._curr_iter}_diffs.npy'), self.Gn_diffs)
             self._subrtn_cand.save_snapshot(meta_info=dict(prefix='final', suffix='cand'))
         else:
-            raise pyrado.ValueErr(msg='SPOTA is not supposed be run as a subroutine!')
+            raise pyrado.ValueErr(msg=f'{self.name} is not supposed be run as a subroutine!')
 
     def load_snapshot(self, load_dir: str = None, meta_info: dict = None):
         # Get the directory to load from
@@ -485,4 +488,4 @@ class SPOTA(Algorithm):
             # This algorithm instance is not a subroutine of a meta-algorithm
             self._subrtn_cand.load_snapshot(ld, meta_info=dict(prefix='final', suffix='cand'))
         else:
-            raise pyrado.ValueErr(msg='SPOTA is not supposed be run as a subroutine!')
+            raise pyrado.ValueErr(msg=f'{self.name} is not supposed be run as a subroutine!')

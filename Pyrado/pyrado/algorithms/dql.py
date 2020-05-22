@@ -12,7 +12,6 @@ from pyrado.algorithms.utils import ReplayMemory
 from pyrado.environments.base import Env
 from pyrado.exploration.stochastic_action import EpsGreedyExplStrat
 from pyrado.logger.step import StepLogger, ConsolePrinter, CSVPrinter
-from pyrado.policies.base import Policy
 from pyrado.policies.fnn import DiscrActQValFNNPolicy
 from pyrado.sampling.parallel_sampler import ParallelSampler
 from pyrado.utils.input_output import print_cbt

@@ -82,7 +82,7 @@ class EPOpt(Algorithm):
             else:
                 self._subroutine.save_snapshot(meta_info=None)
         else:
-            raise pyrado.ValueErr(msg="EPOpt is not supposed be run as a subroutine!")
+            raise pyrado.ValueErr(msg=f'{self.name} is not supposed be run as a subroutine!')
 
     def load_snapshot(self, load_dir: str = None, meta_info: dict = None):
         # Get the directory to load from
@@ -90,6 +90,6 @@ class EPOpt(Algorithm):
 
         if meta_info is None:
             # This algorithm instance is not a subroutine of a meta-algorithm
-            self._subroutine.load_snapshot(load_dir, meta_info)
+            self._subroutine.load_snapshot(ld, meta_info)
         else:
-            raise pyrado.ValueErr(msg="EPOpt is not supposed be run as a subroutine!")
+            raise pyrado.ValueErr(msg=f'{self.name} is not supposed be run as a subroutine!')

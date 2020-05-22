@@ -371,7 +371,7 @@ class BayRn(Algorithm, ABC):
             if isinstance(self._subroutine, ActorCritic):
                 to.save(self._subroutine.critic.value_fcn, osp.join(self._save_dir, 'valuefcn.pt'))
         else:
-            raise pyrado.ValueErr(msg="BayRn is not supposed be run as a subroutine!")
+            raise pyrado.ValueErr(msg=f'{self.name} is not supposed be run as a subroutine!')
 
     def load_snapshot(self, load_dir: str = None, meta_info: dict = None):
         # Get the directory to load from
@@ -460,7 +460,7 @@ class BayRn(Algorithm, ABC):
                         input('Evaluated in the target domain. Hit any key to continue.')
 
         else:
-            raise pyrado.ValueErr(msg='BayRn is not supposed be run as a subroutine!')
+            raise pyrado.ValueErr(msg=f'{self.name} is not supposed be run as a subroutine!')
 
     @staticmethod
     def argmax_posterior_mean(cands: to.Tensor,
@@ -547,7 +547,3 @@ class BayRn(Algorithm, ABC):
 
         subroutine.train(snapshot_mode='best')  # meta_info=dict(prefix='final')
         return subroutine.policy
-
-
-# Legacy
-BDR = BayRn
