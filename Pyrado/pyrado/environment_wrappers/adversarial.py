@@ -43,12 +43,11 @@ class AdversarialObservationWrapper(AdversarialWrapper, Serializable):
                  phi):
         """
         Constructor
-        TODO @Robin
 
-        :param wrapped_env:
+        :param wrapped_env: environment to be wrapped
         :param policy: policy to be updated
-        :param eps:
-        :param phi:
+        :param eps: magnitude of perturbation
+        :param phi: probability of perturbation
         """
         Serializable._init(self, locals())
         AdversarialWrapper.__init__(self, wrapped_env, policy, eps, phi)
@@ -80,13 +79,12 @@ class AdversarialStateWrapper(AdversarialWrapper, Serializable):
                  torch_observation=False):
         """
         Constructor
-        TODO @Robin
 
-        :param wrapped_env:
+        :param wrapped_env: environment to be wrapped
         :param policy: policy to be updated
-        :param eps:
-        :param phi:
-        :param torch_observation:
+        :param eps: magnitude of perturbation
+        :param phi: probability of perturbation
+        :param torch_observation: observation uses torch
         """
         Serializable._init(self, locals())
         AdversarialWrapper.__init__(self, wrapped_env, policy, eps, phi)
@@ -135,13 +133,12 @@ class AdversarialDynamicsWrapper(AdversarialWrapper, Serializable):
                  width=0.25):
         """
         Constructor
-        TODO @Robin
 
-        :param wrapped_env:
+        :param wrapped_env: environemnt to be wrapped
         :param policy: policy to be updated
-        :param eps:
-        :param phi:
-        :param width:
+        :param eps: magnitude of perturbation
+        :param phi: probability of perturbation
+        :param width: width of distribution to sample from
         """
         Serializable._init(self, locals())
         AdversarialWrapper.__init__(self, wrapped_env, policy, eps, phi)
@@ -162,7 +159,7 @@ class AdversarialDynamicsWrapper(AdversarialWrapper, Serializable):
 
     def step(self, act: np.ndarray):
         obs, reward, done, info = self.wrapped_env.step(act)
-        state = obs  # TODO make explicit copy ?!
+        state = obs.clone()
         adversarial = self.get_arpl_grad(state) * self.nominalT
         if self.decide_apply():
             new_params = to.tensor(self.adv).squeeze(0) + adversarial
