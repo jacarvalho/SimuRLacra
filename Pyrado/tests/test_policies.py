@@ -462,14 +462,23 @@ def test_recurrent_policy(policy):
 
 
 @pytest.mark.recurrent_policy
-@pytest.mark.parametrize('policy', lazy_fixture([
-    'rnnpol_bobspec',
-    'lstmpol_bobspec',
-    'grupol_bobspec',
-    'adnpol_bobspec',
-]), ids=['rnn', 'lstm', 'gru', 'adn'])
+@pytest.mark.parametrize(
+    'env', [
+        lazy_fixture('default_bob'),
+        lazy_fixture('default_qbb'),
+        pytest.param(lazy_fixture('default_bop5d_bt'), marks=m_needs_bullet),
+    ], ids=['bob', 'qbb', 'bop5D']
+)
+@pytest.mark.parametrize(
+    'policy', [
+        lazy_fixture('rnn_policy'),
+        lazy_fixture('lstm_policy'),
+        lazy_fixture('gru_policy'),
+        lazy_fixture('adn_policy'),
+    ], ids=['rnn', 'lstm', 'gru', 'adn']
+)
 @pytest.mark.parametrize('batch_size', [1, 2, 4])
-def test_recurrent_policy_batching(policy, batch_size):
+def test_recurrent_policy_batching(env, policy, batch_size):
     obs = np.stack([policy.env_spec.obs_space.sample_uniform() for _ in range(batch_size)])  # shape = (batch_size, 4)
     obs = to.from_numpy(obs)
 
@@ -497,15 +506,23 @@ def test_recurrent_policy_batching(policy, batch_size):
 
 
 @pytest.mark.recurrent_policy
-@pytest.mark.parametrize('policy', lazy_fixture([
-    'rnnpol_bobspec',
-    'lstmpol_bobspec',
-    'grupol_bobspec',
-    'adnpol_bobspec',
-]), ids=['rnn', 'lstm', 'gru', 'adn'])
-def test_recurrent_policy_evaluate(default_bob, policy):
+@pytest.mark.parametrize(
+    'env', [
+        lazy_fixture('default_bob'),
+        pytest.param(lazy_fixture('default_bop5d_bt'), marks=m_needs_bullet),
+    ], ids=['bob', 'bop5D']
+)
+@pytest.mark.parametrize(
+    'policy', [
+        lazy_fixture('rnn_policy'),
+        lazy_fixture('lstm_policy'),
+        lazy_fixture('gru_policy'),
+        lazy_fixture('adn_policy'),
+    ], ids=['rnn', 'lstm', 'gru', 'adn']
+)
+def test_recurrent_policy_evaluate(env, policy):
     # Make a rollout
-    ro = rollout(default_bob, policy, render_mode=RenderMode(text=True))
+    ro = rollout(env, policy, render_mode=RenderMode(text=True))
     ro.torch(to.get_default_dtype())
 
     # Evaluate first and second action manually
@@ -562,11 +579,21 @@ def test_hidden_state_packing_nobatch():
     to.testing.assert_allclose(up, packed)
 
 
-@pytest.mark.parametrize('policy', lazy_fixture([
-    'linpol_bobspec',
-    'fnnpol_bobspec',
-]), ids=['linear', 'fnn'])
-def test_trace(policy):
+@pytest.mark.parametrize(
+    'env', [
+        lazy_fixture('default_bob'),
+        lazy_fixture('default_qbb'),
+        pytest.param(lazy_fixture('default_bop5d_bt'), marks=m_needs_bullet),
+    ], ids=['bob', 'qbb', 'bop5D']
+)
+@pytest.mark.parametrize(
+    'policy', [
+        # TimePolicy and Two-headed policies are not supported
+        lazy_fixture('linear_policy'),
+        lazy_fixture('fnn_policy'),
+    ], ids=['lin', 'fnn']
+)
+def test_trace_feedforward(env, policy):
     # Generate scripted version
     scripted = policy.trace()
 
@@ -579,13 +606,22 @@ def test_trace(policy):
 
 
 @pytest.mark.recurrent_policy
-@pytest.mark.parametrize('policy', lazy_fixture([
-    'rnnpol_bobspec',
-    'lstmpol_bobspec',
-    'grupol_bobspec',
-    'adnpol_bobspec',
-]), ids=['rnn', 'lstm', 'gru', 'adn'])
-def test_trace_recurrent(policy):
+@pytest.mark.parametrize(
+    'env', [
+        lazy_fixture('default_bob'),
+        lazy_fixture('default_qbb'),
+        pytest.param(lazy_fixture('default_bop5d_bt'), marks=m_needs_bullet),
+    ], ids=['bob', 'qbb', 'bop5D']
+)
+@pytest.mark.parametrize(
+    'policy', [
+        lazy_fixture('rnn_policy'),
+        lazy_fixture('lstm_policy'),
+        lazy_fixture('gru_policy'),
+        lazy_fixture('adn_policy'),
+    ], ids=['rnn', 'lstm', 'gru', 'adn']
+)
+def test_trace_recurrent(env, policy):
     # Generate scripted version
     scripted = policy.trace()
 
@@ -615,15 +651,25 @@ def test_trace_recurrent(policy):
 
 @to.no_grad()
 @pytest.mark.m_needs_libtorch
-@pytest.mark.parametrize('policy', lazy_fixture([
-    'linpol_bobspec',
-    'fnnpol_bobspec',
-    'rnnpol_bobspec',
-    'lstmpol_bobspec',
-    'grupol_bobspec',
-    'adnpol_bobspec',
-]), ids=['lin', 'fnn', 'rnn', 'lstm', 'gru', 'adn'])
-def test_export_cpp(policy, tmpdir):
+@pytest.mark.parametrize(
+    'env', [
+        lazy_fixture('default_bob'),
+        lazy_fixture('default_qbb'),
+        pytest.param(lazy_fixture('default_bop5d_bt'), marks=m_needs_bullet),
+    ], ids=['bob', 'qbb', 'bop5D']
+)
+@pytest.mark.parametrize(
+    'policy', [
+        # TimePolicy and Two-headed policies are not supported
+        lazy_fixture('linear_policy'),
+        lazy_fixture('fnn_policy'),
+        lazy_fixture('rnn_policy'),
+        lazy_fixture('lstm_policy'),
+        lazy_fixture('gru_policy'),
+        lazy_fixture('adn_policy'),
+    ], ids=['lin', 'fnn', 'rnn', 'lstm', 'gru', 'adn']
+)
+def test_export_cpp(env, policy, tmpdir):
     # Generate scripted version (in double mode for CPP compatibility)
     scripted = policy.double().trace()
 
@@ -635,7 +681,7 @@ def test_export_cpp(policy, tmpdir):
     loaded = to.jit.load(export_file)
 
     # Compare a couple of inputs
-    for _ in range(10):
+    for _ in range(50):
         obs = policy.env_spec.obs_space.sample_uniform()
         act_scripted = scripted(to.from_numpy(obs)).cpu().numpy()
         act_loaded = loaded(to.from_numpy(obs)).cpu().numpy()
@@ -655,15 +701,25 @@ def test_export_cpp(policy, tmpdir):
 @to.no_grad()
 @pytest.mark.m_needs_rcs
 @pytest.mark.m_needs_libtorch
-@pytest.mark.parametrize('policy', lazy_fixture([
-    'linpol_bobspec',
-    'fnnpol_bobspec',
-    'rnnpol_bobspec',
-    'lstmpol_bobspec',
-    'grupol_bobspec',
-    'adnpol_bobspec',
-]), ids=['lin', 'fnn', 'rnn', 'lstm', 'gru', 'adn'])
-def test_export_rcspysim(policy, tmpdir):
+@pytest.mark.parametrize(
+    'env', [
+        lazy_fixture('default_bob'),
+        lazy_fixture('default_qbb'),
+        pytest.param(lazy_fixture('default_bop5d_bt'), marks=m_needs_bullet),
+    ], ids=['bob', 'qbb', 'bop5D']
+)
+@pytest.mark.parametrize(
+    'policy', [
+        # TimePolicy and Two-headed policies are not supported
+        lazy_fixture('linear_policy'),
+        lazy_fixture('fnn_policy'),
+        lazy_fixture('rnn_policy'),
+        lazy_fixture('lstm_policy'),
+        lazy_fixture('gru_policy'),
+        lazy_fixture('adn_policy'),
+    ], ids=['lin', 'fnn', 'rnn', 'lstm', 'gru', 'adn']
+)
+def test_export_rcspysim(env, policy, tmpdir):
     from rcsenv import ControlPolicy
 
     # Generate scripted version (in double mode for CPP compatibility)
@@ -678,7 +734,7 @@ def test_export_rcspysim(policy, tmpdir):
     cpp = ControlPolicy('torch', export_file)
 
     # Compare a couple of inputs
-    for _ in range(10):
+    for _ in range(50):
         obs = policy.env_spec.obs_space.sample_uniform()
         act_script = scripted(to.from_numpy(obs)).numpy()
         act_cpp = cpp(obs, policy.env_spec.act_space.flat_dim)
@@ -688,7 +744,6 @@ def test_export_rcspysim(policy, tmpdir):
     if hasattr(scripted, 'reset'):
         scripted.reset()
         cpp.reset()
-
         obs = policy.env_spec.obs_space.sample_uniform()
         act_script = scripted(to.from_numpy(obs)).numpy()
         act_cpp = cpp(obs, policy.env_spec.act_space.flat_dim)
