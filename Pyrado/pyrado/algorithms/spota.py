@@ -209,8 +209,8 @@ class SPOTA(Algorithm):
 
             # Continue from the candidate's value function of the previous iteration
             if isinstance(self._subrtn_cand, ActorCritic):
-                self._subrtn_cand.critic.load_state_dict(
-                        to.load(osp.join(self._save_dir, f'iter_{self._curr_iter - 1}_critic_cand.pt')).state_dict()
+                self._subrtn_cand.critic.value_fcn.load_state_dict(
+                        to.load(osp.join(self._save_dir, f'iter_{self._curr_iter - 1}_valuefcn_cand.pt')).state_dict()
                 )
 
             print_cbt('Initialized the candidate solution with the previously trained candidate.\n', 'y')
@@ -279,8 +279,8 @@ class SPOTA(Algorithm):
 
                 # Continue from the candidate's value function of the current iteration
                 if isinstance(self._subrtn_cand, ActorCritic) and isinstance(self._subrtn_refs, ActorCritic):
-                    self._subrtn_refs.critic.load_state_dict(
-                            to.load(osp.join(self._save_dir, f'iter_{self._curr_iter}_critic_cand.pt')).state_dict()
+                    self._subrtn_refs.critic.value_fcn.load_state_dict(
+                            to.load(osp.join(self._save_dir, f'iter_{self._curr_iter}_valuefcn_cand.pt')).state_dict()
                     )
 
                 print_cbt('Initialized the reference solution with the previously trained candidate solution.\n', 'y')

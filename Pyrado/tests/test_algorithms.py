@@ -69,7 +69,7 @@ def ex_dir(tmpdir):
     ids=['a2c', 'ppo', 'ppo2', 'hc_normal', 'hc_hyper', 'nes', 'pepg', 'power', 'reps'])
 def test_snapshots_notmeta(ex_dir, env, policy, algo_class, algo_hparam):
     # Collect hyper-parameters, create algorithm, and train
-    common_hparam = dict(max_iter=1)
+    common_hparam = dict(max_iter=1, num_sampler_envs=1)
     common_hparam.update(algo_hparam)
 
     if algo_class in [A2C, PPO, PPO2]:

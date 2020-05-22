@@ -55,7 +55,7 @@ if __name__ == '__main__':
 
     # Load the environment and the value function
     env, _, kwout = load_experiment(ex_dir, args)
-    value_fcn = kwout['critic'].value_fcn
+    value_fcn = kwout['valuefcn']
 
     if not len(args.idcs) == 2:
         pyrado.ShapeErr(msg='Please provide exactly two indices to slice the value function input space (obs_space)!')

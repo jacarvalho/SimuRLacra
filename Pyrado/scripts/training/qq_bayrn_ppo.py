@@ -88,7 +88,7 @@ if __name__ == '__main__':
           1.2*dp_nom['Lp'], dp_nom['Lp']/10, 1.2*dp_nom['Lr'], dp_nom['Lr']/10]])
 
     # policy_init = to.load(osp.join(pyrado.EXP_DIR, QQubeSim.name, PPO.name, 'EXP_NAME', 'policy.pt'))
-    # critic_init = to.load(osp.join(pyrado.EXP_DIR, QQubeSim.name, PPO.name, 'EXP_NAME', 'critic.pt'))
+    # valuefcn_init = to.load(osp.join(pyrado.EXP_DIR, QQubeSim.name, PPO.name, 'EXP_NAME', 'valuefcn.pt'))
 
     # Algorithm
     bayrn_hparam = dict(
@@ -101,7 +101,7 @@ if __name__ == '__main__':
         num_init_cand=10,
         warmstart=False,
         # policy_param_init=policy_init.param_values.data,
-        # critic_param_init=critic_init.param_values.data,
+        # valuefcn_param_init=valuefcn_init.param_values.data,
     )
 
     # Save the environments and the hyper-parameters (do it before the init routine of BayRn)
