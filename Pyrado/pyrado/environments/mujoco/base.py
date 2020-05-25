@@ -164,7 +164,7 @@ class MujocoSimEnv(SimEnv, ABC, Serializable):
 
         # Create MuJoCo model from parsed XML file
         self.model = mujoco_py.load_model_from_xml(xml_model)
-        self.sim = mujoco_py.MjSim(self.model)
+        self.sim = mujoco_py.MjSim(self.model, nsubsteps=self.frame_skip)
 
     def configure_viewer(self):
         """ Configure the camera when the viewer is initialized. You need to set `self.camera_config` before. """
