@@ -41,7 +41,7 @@ class QCartPoleSim(SimPyEnv, Serializable):
     def _create_spaces(self):
         l_rail = self.domain_param['l_rail']
 
-        max_act = np.array([12.])  # [V], original: 24, energy-based swing up controller needs at about +-8V
+        max_act = np.array([8.])  # [V], original: 24, energy-based swing up controller needs at about +-6.5V
         max_obs = np.array([l_rail/2., 1., 1., np.inf, np.inf])
 
         self._state_space = None
@@ -89,8 +89,8 @@ class QCartPoleSim(SimPyEnv, Serializable):
         J_m = self.domain_param['J_m']
         r_mp = self.domain_param['r_mp']
 
-        self.J_pole = l_pole**2*m_pole/3.  # pole inertia [kg*m**2]
-        self.J_eq = m_cart + (eta_g*K_g**2*J_m)/r_mp**2  # equiv. inertia [kg]
+        self.J_pole = l_pole ** 2*m_pole/3.  # pole inertia [kg*m**2]
+        self.J_eq = m_cart + (eta_g*K_g ** 2*J_m)/r_mp ** 2  # equiv. inertia [kg]
 
     def _step_dynamics(self, act: np.ndarray):
         g = self.domain_param['g']
@@ -111,9 +111,9 @@ class QCartPoleSim(SimPyEnv, Serializable):
         force = (eta_g*K_g*eta_m*k_m)/(R_m*r_mp)*(eta_m*float(act) - K_g*k_m*x_dot/r_mp)
 
         A = np.array([[m_pole + self.J_eq, m_pole*l_pole*np.cos(th)],
-                      [m_pole*l_pole*np.cos(th), self.J_pole + m_pole*l_pole**2]])
+                      [m_pole*l_pole*np.cos(th), self.J_pole + m_pole*l_pole ** 2]])
 
-        b = np.array([force - B_eq*x_dot - m_pole*l_pole*np.sin(th)*th_dot**2,
+        b = np.array([force - B_eq*x_dot - m_pole*l_pole*np.sin(th)*th_dot ** 2,
                       - B_pole*th_dot - m_pole*l_pole*g*np.sin(th)])
 
         # Compute acceleration from linear system of equations
@@ -273,9 +273,7 @@ class QCartPoleStabSim(QCartPoleSim, Serializable):
             state_des = np.array([0., np.pi, 0., 0.])
         # Define the task including the reward function
         return RadiallySymmDesStateTask(
-            self.spec, state_des, QuadrErrRewFcn(
-                Q=np.diag([1e-0, 1e-0, 1e-2, 1e-2]), R=np.diag([1e-3])
-            ), idcs=[1]
+            self.spec, state_des, QuadrErrRewFcn(Q=np.diag([1e-0, 1e-0, 1e-2, 1e-2]), R=np.diag([1e-3])), idcs=[1]
         )
 
 
@@ -320,9 +318,7 @@ class QCartPoleSwingUpSim(QCartPoleSim, Serializable):
         if state_des is None:
             state_des = np.array([0., np.pi, 0., 0.])
         # Define the task including the reward function
-        Q = np.diag([1e-2, 1e-2, 1e-4, 1e-4])
-        R = np.diag([1e-5])
-        return FinalRewTask(RadiallySymmDesStateTask(self.spec, state_des, QuadrErrRewFcn(Q, R), idcs=[1]),
-                            mode=FinalRewMode(always_negative=True, time_dependent=True))
-        # return FinalRewTask(RadiallySymmDesStateTask(self.spec, state_des, UnderActuatedSwingUpRewFcn(), idcs=[1]),
-        #                     mode=FinalRewMode(always_negative=True))
+        return FinalRewTask(
+            RadiallySymmDesStateTask(self.spec, state_des, UnderActuatedSwingUpRewFcn(), idcs=[1]),
+            mode=FinalRewMode(always_negative=True)
+        )
