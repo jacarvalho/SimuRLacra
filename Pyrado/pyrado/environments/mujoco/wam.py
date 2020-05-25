@@ -227,6 +227,14 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         state_des[-3:] = self.sim.data.get_body_xpos('B0').copy()
         self._task.wrapped_task.state_des = state_des
 
+        """
+        # Extract contacts
+        for i in range(self.sim.data.ncon):
+            contact = self.sim.data.contact[i]
+            body1 = self.model.geom_bodyid[contact.geom1]
+            body1_name = self.model.body_names[body1]  # Console output: >> ball
+        """
+        
         return dict(
             des_qpos=des_qpos, des_qvel=des_qvel, qpos=qpos[:7], qvel=qvel[:7], ball_pos=ball_pos,
             state_des=state_des[-3:], failed=mjsim_crashed
