@@ -3,7 +3,7 @@ The Barrett WAM 7 DoF setup as in the IAS Lab @ TU Darmstadt
 Credits to Pascal Klink, Kai Plöger, and OpenAI
 -->
 <mujoco model="wam_bic">
-  <option integrator="Euler" timestep="0.002"/>
+  <option integrator="Euler" timestep="0.0005"/>
   <compiler coordinate="local" angle="radian" meshdir="[ASSETS_DIR]/meshes/barrett_wam"/>
   <!--size njmax="500" nconmax="100"/-->
 
@@ -165,8 +165,8 @@ Credits to Pascal Klink, Kai Plöger, and OpenAI
                       <geom name="cup_geom16" pos="0 0.05 [pos_mesh]" euler="-1.57 0 0" solref="-10000 -100" type="mesh" mesh="cup16"/>
                       <geom name="cup_geom17" pos="0 0.05 [pos_mesh]" euler="-1.57 0 0" solref="-10000 -100" type="mesh" mesh="cup17"/>
                       <geom name="cup_geom18" pos="0 0.05 [pos_mesh]" euler="-1.57 0 0" solref="-10000 -100" type="mesh" mesh="cup18"/>
-                      <site name="cup_goal" pos="0 0.05 [pos_goal]" />
-                      <site name="cup_goal_final" pos="0 -0.025 [pos_goal]" />
+                      <site name="cup_goal" pos="0 0.05 [pos_goal]" size="1e-5" />
+                      <site name="cup_goal_final" pos="0 -0.025 [pos_goal]" size="1e-5" />
 
                       <body name="B0" pos="0 -0.045 [pos_goal]" quat="0.707388 0 0 -0.706825">
                         <inertial pos="0 0 0" quat="0.707107 0 0.707107 0" mass="7.4927e-05" diaginertia="5.87e-10 5.87e-10 3.74635e-11"/>
