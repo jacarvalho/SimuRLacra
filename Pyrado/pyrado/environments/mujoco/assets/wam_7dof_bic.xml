@@ -329,7 +329,7 @@ Credits to Pascal Klink, Kai Plöger, and OpenAI
                                                                                   <joint name="J1_29" class="rope_joint_z"/>
                                                                                   <geom name="G29" class="rope_geom"/>
                                                                                   <body name="ball">
-                                                                                    <geom name="ball_geom" type="sphere" size="0.02" mass="[ball_mass]" rgba="0.8 0.2 0.1 1" solref="0"/>
+                                                                                    <geom name="ball_geom" type="sphere" size="0.02" mass="[ball_mass]" rgba="0.8 0.2 0.1 1" />
                                                                                   </body>
                                                                                 </body>
                                                                               </body>
