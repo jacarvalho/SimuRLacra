@@ -83,10 +83,8 @@ class HalfCheetahSim(MujocoSimEnv, Serializable):
 
     def _mujoco_step(self, act: np.ndarray) -> dict:
         self.sim.data.ctrl[:] = act
-        # Alternatively: pass `frame_skip` as `nsubsteps` argument in MjSim constructor..
-        # ..instead of calling sim.step() multiple times
-        for _ in range(self.frame_skip):
-            self.sim.step()
+        # Changelog: frame_skip is now directly passed to self.sim
+        self.sim.step()
 
         pos = self.sim.data.qpos.copy()
         vel = self.sim.data.qvel.copy()
