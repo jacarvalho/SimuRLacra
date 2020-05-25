@@ -39,9 +39,10 @@ RUN echo "conda activate pyrado" >> ~/.bashrc
 RUN python setup_deps.py dep_libraries -j4
 #RUN python setup_deps.py all --use-cuda -j4
 
-RUN conda install pytorch torchvision
+#RUN conda install pytorch torchvision
+RUN conda install pytorch torchvision cudatoolkit=10.1 -c pytorch
+
 RUN python setup_deps.py separate_pytorch -j4
-#RUN conda install pytorch torchvision cudatoolkit=10.1 -c pytorch
 RUN python setup_deps.py pytorch_based -j4
 ENV PATH /opt/conda/envs/pyrado/bin:$PATH
 ENV PYTHONPATH /home/user/SimuRLacra/RcsPySim/build/lib:/home/user/SimuRLacra/Pyrado/:$PYTHONPATH
