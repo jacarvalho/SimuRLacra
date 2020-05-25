@@ -114,6 +114,8 @@ if __name__ == '__main__':
 
     # Environment
     env = WAMBallInCupSim(max_steps=1750)
+    # To get same behavior of the policy as before the "nsubsteps-change" use:
+    # env = WAMBallInCupSim(max_steps=1750, frame_skip=1)
 
     # Stabilize around initial position
     env.reset(domain_param=dict(cup_scale=1., rope_length=0.3103, ball_mass=0.021))
@@ -130,9 +132,9 @@ if __name__ == '__main__':
 
     # Retrieve infos from rollout
     t = ro.env_infos['t']
-    des_pos_traj = ro.env_infos['des_qpos']
+    des_pos_traj = ro.env_infos['des_qpos']  # (max_steps,7) ndarray >> can directly be saved
     pos_traj = ro.env_infos['qpos']
-    des_vel_traj = ro.env_infos['des_qvel']
+    des_vel_traj = ro.env_infos['des_qvel']  # (max_steps,7) ndarray >> can directly be saved
     vel_traj = ro.env_infos['qvel']
     ball_pos = ro.env_infos['ball_pos']
     state_des = ro.env_infos['state_des']
