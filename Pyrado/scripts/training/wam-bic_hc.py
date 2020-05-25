@@ -1,8 +1,6 @@
 """
 Train an agent to solve the WAM Ball-in-cup environment using Hill Climbing.
 """
-import numpy as np
-
 from pyrado.algorithms.hc import HCNormal
 from pyrado.environments.mujoco.wam import WAMBallInCupSim
 from pyrado.logger.experiment import setup_experiment, save_list_of_dicts_to_yaml
@@ -11,18 +9,18 @@ from pyrado.policies.environment_specific import DualRBFLinearPolicy
 
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
-    ex_dir = setup_experiment(WAMBallInCupSim.name, HCNormal.name, seed=1001)
+    ex_dir = setup_experiment(WAMBallInCupSim.name, HCNormal.name, seed=101)
 
     # Environment
     env_hparams = dict(
-        max_steps=2000,
+        max_steps=2500,
         task_args=dict(factor=0.05)
     )
     env = WAMBallInCupSim(**env_hparams)
 
     # Policy
     policy_hparam = dict(
-        rbf_hparam=dict(num_feat_per_dim=8, bounds=(0., 1.), scale=None),
+        rbf_hparam=dict(num_feat_per_dim=10, bounds=(0., 1.), scale=None),
         dim_mask=2
     )
     policy = DualRBFLinearPolicy(env.spec, **policy_hparam)
@@ -33,8 +31,8 @@ if __name__ == '__main__':
         pop_size=5*policy.num_param,
         expl_factor=1.05,
         num_rollouts=1,
-        expl_std_init=0.2,
-        num_sampler_envs=12,
+        expl_std_init=0.1,
+        num_sampler_envs=8,
     )
     algo = HCNormal(ex_dir, env, policy, **algo_hparam)
 
