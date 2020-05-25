@@ -39,13 +39,13 @@ class WAMSim(MujocoSimEnv, Serializable):
         :param max_steps: max number of simulation time steps
         :param task_args: arguments for the task construction
         """
-        model_path = osp.join(pyrado.MUJOCO_ASSETS_DIR, 'wam_7dof.xml')
+        model_path = osp.join(pyrado.MUJOCO_ASSETS_DIR, 'wam_7dof_base.xml')
         super().__init__(model_path, frame_skip, max_steps, task_args)
 
         self.camera_config = dict(
             trackbodyid=0,  # id of the body to track
             elevation=-30,  # camera rotation around the axis in the plane
-            azimuth=180  # camera rotation around the camera's vertical axis
+            azimuth=-90  # camera rotation around the camera's vertical axis
         )
 
     @classmethod
@@ -108,7 +108,7 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         :param max_steps: max number of simulation time steps
         :param task_args: arguments for the task construction
         """
-        model_path = osp.join(pyrado.MUJOCO_ASSETS_DIR, 'wam_cup.xml')
+        model_path = osp.join(pyrado.MUJOCO_ASSETS_DIR, 'wam_7dof_bic.xml')
         super().__init__(model_path, frame_skip, max_steps, task_args)
 
         # Desired joint position for the initial state
@@ -121,7 +121,7 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         self.camera_config = dict(
             trackbodyid=0,  # id of the body to track
             elevation=-30,  # camera rotation around the axis in the plane
-            azimuth=180  # camera rotation around the camera's vertical axis
+            azimuth=-90  # camera rotation around the camera's vertical axis
         )
 
     @property
