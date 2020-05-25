@@ -29,6 +29,7 @@ class CompoundSpace(Space):
         return NotImplementedError
 
     def subspace(self, idcs: [int, slice]):
+        # Subspace of this CompoundSpace and not of the individual spaces
         return self._spaces[idcs]
 
     def shrink(self, new_lo: np.ndarray, new_up: np.ndarray):

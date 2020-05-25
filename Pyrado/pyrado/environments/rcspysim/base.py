@@ -1,6 +1,5 @@
 import numpy as np
 from abc import abstractmethod
-from copy import deepcopy
 from init_args_serializer import Serializable
 from rcsenv import RcsSimEnv, JointLimitException
 
@@ -13,12 +12,12 @@ from pyrado.tasks.base import Task
 from pyrado.utils.data_types import RenderMode
 
 
-def to_pyrado_space(space) -> BoxSpace:
+def to_pyrado_space(space) -> [BoxSpace, EmptySpace]:
     """
-    Convert the box space implementation from RcsPySim to the one of pyrado.
+    Convert the box space implementation from RcsPySim to the one of Pyrado.
 
     :param space: a space from RcsPySim
-    :return: a Pyrado `BoxSpace`
+    :return: a Pyrado `BoxSpace` or an Pyrado`EmptySpace` if `None` was given
     """
     if space is None:
         return EmptySpace
@@ -239,7 +238,7 @@ class RcsSim(SimEnv, Serializable):
         try:
             obs = self._impl.step(act, disturbance)
         except JointLimitException:
-            # Joint limits exceeded! Return (obs, rew, done, info) directly after this failure
+            # Joint limits exceeded! Return (obs, rew, done, info) directly after this failure.
             return self._impl.lastObservation, self._joint_limit_penalty, True, dict(t=self._curr_step*self._dt)
 
         self.state = self._state_from_obs(obs)  # only for the Python side

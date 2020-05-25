@@ -1,7 +1,8 @@
 import functools
-import pytest
 import numpy as np
+import pytest
 
+import pyrado
 from pyrado.utils.data_types import EnvSpec
 from pyrado.spaces.box import BoxSpace
 from pyrado.tasks.final_reward import FinalRewTask, FinalRewMode, BestStateFinalRewTask
@@ -133,7 +134,7 @@ def test_parallel_task_function(hold_rew_when_done):
     # Create artificial dynamics by hard-coding a sequence of states
     num_steps = 12
     fixed_traj = np.linspace(-.5, +.6, num_steps, endpoint=True)  # for the final step, all sub-tasks would be true
-    r = [None]*num_steps
+    r = [-pyrado.inf]*num_steps
 
     for i in range(num_steps):
         # Advance the artificial state
@@ -205,7 +206,7 @@ def test_sequential_task_function(hold_rew_when_done):
     # Create artificial dynamics by hard-coding a sequence of states
     num_steps = 12
     fixed_traj = np.linspace(-.5, +.6, num_steps, endpoint=True)  # for the final step, all sub-tasks would be true
-    r = [None]*num_steps
+    r = [-pyrado.inf]*num_steps
 
     for i in range(num_steps):
         # Advance the artificial state
@@ -269,7 +270,7 @@ def test_best_state_final_rew_task(rew_fcn, factor):
 
     # Create artificial dynamics by hard-coding a sequence of states
     fixed_traj = np.linspace(-.5, +.5, num_steps, endpoint=True)
-    r = [None]*num_steps
+    r = [-pyrado.inf]*num_steps
 
     for i in range(num_steps):
         # Advance the artificial state
@@ -281,3 +282,31 @@ def test_best_state_final_rew_task(rew_fcn, factor):
     assert final_rew == pytest.approx(max(r) * num_steps * factor)
     assert task.best_rew == pytest.approx(max(r))
 
+
+@pytest.mark.parametrize(
+    'rew_fcn', [
+        QuadrErrRewFcn(0.1*np.eye(3), np.eye(2))
+    ], ids=['QuadrErrRewFcn']
+)
+def test_tracking_task(rew_fcn):
+    # Create env spec and sub-tasks (state_space is necessary for the has_failed function)
+    env_spec = EnvSpec(obs_space=BoxSpace(-1., 1., 3), act_space=BoxSpace(-1., 1., 2), state_space=BoxSpace(-1., 1., 3))
+    num_steps = 5
+    state_init = env_spec.obs_space.bound_lo.copy()
+    state_des = env_spec.obs_space.bound_lo.copy()
+    task = DesStateTask(env_spec, state_des, rew_fcn)
+    task.reset(env_spec=env_spec)
+
+    # Create artificial dynamics by hard-coding a sequence of states
+    fixed_traj = np.linspace(-.5, +.5, num_steps, endpoint=True)
+    r = [-pyrado.inf]*num_steps
+
+    for i in range(num_steps):
+        # Advance the desired state, but keep the system state
+        old_state_des_task = task.state_des.copy()
+        state_des[:] = fixed_traj[i]*np.ones(3)
+        r[i] = task.step_rew(state_init, act=np.zeros(2), remaining_steps=num_steps - (i+1))
+
+        if i > 0:
+            assert all(task.state_des >= old_state_des_task)  # desired state is moving away
+            assert r[i] <= r[i-1]  # reward goes down

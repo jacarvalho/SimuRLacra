@@ -102,11 +102,11 @@ class Space(ABC):
         """ Create a deep copy (recursively copy values of a compound object). """
         return deepcopy(self)
 
-    def subspace(self, idcs: [int, slice]):
+    def subspace(self, idcs: [np.ndarray, int, slice]):
         """
-        Select a subspace by passing a list of indices. The oder is preserved.
+        Select a subspace by passing an array or a list of indices. The oder is preserved.
 
-        :param idcs: list of indices or mask
+        :param idcs: indices or mask, entries with `True` are kept
         :return: subspace with the same boundaries but reduced dimensionality
         """
         raise NotImplementedError

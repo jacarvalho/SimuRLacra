@@ -64,7 +64,7 @@ class BoxSpace(Space):
     def labels(self) -> np.ndarray:
         return self._labels
 
-    def subspace(self, idcs: Sequence[int]):
+    def subspace(self, idcs: [np.ndarray, int, slice]):
         if not isinstance(idcs, np.ndarray) or idcs.dtype != np.dtype(np.bool_):
             # Interpret as index list
             mask = self.create_mask(idcs)
