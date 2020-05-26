@@ -14,6 +14,11 @@ from pyrado.tasks.reward_functions import CombinedRewFcn, CosOfOneEleRewFcn, Min
     ScaledExpQuadrErrRewFcn, RewFcn, PlusOnePerStepRewFcn
 
 
+@pytest.fixture(scope='function')
+def envspec_432():
+    return EnvSpec(obs_space=BoxSpace(-1, 1, 4), act_space=BoxSpace(-1, 1, 2), state_space=BoxSpace(-1, 1, 3))
+
+
 @pytest.mark.parametrize(
     'fcn_list, reset_args, reset_kwargs', [
         ([MinusOnePerStepRewFcn()], [None], [None]),
@@ -44,13 +49,13 @@ def test_modulated_rew_fcn():
     rew_fcn = QuadrErrRewFcn(Q, R)
     task = RadiallySymmDesStateTask(EnvSpec(None, None, None), np.zeros(4), rew_fcn, idcs, 2)
     r = task.step_rew(s, a)
-    assert r == -(1 ** 2 + 3 ** 2)
+    assert r == -(1**2 + 3**2)
 
     # Different modulo factor for the selected states
     idcs = [1, 3]
     task = RadiallySymmDesStateTask(EnvSpec(None, None, None), np.zeros(4), rew_fcn, idcs, np.array([2, 3]))
     r = task.step_rew(s, a)
-    assert r == -(1 ** 2 + 3 ** 2 + 1 ** 2)
+    assert r == -(1**2 + 3**2 + 1**2)
 
 
 @pytest.mark.parametrize(
@@ -73,15 +78,17 @@ def test_rew_fcn_constructor(state_space, act_space):
         'SequentialTasks'
     ], ids=['parallel', 'sequential']
 )
-def test_composite_task_structure(task_type):
-    env_spec = EnvSpec(obs_space=BoxSpace(-1, 1, 3), act_space=BoxSpace(-1, 1, 2), state_space=BoxSpace(-1, 1, 3))
+def test_composite_task_structure(envspec_432, task_type):
     state_des1 = np.zeros(3)
     state_des2 = -.5*np.ones(3)
     state_des3 = +.5*np.ones(3)
     rew_fcn = MinusOnePerStepRewFcn()
-    t1 = FinalRewTask(DesStateTask(env_spec, state_des1, rew_fcn), mode=FinalRewMode(always_positive=True), factor=10)
-    t2 = FinalRewTask(DesStateTask(env_spec, state_des2, rew_fcn), mode=FinalRewMode(always_positive=True), factor=10)
-    t3 = FinalRewTask(DesStateTask(env_spec, state_des3, rew_fcn), mode=FinalRewMode(always_positive=True), factor=10)
+    t1 = FinalRewTask(DesStateTask(envspec_432, state_des1, rew_fcn), mode=FinalRewMode(always_positive=True),
+                      factor=10)
+    t2 = FinalRewTask(DesStateTask(envspec_432, state_des2, rew_fcn), mode=FinalRewMode(always_positive=True),
+                      factor=10)
+    t3 = FinalRewTask(DesStateTask(envspec_432, state_des3, rew_fcn), mode=FinalRewMode(always_positive=True),
+                      factor=10)
 
     if task_type == 'ParallelTasks':
         ct = ParallelTasks([t1, t2, t3])
@@ -89,12 +96,12 @@ def test_composite_task_structure(task_type):
         ct = SequentialTasks([t1, t2, t3])
     else:
         raise NotImplementedError
-    ct.reset(env_spec=env_spec)
+    ct.reset(env_spec=envspec_432)
 
     assert len(ct) == 3
-    assert ct.env_spec.obs_space == env_spec.obs_space
-    assert ct.env_spec.act_space == env_spec.act_space
-    assert ct.env_spec.state_space == env_spec.state_space
+    assert ct.env_spec.obs_space == envspec_432.obs_space
+    assert ct.env_spec.act_space == envspec_432.act_space
+    assert ct.env_spec.state_space == envspec_432.state_space
     assert isinstance(ct.tasks[0].rew_fcn, RewFcn)
     assert isinstance(ct.tasks[1].rew_fcn, RewFcn)
     assert isinstance(ct.tasks[2].rew_fcn, RewFcn)
@@ -113,19 +120,18 @@ def test_composite_task_structure(task_type):
         False
     ], ids=['hold_rews', 'dont_hold_rews']
 )
-def test_parallel_task_function(hold_rew_when_done):
+def test_parallel_task_function(envspec_432, hold_rew_when_done):
     # Create env spec and sub-tasks (state_space is necessary for the has_failed function)
-    env_spec = EnvSpec(obs_space=BoxSpace(-1, 1, 3), act_space=BoxSpace(-1, 1, 2), state_space=BoxSpace(-1, 1, 3))
     state_des1 = np.zeros(3)
     state_des2 = -.5*np.ones(3)
     state_des3 = +.5*np.ones(3)
     rew_fcn = MinusOnePerStepRewFcn()
     succ_fcn = functools.partial(proximity_succeeded, thold_dist=1e-6)  # necessary to stop a sub-task on success
-    t1 = FinalRewTask(DesStateTask(env_spec, state_des1, rew_fcn, succ_fcn),
+    t1 = FinalRewTask(DesStateTask(envspec_432, state_des1, rew_fcn, succ_fcn),
                       mode=FinalRewMode(always_positive=True), factor=10)
-    t2 = FinalRewTask(DesStateTask(env_spec, state_des2, rew_fcn, succ_fcn),
+    t2 = FinalRewTask(DesStateTask(envspec_432, state_des2, rew_fcn, succ_fcn),
                       mode=FinalRewMode(always_positive=True), factor=10)
-    t3 = FinalRewTask(DesStateTask(env_spec, state_des3, rew_fcn, succ_fcn),
+    t3 = FinalRewTask(DesStateTask(envspec_432, state_des3, rew_fcn, succ_fcn),
                       mode=FinalRewMode(always_positive=True), factor=10)
 
     pt = FinalRewTask(ParallelTasks([t1, t2, t3], hold_rew_when_done),
@@ -185,19 +191,18 @@ def test_parallel_task_function(hold_rew_when_done):
         False
     ], ids=['hold_rews', 'dont_hold_rews']
 )
-def test_sequential_task_function(hold_rew_when_done):
+def test_sequential_task_function(envspec_432, hold_rew_when_done):
     # Create env spec and sub-tasks (state_space is necessary for the has_failed function)
-    env_spec = EnvSpec(obs_space=BoxSpace(-1, 1, 3), act_space=BoxSpace(-1, 1, 2), state_space=BoxSpace(-1, 1, 3))
     state_des1 = -.5*np.ones(3)
     state_des2 = np.zeros(3)
     state_des3 = +.5*np.ones(3)
     rew_fcn = MinusOnePerStepRewFcn()
     succ_fcn = functools.partial(proximity_succeeded, thold_dist=1e-6)  # necessary to stop a sub-task on success
-    t1 = FinalRewTask(DesStateTask(env_spec, state_des1, rew_fcn, succ_fcn),
+    t1 = FinalRewTask(DesStateTask(envspec_432, state_des1, rew_fcn, succ_fcn),
                       mode=FinalRewMode(always_positive=True), factor=10)
-    t2 = FinalRewTask(DesStateTask(env_spec, state_des2, rew_fcn, succ_fcn),
+    t2 = FinalRewTask(DesStateTask(envspec_432, state_des2, rew_fcn, succ_fcn),
                       mode=FinalRewMode(always_positive=True), factor=10)
-    t3 = FinalRewTask(DesStateTask(env_spec, state_des3, rew_fcn, succ_fcn),
+    t3 = FinalRewTask(DesStateTask(envspec_432, state_des3, rew_fcn, succ_fcn),
                       mode=FinalRewMode(always_positive=True), factor=10)
 
     st = FinalRewTask(SequentialTasks([t1, t2, t3], 0, hold_rew_when_done),
@@ -213,7 +218,7 @@ def test_sequential_task_function(hold_rew_when_done):
         state = fixed_traj[i]*np.ones(3)
 
         # Get all sub-tasks step rew, check if they are done, and if so
-        r[i] = st.step_rew(state, act=np.zeros(2), remaining_steps=num_steps - (i+1))
+        r[i] = st.step_rew(state, act=np.zeros(2), remaining_steps=num_steps - (i + 1))
 
         # Check if reaching the sub-goals is recognized
         if np.all(state == state_des1):
@@ -260,13 +265,12 @@ def test_sequential_task_function(hold_rew_when_done):
 @pytest.mark.parametrize(
     'factor', [1., 42.], ids=['factor_1', 'factor_42']
 )
-def test_best_state_final_rew_task(rew_fcn, factor):
+def test_best_state_final_rew_task(envspec_432, rew_fcn, factor):
     # Create env spec and sub-tasks (state_space is necessary for the has_failed function)
-    env_spec = EnvSpec(obs_space=BoxSpace(-1., 1., 3), act_space=BoxSpace(-1., 1., 2), state_space=BoxSpace(-1., 1., 3))
     num_steps = 5
     state_des = np.array([0.05, 0.05, 0.05])
-    task = BestStateFinalRewTask(DesStateTask(env_spec, state_des, rew_fcn), max_steps=num_steps, factor=factor)
-    task.reset(env_spec=env_spec)
+    task = BestStateFinalRewTask(DesStateTask(envspec_432, state_des, rew_fcn), max_steps=num_steps, factor=factor)
+    task.reset(env_spec=envspec_432)
 
     # Create artificial dynamics by hard-coding a sequence of states
     fixed_traj = np.linspace(-.5, +.5, num_steps, endpoint=True)
@@ -275,11 +279,11 @@ def test_best_state_final_rew_task(rew_fcn, factor):
     for i in range(num_steps):
         # Advance the artificial state
         state = fixed_traj[i]*np.ones(3)
-        r[i] = task.step_rew(state, act=np.zeros(2), remaining_steps=num_steps - (i+1))
+        r[i] = task.step_rew(state, act=np.zeros(2), remaining_steps=num_steps - (i + 1))
 
     last_state = fixed_traj[-1]*np.ones(3)
     final_rew = task.final_rew(last_state, remaining_steps=0)
-    assert final_rew == pytest.approx(max(r) * num_steps * factor)
+    assert final_rew == pytest.approx(max(r)*num_steps*factor)
     assert task.best_rew == pytest.approx(max(r))
 
 
@@ -288,14 +292,13 @@ def test_best_state_final_rew_task(rew_fcn, factor):
         QuadrErrRewFcn(0.1*np.eye(3), np.eye(2))
     ], ids=['QuadrErrRewFcn']
 )
-def test_tracking_task(rew_fcn):
+def test_tracking_task(envspec_432, rew_fcn):
     # Create env spec and sub-tasks (state_space is necessary for the has_failed function)
-    env_spec = EnvSpec(obs_space=BoxSpace(-1., 1., 3), act_space=BoxSpace(-1., 1., 2), state_space=BoxSpace(-1., 1., 3))
     num_steps = 5
-    state_init = env_spec.obs_space.bound_lo.copy()
-    state_des = env_spec.obs_space.bound_lo.copy()
-    task = DesStateTask(env_spec, state_des, rew_fcn)
-    task.reset(env_spec=env_spec)
+    state_init = envspec_432.state_space.bound_lo.copy()
+    state_des = envspec_432.state_space.bound_lo.copy()
+    task = DesStateTask(envspec_432, state_des, rew_fcn)
+    task.reset(env_spec=envspec_432)
 
     # Create artificial dynamics by hard-coding a sequence of states
     fixed_traj = np.linspace(-.5, +.5, num_steps, endpoint=True)
@@ -305,8 +308,8 @@ def test_tracking_task(rew_fcn):
         # Advance the desired state, but keep the system state
         old_state_des_task = task.state_des.copy()
         state_des[:] = fixed_traj[i]*np.ones(3)
-        r[i] = task.step_rew(state_init, act=np.zeros(2), remaining_steps=num_steps - (i+1))
+        r[i] = task.step_rew(state_init, act=np.zeros(2), remaining_steps=num_steps - (i + 1))
 
         if i > 0:
             assert all(task.state_des >= old_state_des_task)  # desired state is moving away
-            assert r[i] <= r[i-1]  # reward goes down
+            assert r[i] <= r[i - 1]  # reward goes down
