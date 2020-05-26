@@ -30,7 +30,7 @@ class OneMassOscillatorSim(SimPyEnv, Serializable):
         # Define the spaces
         max_state = np.array([1., 10.])  # pos [m], vel [m/s]
         min_init_state = np.array([-0.8*max_state[0], -0.01*max_state[1]])
-        max_init_state = np.array([-0.8*max_state[0], -0.01*max_state[1]])
+        max_init_state = np.array([-0.6*max_state[0], +0.01*max_state[1]])
         max_act = np.array([max_state[0]*k])  # max force [N]; should be big enough to reach every steady state
         self._curr_act = np.zeros_like(max_act)  # just for usage in render function
 
@@ -39,8 +39,9 @@ class OneMassOscillatorSim(SimPyEnv, Serializable):
         self._init_space = BoxSpace(min_init_state, max_init_state, labels=['$x$', r'$\dot{x}$'])
         self._act_space = BoxSpace(-max_act, max_act, labels=['$F$'])
 
-    def _create_task(self, state_des: [np.ndarray, None]) -> Task:
+    def _create_task(self, task_args: dict) -> Task:
         # Define the task including the reward function
+        state_des = task_args.get('state_des', None)
         if state_des is None:
             state_des = np.zeros(2)
         Q = np.diag([1e1, 1e-3])

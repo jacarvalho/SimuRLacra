@@ -22,12 +22,14 @@ if __name__ == '__main__':
     env, policy, _ = load_experiment(ex_dir, args)
 
     # Print the policy structure
-    print(policy)
+    for name, param in policy.named_parameters():
+        print(f'{name}\n{param.detach().numpy()}')
 
     # Visualize the parameters
     fig = render_policy_params(policy, env.spec, annotate=args.verbose)
 
     if args.save_figures:
-        fig.savefig(osp.join(ex_dir, f'policy-parameters.pdf'), dpi=500)
+        for fmt in ['pdf', 'pgf', 'png']:
+            fig.savefig(osp.join(ex_dir, f'policy-parameters.{fmt}'), dpi=500)
 
     plt.show()

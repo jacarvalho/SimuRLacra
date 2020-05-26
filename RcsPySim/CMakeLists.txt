@@ -41,14 +41,6 @@ IF(USE_LIBTORCH)
   message("-- Building libtorch policy support.")
 ENDIF()
 
-IF(USE_NEWLIBTORCH)
-  set(ENV{TORCH_INSTALL_PREFIX} "/hri/localdisk/muratore/software/anaconda3/envs/pyrado_cuda10/lib/python3.6/site-packages/torch")
-  set(Torch_DIR "$ENV{TORCH_INSTALL_PREFIX}/share/cmake/Torch")
-  find_package(Torch 1.2 REQUIRED )
-  message("-- Building libtorch policy support.")
-ENDIF()
-
-
 # Use eigen from submodule
 set(EIGEN3_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/../thirdParty/eigen3")
 

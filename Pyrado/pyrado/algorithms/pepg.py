@@ -51,7 +51,7 @@ class PEPG(ParameterExploring):
                  max_iter: int,
                  num_rollouts: int,
                  expl_std_init: float,
-                 expl_std_min: float = 0.1,
+                 expl_std_min: float = 0.01,
                  pop_size: int = None,
                  clip_ratio_std: float = 0.05,
                  normalize_update: bool = True,
@@ -101,9 +101,9 @@ class PEPG(ParameterExploring):
             std_min=expl_std_min,
         ))
 
-        # self.optim = to.optim.Adam([{'params': self._policy.parameters()}], lr=lr, eps=1e-5)
-        self.optim = to.optim.SGD([{'params': self._policy.parameters()}], lr=lr, momentum=0.9, dampening=0.1)
+        self.optim = to.optim.SGD([{'params': self._policy.parameters()}], lr=lr, momentum=0.8, dampening=0.1)
 
+    @to.no_grad()
     def update(self, param_results: ParameterSamplingResult, ret_avg_curr: float = None):
         # Average the return values over the rollouts
         rets_avg_ros = param_results.mean_returns
@@ -132,9 +132,9 @@ class PEPG(ParameterExploring):
 
         # Update the mean
         self.optim.zero_grad()
-        self._policy.param_grad = delta_mean
+        self._policy.param_grad = -delta_mean  # PyTorch optimizers are minimizers
         self.optim.step()
-        # Old version without PyTorch opimizer: self._expl_strat.policy.param_values += delta_mean * self.lr
+        # Old version without PyTorch optimizer: self._expl_strat.policy.param_values += delta_mean * self.lr
 
         # Update the std
         S = (epsilon**2 - self._expl_strat.std**2)/self._expl_strat.std

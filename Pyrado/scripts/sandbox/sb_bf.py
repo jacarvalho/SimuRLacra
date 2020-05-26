@@ -39,16 +39,23 @@ def create_idle_setup(physicsEngine, graphFileName, dt, max_steps, ref_frame, ch
 
 
 def create_position_mps_setup(physicsEngine, graphFileName, dt, max_steps, ref_frame, checkJointLimits):
+    # def policy(t: float):
+    #     if t < 3.1:
+    #         return [0, 0, 0, 0,
+    #                 0, 0, 0, 0, 1]
+    #     elif t <= 4.5:
+    #         return [0, 0, 0, 0,
+    #                 0, 0, 0, 0, 1]
+    #     else:
+    #         return [0, 0, 0, 0,
+    #                 0, 0, 0, 0, 1]
     def policy(t: float):
-        if t < 3.1:
-            return [0, 0.6, 0, 0,
-                    0, 0, 0, 0]
-        elif t <= 4.5:
-            return [0, 0.6, 0, 1,
-                    0, 0, 0, 0]
+        if t <= 5:
+            return [0.2, 0, 0, 0,
+                    0, 1]
         else:
-            return [0, 0, 0, 0,
-                    0, 0, 0, 0]
+            return [-0.1, 0, 0, 0,
+                    0.1, 1.]
 
     # Set up environment
     env = BoxFlippingPosMPsSim(
@@ -69,7 +76,7 @@ def create_position_mps_setup(physicsEngine, graphFileName, dt, max_steps, ref_f
         observeManipulabilityIndex=True,
         observeCurrentManipulability=True,
         observeDynamicalSystemDiscrepancy=True,
-        observeTaskSpaceDiscrepancy=True,
+        observeTaskSpaceDiscrepancy=False,
         observeDSGoalDistance=True,
     )
 
@@ -125,7 +132,7 @@ if __name__ == '__main__':
     physicsEngine = 'Bullet'  # Bullet or Vortex
     graphFileName = 'gBoxFlipping_posCtrl.xml'  # gBoxFlipping_posCtrl.xml or gBoxFlipping_trqCtrl.xml
     dt = 1/100.
-    max_steps = int(12/dt)
+    max_steps = int(20/dt)
     ref_frame = 'table'  # world, box, table, or table
     checkJointLimits = False
     randomize = False
@@ -154,6 +161,6 @@ if __name__ == '__main__':
     done, param, state = False, None, None
     while not done:
         ro = rollout(env, policy, render_mode=RenderMode(text=False, video=True), eval=True, max_steps=max_steps,
-                     reset_kwargs=dict(domain_param=param, init_state=state))
+                     reset_kwargs=dict(domain_param=param, init_state=state), stop_on_done=False)
         print_cbt(f'Return: {ro.undiscounted_return()}', 'g', bright=True)
         done, state, param = after_rollout_query(env, policy, ro)

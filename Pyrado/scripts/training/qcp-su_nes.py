@@ -9,16 +9,16 @@ from pyrado.policies.rnn import LSTMPolicy, GRUPolicy
 
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
-    ex_dir = setup_experiment(QCartPoleSwingUpSim.name, NES.name, 'gru_short', seed=1001)
+    ex_dir = setup_experiment(QCartPoleSwingUpSim.name, NES.name, 'gru', seed=1001)
 
     # Environments
-    env_hparams = dict(dt=1/500., max_steps=6000, long=False)
+    env_hparams = dict(dt=1/100., max_steps=1300, long=False)
     env = QCartPoleSwingUpSim(**env_hparams)
     env = ActNormWrapper(env)
 
     # Policy
     policy_hparam = dict(
-        hidden_size=16,
+        hidden_size=32,
         num_recurrent_layers=1,
         # init_param_kwargs=dict(t_max=50)
     )
@@ -27,15 +27,15 @@ if __name__ == '__main__':
 
     # Algorithm
     algo_hparam = dict(
-        max_iter=10000,
-        pop_size=None,
-        num_rollouts=12,
-        eta_mean=1.,
+        max_iter=5000,
+        pop_size=50,
+        num_rollouts=6,
+        eta_mean=2.,
         eta_std=None,
-        expl_std_init=1.0,
+        expl_std_init=0.5,
         symm_sampling=False,
         transform_returns=True,
-        num_sampler_envs=8,
+        num_sampler_envs=10,
     )
     algo = NES(ex_dir, env, policy, **algo_hparam)
 

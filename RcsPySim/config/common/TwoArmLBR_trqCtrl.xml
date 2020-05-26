@@ -78,7 +78,8 @@
         <xi:include href="SDH_posCtrl.xml" prev="Base"/>
     </Group>
 
-    <Body name="PowerGrasp_L" prev="sdh-base_L" transform="0 0 0.1 90 0 90" oldtransform="0 0 0.125 90 0 90">
+    <Body name="PowerGrasp_L" prev="sdh-base_L" transform="0 0 0.1 90 0 90" >
+        <Shape type="POINT" distance="true" />
         <Shape type="FRAME" scale="0.2"/>
     </Body>
 
@@ -98,8 +99,8 @@
         <xi:include href="SDH_posCtrl.xml" prev="Base"/>
     </Group>
 
-    <Body name="PowerGrasp_R" prev="sdh-base_R" transform="0 0 0.1 -90 0 -90" xxtransform="0 0 0.08 -90 0 -90"
-          oldtransform="0 0 0.125 -90 0 -90">
+    <Body name="PowerGrasp_R" prev="sdh-base_R" transform="0 0 0.1 -90 0 -90" >
+        <Shape type="POINT" distance="true" />
         <Shape type="FRAME" scale="0.2"/>
     </Body>
 

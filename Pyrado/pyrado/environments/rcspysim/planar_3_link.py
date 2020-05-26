@@ -32,7 +32,7 @@ class Planar3LinkSim(RcsSim, Serializable):
         .. note::
             This constructor should only be called via the subclasses.
 
-        :param task_args: arguments for the task construction, e.g `dict(state_des=np.zeros(42))`
+        :param task_args: arguments for the task construction
         :param max_dist_force: maximum disturbance force, set to None (default) for no disturbance
         :param position_mps: `True` if the MPs are defined on position level, `False` if defined on velocity level,
                              only matters if `actionModelType='activation'`

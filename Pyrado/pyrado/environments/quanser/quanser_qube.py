@@ -39,8 +39,9 @@ class QQubeReal(RealEnv, Serializable):
         self._curr_act = np.zeros(self.act_space.shape)  # just for usage in render function
         self._sens_offset = np.zeros(4)  # last two entries are never calibrated but useful for broadcasting
 
-    def _create_task(self, state_des: [np.ndarray, None]) -> Task:
+    def _create_task(self, task_args: dict) -> Task:
         # Define the task including the reward function
+        state_des = task_args.get('state_des', None)
         if state_des is None:
             state_des = np.array([0., np.pi, 0., 0.])
         Q = np.diag([2e-1, 1., 2e-2, 5e-3])

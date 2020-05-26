@@ -55,7 +55,7 @@ class RosenSim(SimEnv, Serializable):
     def act_space(self):
         return self._act_space
 
-    def _create_task(self, task_args: [dict, None] = None) -> OptimProxyTask:
+    def _create_task(self, task_args: dict = None) -> OptimProxyTask:
         return OptimProxyTask(self.spec, StateBasedRewFcn(rosenbrock, flip_sign=True))
 
     @property

@@ -16,7 +16,7 @@ if __name__ == '__main__':
 
     # Set up environment and policy (swing-up works reliably if is sampling frequency is >= 400 Hz)
     if args.env_name == 'qcp-su':
-        env = QCartPoleSwingUpSim(dt=args.dt, max_steps=int(10/args.dt), long=False)
+        env = QCartPoleSwingUpSim(dt=args.dt, max_steps=int(12/args.dt), long=False)
         policy = QCartPoleSwingUpAndBalanceCtrl(env.spec)
 
     elif args.env_name == 'qcp-st':

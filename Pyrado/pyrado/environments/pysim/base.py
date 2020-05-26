@@ -41,7 +41,7 @@ class SimPyEnv(SimEnv, Serializable):
 
         # Initialize task
         self._state_des = state_des
-        self._task = self._create_task(state_des)
+        self._task = self._create_task(task_args=dict(state_des=state_des))
 
         # Animation with VPython
         self._curr_act = np.zeros(self.act_space.shape)

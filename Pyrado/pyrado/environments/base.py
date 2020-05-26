@@ -109,15 +109,15 @@ class Env(ABC, Serializable):
         return self._curr_step
 
     @abstractmethod
-    def _create_task(self, state_des: [np.ndarray, None]) -> Task:
+    def _create_task(self, task_args: dict) -> Task:
         """
         Create task based on the domain parameters and spaces.
 
         .. note::
             This function should be called from the environment's constructor.
 
-        :param state_des: desired state for the task, or `None` for default value
-        :return: task
+        :param task_args: arguments for the task construction, e.g `dict(state_des=np.zeros(42))`
+        :return: task of the environment
         """
 
     @property

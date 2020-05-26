@@ -41,7 +41,7 @@ class wrap_value_fcn:
         # First dimension is the batch size, second dimension is 1, third dimension is the full state dimension
         state = state.repeat(varying.shape[0], varying.shape[1], 1)
         # Insert the values of the evaluation mesh grid into the selected state dimensions
-        state[:, :, args.idcs] = varying
+        state[:, :, self._idcs] = varying
         return self._fcn(state)
 
 
@@ -55,7 +55,7 @@ if __name__ == '__main__':
 
     # Load the environment and the value function
     env, _, kwout = load_experiment(ex_dir, args)
-    value_fcn = kwout['critic'].value_fcn
+    value_fcn = kwout['valuefcn']
 
     if not len(args.idcs) == 2:
         pyrado.ShapeErr(msg='Please provide exactly two indices to slice the value function input space (obs_space)!')
@@ -93,6 +93,7 @@ if __name__ == '__main__':
                          data_format='torch')
 
     if args.save_figures:
-        fig.savefig(osp.join(ex_dir, f'valuefcn-{state_labels[0]}-{state_labels[1]}.pdf'), dpi=500)
+        for fmt in ['pdf', 'pgf']:
+            fig.savefig(osp.join(ex_dir, f'valuefcn-{state_labels[0]}-{state_labels[1]}.{fmt}'), dpi=500)
 
     plt.show()

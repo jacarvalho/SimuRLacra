@@ -15,7 +15,7 @@ class ObsPartialWrapper(EnvWrapperObs, Serializable):
         Constructor
 
         :param wrapped_env: environment to wrap
-        :param mask: mask array, entries with 1 are dropped (behavior can be inverted by keep_selected=True)
+        :param mask: mask out array, entries with 1 are dropped (behavior can be inverted by keep_selected=True)
         :param indices: indices to drop, ignored if mask is specified.
                         If the observation space is labeled, labels can be used as indices.
         :param keep_selected: set to true to keep the mask entries with 1/the specified indices and drop the others.

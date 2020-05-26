@@ -36,11 +36,14 @@ def create_idle_setup(physicsEngine, graphFileName, dt, max_steps, ref_frame, ch
 
 def create_position_mps_setup(physicsEngine, graphFileName, dt, max_steps, ref_frame, checkJointLimits):
     def policy(t: float):
-        return [1, 0, 1, 1, 1,
-                1, 1, 0, 1, 1]
+        # return [1, 0, 1, 1, 1,
+        #         0, 0, 0, 0, 0, 1]
+        return [0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 1]
 
     # Set up environment
     env = BoxLiftingPosMPsSim(
+        usePhysicsNode=True,
         physicsEngine=physicsEngine,
         graphFileName=graphFileName,
         dt=dt,
@@ -76,6 +79,7 @@ def create_velocity_mps_setup(physicsEngine, graphFileName, dt, max_steps, ref_f
 
     # Set up environment
     env = BoxLiftingVelMPsSim(
+        usePhysicsNode=True,
         physicsEngine=physicsEngine,
         graphFileName=graphFileName,
         dt=dt,
@@ -111,7 +115,7 @@ if __name__ == '__main__':
     physicsEngine = 'Bullet'  # Bullet or Vortex
     graphFileName = 'gBoxLifting_posCtrl.xml'  # gBoxLifting_trqCtrl or gBoxLifting_posCtrl
     dt = 1/100.
-    max_steps = int(10/dt)
+    max_steps = int(20/dt)
     ref_frame = 'basket'  # world, box, basket, or table
     checkJointLimits = False
 
@@ -129,6 +133,6 @@ if __name__ == '__main__':
     done, param, state = False, None, None
     while not done:
         ro = rollout(env, policy, render_mode=RenderMode(text=False, video=True), eval=True, max_steps=max_steps,
-                     reset_kwargs=dict(domain_param=param, init_state=state))
+                     reset_kwargs=dict(domain_param=param, init_state=state), stop_on_done=False)
         print_cbt(f'Return: {ro.undiscounted_return()}', 'g', bright=True)
         done, state, param = after_rollout_query(env, policy, ro)

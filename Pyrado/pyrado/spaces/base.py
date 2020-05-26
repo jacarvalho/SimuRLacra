@@ -54,7 +54,6 @@ class Space(ABC):
         """ Get the labels for space entries, or None if not supported. """
         return None
 
-    # This nice idea comes from https://stackoverflow.com/questions/45164691/recommended-way-to-implement-eq-and-hash
     @abstractmethod
     def _members(self) -> tuple:
         """ Return a tuple of members relevant for equals. """
@@ -66,12 +65,11 @@ class Space(ABC):
         else:
             return False
 
-    # We don't guarantee immutability, so no hash
-
     def create_mask(self, *idcs):
         """
         Create a mask selecting the given indices from this space.
         Every index should be a number or a name in labels.
+
         :param idcs: index list, which can either be varargs or a single iterable
         :return: mask array with 1 at each index
         """
@@ -104,11 +102,11 @@ class Space(ABC):
         """ Create a deep copy (recursively copy values of a compound object). """
         return deepcopy(self)
 
-    def subspace(self, idcs: [int, slice]):
+    def subspace(self, idcs: [np.ndarray, int, slice]):
         """
-        Select a subspace by passing a list of indices. The oder is preserved.
+        Select a subspace by passing an array or a list of indices. The oder is preserved.
 
-        :param idcs: list of indices or mask
+        :param idcs: indices or mask, entries with `True` are kept
         :return: subspace with the same boundaries but reduced dimensionality
         """
         raise NotImplementedError

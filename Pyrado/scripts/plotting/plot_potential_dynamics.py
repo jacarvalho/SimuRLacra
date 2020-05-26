@@ -20,7 +20,7 @@ if __name__ == '__main__':
     plt.rc('text', usetex=args.use_tex)
 
     # Define the configurations to plot
-    pd_fcn = pd_cubic  # function determining the potential dynamics
+    pd_fcn = pd_capacity_21_abs  # function determining the potential dynamics
     p_min, p_max, num_p = -6., 6., 501
     print_cbt(f'Evaluating {pd_fcn.__name__} between {p_min} and {p_max}.', 'c')
 

@@ -97,7 +97,7 @@ class MujocoSimEnv(SimEnv, ABC, Serializable):
         return self._task
 
     @abstractmethod
-    def _create_task(self, task_args: [dict, None]) -> Task:
+    def _create_task(self, task_args: dict) -> Task:
         # Needs to implemented by subclasses
         raise NotImplementedError
 

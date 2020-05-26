@@ -49,7 +49,7 @@ def create_position_mps_setup(physicsEngine, graphFileName, dt, max_steps, ref_f
 
     # Set up environment
     env = BoxLiftingSimplePosMPsSim(
-        usePhysicsNode=True,
+        usePhysicsNode=False,
         physicsEngine=physicsEngine,
         graphFileName=graphFileName,
         dt=dt,
@@ -116,7 +116,7 @@ def create_velocity_mps_setup(physicsEngine, graphFileName, dt, max_steps, ref_f
 if __name__ == '__main__':
     # Choose setup
     setup_type = 'pos'  # idle, pos, or vel
-    physicsEngine = 'Bullet'  # Bullet or Vortex
+    physicsEngine = 'Vortex'  # Bullet or Vortex
     graphFileName = 'gBoxLiftingSimple_posCtrl.xml'  # gBoxLiftingSimple_posCtrl.xml or gBoxLiftingSimple_trqCtrl.xml
     dt = 1/100.
     max_steps = int(12/dt)
@@ -139,7 +139,10 @@ if __name__ == '__main__':
         dp_nom = env.get_nominal_domain_param()
         randomizer = DomainRandomizer(
             UniformDomainParam(name='box_mass', mean=dp_nom['box_mass'], halfspan=dp_nom['box_mass']/5),
-            UniformDomainParam(name='box_width', mean=dp_nom['box_width'], halfspan=dp_nom['box_length']/5)
+            UniformDomainParam(name='box_width', mean=dp_nom['box_width'], halfspan=dp_nom['box_length']/5),
+            UniformDomainParam(name='basket_friction_coefficient',
+                               mean=dp_nom['basket_friction_coefficient'],
+                               halfspan=dp_nom['basket_friction_coefficient']/5)
         )
         env = DomainRandWrapperLive(env, randomizer)
 

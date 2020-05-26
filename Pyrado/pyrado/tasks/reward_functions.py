@@ -264,7 +264,7 @@ class ScaledExpQuadrErrRewFcn(QuadrErrRewFcn):
 
 class UnderActuatedSwingUpRewFcn(RewFcn):
     """
-    Reward function for the swing-up task on the Car-Pole system (see [1]). The actions have no cost.
+    Reward function for the swing-up task on the Cart-Pole system similar to [1].
 
     .. seealso::
         [1] W. Yu, J. Tan, C.K. Liu, G. Turk, "Preparing for the Unknown: Learning a Universal Policy with Online System
@@ -272,36 +272,35 @@ class UnderActuatedSwingUpRewFcn(RewFcn):
     """
 
     def __init__(self,
-                 k1: float = 1.0,
-                 k2: float = 0.2,
-                 w: float = 1.0,
-                 v: float = 1.0,
-                 a: float = 1.0,
+                 c_pole: float = 1.0,
+                 c_cart: float = 0.2,
+                 c_act: float = 1e-3,
+                 c_theta_sq: float = 1.0,
+                 c_theta_log: float = 0.1,
                  idx_x: int = 0,
                  idx_th: int = 1):
         """
         Constructor
 
-        :param k1: scaling parameter for the pole angle component of reward function
-        :param k2: scaling parameter for the cart position reward function
-        :param w: scaling parameter for the reward function
-        :param v: scaling parameter for the reward function
-        :param a: shifting parameter for the reward function
+        :param c_pole: scaling parameter for the pole angle cost
+        :param c_cart: scaling parameter for the cart position cost
+        :param c_act: scaling parameter for the control cost
+        :param c_theta_sq: scaling parameter for the quadratic angle deviation
+        :param c_theta_log: shifting parameter for the logarithm of the quadratic angle deviation
         :param idx_x: index of he state representing the driving component of the system (e.g. cart position x)
         :param idx_th: index of he state representing the rotating of the system (e.g. pole angle theta)
         """
-        self.k1 = k1
-        self.k2 = k2
-        self.w = w
-        self.v = v
-        self.a = a
+        self.c_costs = np.array([c_pole, c_cart, c_act])
+        self.c_theta_sq = c_theta_sq
+        self.c_theta_log = c_theta_log
         self.idx_x = idx_x
         self.idx_th = idx_th
 
     def __call__(self, err_s: np.ndarray, err_a: np.ndarray, remaining_steps: int = None) -> float:
-        cost_1 = self.w*err_s[self.idx_th] ** 2 + self.v*np.log(err_s[self.idx_th] ** 2 + self.a)
-        cost_2 = np.abs(err_s[self.idx_x])  # cart position = cart position error
-        return float(-self.k1*cost_1 - self.k2*cost_2 + 10)
+        cost_pole = self.c_theta_sq*err_s[self.idx_th]**2 + np.log(err_s[self.idx_th]**2 + self.c_theta_log)
+        cost_cart = np.abs(err_s[self.idx_x])  # cart position = cart position error
+        cost_act = err_a**2
+        return float(-self.c_costs @ np.asarray([cost_pole, cost_cart, cost_act]) + 10)
 
 
 class StateBasedRewFcn:
@@ -330,7 +329,7 @@ class StateBasedRewFcn:
         :param state: state
         :return: scalar reward
         """
-        return -1 ** self._flip_sign*self._fcn(state)
+        return -1**self._flip_sign*self._fcn(state)
 
 
 class ForwardVelocityRewFcn(RewFcn):

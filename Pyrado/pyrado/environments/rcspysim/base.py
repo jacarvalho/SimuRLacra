@@ -1,6 +1,5 @@
 import numpy as np
 from abc import abstractmethod
-from copy import deepcopy
 from init_args_serializer import Serializable
 from rcsenv import RcsSimEnv, JointLimitException
 
@@ -13,12 +12,12 @@ from pyrado.tasks.base import Task
 from pyrado.utils.data_types import RenderMode
 
 
-def to_pyrado_space(space) -> BoxSpace:
+def to_pyrado_space(space) -> [BoxSpace, EmptySpace]:
     """
-    Convert the box space implementation from RcsPySim to the one of pyrado.
+    Convert the box space implementation from RcsPySim to the one of Pyrado.
 
     :param space: a space from RcsPySim
-    :return: a Pyrado `BoxSpace`
+    :return: a Pyrado `BoxSpace` or an Pyrado`EmptySpace` if `None` was given
     """
     if space is None:
         return EmptySpace
@@ -44,7 +43,7 @@ class RcsSim(SimEnv, Serializable):
             The joint type (i.e. position or torque control) is set in the config-xml file in Rcs.
 
         :param envType: environment type name as defined on the C++ side
-        :param task_args: arguments for the task construction, e.g `dict(state_des=np.zeros(42))`
+        :param task_args: arguments for the task construction
         :param dt: integration step size in seconds
         :param max_steps: max number of simulation time steps
         :param domain_param: initial domain param values
@@ -122,7 +121,7 @@ class RcsSim(SimEnv, Serializable):
         return self._task
 
     @abstractmethod
-    def _create_task(self, task_args: [dict, None]) -> Task:
+    def _create_task(self, task_args: dict) -> Task:
         # Needs to implemented by subclasses
         raise NotImplementedError
 
@@ -146,7 +145,8 @@ class RcsSim(SimEnv, Serializable):
         Get the nominal a.k.a. default domain parameters.
 
         .. note::
-            It is highly recommended to have the same values as in the associated physics config file (p<NAME>.xml)
+            It is highly recommended to have the same values as in the associated physics config file (p<NAME>.xml),
+            since the nominal domain parameters are not set explicitly from Pyrado (only when randomizing).
         """
         raise NotImplementedError
 
@@ -238,7 +238,7 @@ class RcsSim(SimEnv, Serializable):
         try:
             obs = self._impl.step(act, disturbance)
         except JointLimitException:
-            # Joint limits exceeded! Return (obs, rew, done, info) directly after this failure
+            # Joint limits exceeded! Return (obs, rew, done, info) directly after this failure.
             return self._impl.lastObservation, self._joint_limit_penalty, True, dict(t=self._curr_step*self._dt)
 
         self.state = self._state_from_obs(obs)  # only for the Python side

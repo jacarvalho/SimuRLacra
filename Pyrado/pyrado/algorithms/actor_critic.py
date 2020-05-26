@@ -124,20 +124,20 @@ class ActorCritic(Algorithm, ABC):
             # This algorithm instance is not a subroutine of a meta-algorithm
             joblib.dump(self._env, osp.join(self._save_dir, 'env.pkl'))
             to.save(self._expl_strat.policy, osp.join(self._save_dir, 'policy.pt'))
-            to.save(self._critic, osp.join(self._save_dir, 'critic.pt'))
+            to.save(self._critic.value_fcn, osp.join(self._save_dir, 'valuefcn.pt'))
         else:
             # This algorithm instance is a subroutine of a meta-algorithm
             if 'prefix' in meta_info and 'suffix' in meta_info:
                 to.save(self._expl_strat.policy, osp.join(self._save_dir,
                                                           f"{meta_info['prefix']}_policy_{meta_info['suffix']}.pt"))
-                to.save(self._critic, osp.join(self._save_dir,
-                                               f"{meta_info['prefix']}_critic_{meta_info['suffix']}.pt"))
+                to.save(self._critic.value_fcn, osp.join(self._save_dir,
+                                                         f"{meta_info['prefix']}_valuefcn_{meta_info['suffix']}.pt"))
             elif 'prefix' in meta_info and 'suffix' not in meta_info:
                 to.save(self._expl_strat.policy, osp.join(self._save_dir, f"{meta_info['prefix']}_policy.pt"))
-                to.save(self._critic, osp.join(self._save_dir, f"{meta_info['prefix']}_critic.pt"))
+                to.save(self._critic.value_fcn, osp.join(self._save_dir, f"{meta_info['prefix']}_valuefcn.pt"))
             elif 'prefix' not in meta_info and 'suffix' in meta_info:
                 to.save(self._expl_strat.policy, osp.join(self._save_dir, f"policy_{meta_info['suffix']}.pt"))
-                to.save(self._critic, osp.join(self._save_dir, f"critic_{meta_info['suffix']}.pt"))
+                to.save(self._critic.value_fcn, osp.join(self._save_dir, f"valuefcn_{meta_info['suffix']}.pt"))
             else:
                 raise NotImplementedError
 
@@ -149,20 +149,20 @@ class ActorCritic(Algorithm, ABC):
         if meta_info is None:
             # This algorithm instance is not a subroutine of a meta-algorithm
             self._env = joblib.load(osp.join(ld, 'env.pkl'))
-            self._critic.load_state_dict(to.load(osp.join(ld, 'critic.pt')).state_dict())
+            self._critic.value_fcn.load_state_dict(to.load(osp.join(ld, 'valuefcn.pt')).state_dict())
         else:
             # This algorithm instance is a subroutine of a meta-algorithm
             if 'prefix' in meta_info and 'suffix' in meta_info:
-                self._critic.load_state_dict(
-                    to.load(osp.join(ld, f"{meta_info['prefix']}_critic_{meta_info['suffix']}.pt")).state_dict()
+                self._critic.value_fcn.load_state_dict(
+                    to.load(osp.join(ld, f"{meta_info['prefix']}_valuefcn_{meta_info['suffix']}.pt")).state_dict()
                 )
             elif 'prefix' in meta_info and 'suffix' not in meta_info:
-                self._critic.load_state_dict(
-                    to.load(osp.join(ld, f"{meta_info['prefix']}_critic.pt")).state_dict()
+                self._critic.value_fcn.load_state_dict(
+                    to.load(osp.join(ld, f"{meta_info['prefix']}_valuefcn.pt")).state_dict()
                 )
             elif 'prefix' not in meta_info and 'suffix' in meta_info:
-                self._critic.load_state_dict(
-                    to.load(osp.join(ld, f"critic_{meta_info['suffix']}.pt")).state_dict()
+                self._critic.value_fcn.load_state_dict(
+                    to.load(osp.join(ld, f"valuefcn_{meta_info['suffix']}.pt")).state_dict()
                 )
             else:
                 raise NotImplementedError

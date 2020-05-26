@@ -1,6 +1,9 @@
-<Controller graph="gBoxFlipping_posCtrl.xml" >
+<Controller graph="gBoxFlipping_trqCtrl.xml" >
 
-  <Task name="LeftCP  XYZ" effector="ContactPoint_L" controlVariable="XYZ" active="true"/>
-  <Task name="RightCP XYZ" effector="ContactPoint_R" controlVariable="XYZ" active="true"/>
+  <Task name="LeftCP  XYZ" controlVariable="XYZ" effector="ContactPoint_L" active="true"/>
+  <Task name="RightCP XYZ" controlVariable="XYZ" effector="ContactPoint_R" active="true"/>
+
+  <Task name="Distance L" controlVariable="Distance"  effector="ContactPoint_L" refBdy="Box" gainDX="1.0" active="true"/>
+  <Task name="Distance R" controlVariable="Distance"  effector="ContactPoint_R" refBdy="Box" gainDX="1.0" active="true"/>
 
 </Controller>

@@ -19,7 +19,7 @@ from pyrado.policies.base import Policy
 from pyrado.policies.two_headed import TwoHeadedPolicy
 from pyrado.sampling.step_sequence import StepSequence
 from pyrado.utils.data_types import RenderMode
-from pyrado.utils.input_output import print_cbt
+from pyrado.utils.input_output import print_cbt, color_validity
 
 
 def rollout(env: Env,
@@ -138,7 +138,11 @@ def rollout(env: Env,
         # Check observations
         if np.isnan(obs).any():
             env.render(render_mode, render_step=1)
-            raise pyrado.ValueErr(msg=f'At least one observation value is NaN: {obs}')
+            raise pyrado.ValueErr(
+                msg=f'At least one observation value is NaN!' +
+                    tabulate([list(env.obs_space.labels),
+                              [*color_validity(obs, np.invert(np.isnan(obs)))]], headers='firstrow')
+            )
 
         # Get the agent's action
         obs_to = to.from_numpy(obs).type(to.get_default_dtype())  # policy operates on PyTorch tensors
@@ -158,7 +162,11 @@ def rollout(env: Env,
         # Check actions
         if np.isnan(act).any():
             env.render(render_mode, render_step=1)
-            raise pyrado.ValueErr(msg=f'At least one action value is NaN: {act}')
+            raise pyrado.ValueErr(
+                msg=f'At least one observation value is NaN!' +
+                    tabulate([list(env.act_space.labels),
+                              [*color_validity(act, np.invert(np.isnan(act)))]], headers='firstrow')
+            )
 
         # Record time after the action was calculated
         if record_dts:

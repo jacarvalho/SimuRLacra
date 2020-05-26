@@ -42,7 +42,7 @@ def load_experiment(ex_dir: str, args: Any = None) -> ([SimEnv, EnvWrapper], Pol
 
     :param ex_dir: experiment's parent directory
     :param args: arguments from the argument parser
-    :return: environment, policy, and optional output (e.g. critic)
+    :return: environment, policy, and optional output (e.g. valuefcn)
     """
     hparams_file_name = 'hyperparams.yaml'
     env, policy, kwout = None, None, dict()
@@ -65,14 +65,14 @@ def load_experiment(ex_dir: str, args: Any = None) -> ([SimEnv, EnvWrapper], Pol
             else:
                 policy = to.load(osp.join(ex_dir, f'iter_{args.iter}_policy_cand.pt'))
                 print_cbt(f"Loaded {osp.join(ex_dir, f'iter_{args.iter}_policy_cand.pt')}", 'g')
-            # Critic (optional)
+            # Value function (optional)
             if any([a.name in hparams.get('subroutine_name', '') for a in [PPO, PPO2, A2C]]):
                 try:
-                    kwout['critic'] = to.load(osp.join(ex_dir, 'final_critic.pt'))
-                    print_cbt(f"Loaded {osp.join(ex_dir, 'final_critic.pt')}", 'g')
+                    kwout['valuefcn'] = to.load(osp.join(ex_dir, 'final_valuefcn.pt'))
+                    print_cbt(f"Loaded {osp.join(ex_dir, 'final_valuefcn.pt')}", 'g')
                 except FileNotFoundError:
-                    kwout['critic'] = to.load(osp.join(ex_dir, 'critic.pt'))
-                    print_cbt(f"Loaded {osp.join(ex_dir, 'critic.pt')}", 'g')
+                    kwout['valuefcn'] = to.load(osp.join(ex_dir, 'valuefcn.pt'))
+                    print_cbt(f"Loaded {osp.join(ex_dir, 'valuefcn.pt')}", 'g')
 
         elif BayRn.name in hparams.get('algo_name', ''):
             # Environment
@@ -90,14 +90,14 @@ def load_experiment(ex_dir: str, args: Any = None) -> ([SimEnv, EnvWrapper], Pol
             else:
                 policy = to.load(osp.join(ex_dir, f'iter_{args.iter}.pt'))
                 print_cbt(f"Loaded {osp.join(ex_dir, f'iter_{args.iter}.pt')}", 'g')
-            # Critic (optional)
+            # Value function (optional)
             if any([a.name in hparams.get('subroutine_name', '') for a in [PPO, PPO2, A2C]]):
                 try:
-                    kwout['critic'] = to.load(osp.join(ex_dir, 'final_critic.pt'))
-                    print_cbt(f"Loaded {osp.join(ex_dir, 'final_critic.pt')}", 'g')
+                    kwout['valuefcn'] = to.load(osp.join(ex_dir, 'final_valuefcn.pt'))
+                    print_cbt(f"Loaded {osp.join(ex_dir, 'final_valuefcn.pt')}", 'g')
                 except FileNotFoundError:
-                    kwout['critic'] = to.load(osp.join(ex_dir, 'critic.pt'))
-                    print_cbt(f"Loaded {osp.join(ex_dir, 'critic.pt')}", 'g')
+                    kwout['valuefcn'] = to.load(osp.join(ex_dir, 'valuefcn.pt'))
+                    print_cbt(f"Loaded {osp.join(ex_dir, 'valuefcn.pt')}", 'g')
 
         elif EPOpt.name in hparams.get('algo_name', ''):
             # Environment
@@ -112,9 +112,9 @@ def load_experiment(ex_dir: str, args: Any = None) -> ([SimEnv, EnvWrapper], Pol
             # Policy
             policy = to.load(osp.join(ex_dir, 'policy.pt'))
             print_cbt(f"Loaded {osp.join(ex_dir, 'policy.pt')}", 'g')
-            # Critic
-            kwout['critic'] = to.load(osp.join(ex_dir, 'critic.pt'))
-            print_cbt(f"Loaded {osp.join(ex_dir, 'critic.pt')}", 'g')
+            # Value function
+            kwout['valuefcn'] = to.load(osp.join(ex_dir, 'valuefcn.pt'))
+            print_cbt(f"Loaded {osp.join(ex_dir, 'valuefcn.pt')}", 'g')
 
         elif SAC.name in hparams.get('algo_name', ''):
             # Environment

@@ -77,8 +77,9 @@ class QBallBalancerSim(SimPyEnv, Serializable):
 
         self._curr_act = np.zeros_like(max_act)  # just for usage in render function
 
-    def _create_task(self, state_des: [np.ndarray, None]) -> Task:
+    def _create_task(self, task_args: dict) -> Task:
         # Define the task including the reward function
+        state_des = task_args.get('state_des', None)
         if state_des is None:
             state_des = np.zeros(8)
         Q = np.diag([1e0, 1e0, 5e3, 5e3, 1e-2, 1e-2, 5e-1, 5e-1])  # default

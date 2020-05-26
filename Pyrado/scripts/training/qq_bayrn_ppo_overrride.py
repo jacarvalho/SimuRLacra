@@ -26,7 +26,8 @@ if __name__ == '__main__':
     policy = to.load(osp.join(ex_dir, 'policy.pt'))
 
     # Critic
-    critic = to.load(osp.join(ex_dir, 'critic.pt'))
+    valuefcn = to.load(osp.join(ex_dir, 'valuefcn.pt'))
+    critic = GAE(valuefcn, **hparams['critic'])
 
     # Subroutine
     algo_hparam = hparams['subroutine']

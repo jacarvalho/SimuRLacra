@@ -44,8 +44,9 @@ class QBallBalancerReal(RealEnv, Serializable):
         self._obs_space = self._state_space
         self._act_space = BoxSpace(-max_act, max_act, labels=['V_{x}', 'V_{y}'])
 
-    def _create_task(self, state_des: [np.ndarray, None]) -> Task:
+    def _create_task(self, task_args: dict) -> Task:
         # Define the task including the reward function
+        state_des = task_args.get('state_des', None)
         if state_des is None:
             state_des = np.zeros(self.state_space.shape)
         Q = np.diag([1e0, 1e0, 1e3, 1e3, 1e-2, 1e-2, 5e-1, 5e-1])

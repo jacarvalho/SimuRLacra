@@ -55,8 +55,8 @@ cmake_prefix_path = [
 
 # Required packages
 required_packages = [
-    "qt5-default",
     "g++-4.8",
+    "qt5-default",
     "libqwt-qt5-dev",
     "libbullet-dev",
     "libfreetype6-dev",
@@ -272,6 +272,8 @@ def buildCMakeProject(srcDir, buildDir, cmakeVars=None, env=env_vars, install_di
 
 
 def setup_dep_libraries():
+    # Update
+    sp.check_call(["sudo", "apt-get", "update", "-y"])
     # Install dependencies
     sp.check_call(["sudo", "apt-get", "install", "-y"] + required_packages)
 

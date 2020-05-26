@@ -66,7 +66,9 @@ class BallOnBeamSim(SimPyEnv, Serializable):
         self.J_beam = 1./12*m_beam*(l_beam**2 + d_beam**2)
         self.zeta_ball = m_ball + self.J_ball/r_ball**2
 
-    def _create_task(self, state_des: [np.ndarray, None]) -> Task:
+    def _create_task(self, task_args: dict) -> Task:
+        # Define the task including the reward function
+        state_des = task_args.get('state_des', None)
         if state_des is None:
             state_des = np.zeros(4)
         # Define the task including the reward function

@@ -47,7 +47,7 @@ class RealEnv(Env, ABC):
 
         # Initialize task
         self._state_des = state_des
-        self._task = self._create_task(state_des)
+        self._task = self._create_task(task_args=dict(state_des=state_des))
 
     def __del__(self):
         """ Finalizer forwards to close function. """

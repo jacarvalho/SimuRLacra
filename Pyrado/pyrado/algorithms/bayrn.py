@@ -61,7 +61,7 @@ class BayRn(Algorithm, ABC):
                  thold_succ: float = pyrado.inf,
                  warmstart: bool = True,
                  policy_param_init: to.Tensor = None,
-                 critic_param_init: to.Tensor = None):
+                 valuefcn_param_init: to.Tensor = None):
         """
         Constructor
 
@@ -90,7 +90,7 @@ class BayRn(Algorithm, ABC):
         :param warmstart: initialize the policy parameters with the one of the previous iteration. This option has no
                           effect for initial policies and can be overruled by passing init policy params explicitly.
         :param policy_param_init: initial policy parameter values for the subroutine, set `None` to be random
-        :param critic_param_init: initial value function parameter values for the subroutine, set `None` to be random
+        :param valuefcn_param_init: initial value function parameter values for the subroutine, set `None` to be random
         """
         assert isinstance(env_sim, MetaDomainRandWrapper)
         assert isinstance(subroutine, Algorithm)
@@ -115,7 +115,7 @@ class BayRn(Algorithm, ABC):
         self.acq_samples = acq_samples
         self.acq_param = acq_param
         self.policy_param_init = policy_param_init.detach() if policy_param_init is not None else None
-        self.critic_param_init = critic_param_init.detach() if critic_param_init is not None else None
+        self.valuefcn_param_init = valuefcn_param_init.detach() if valuefcn_param_init is not None else None
         self.warmstart = warmstart
         self.num_eval_rollouts = num_eval_rollouts
         self.thold_succ = to.tensor([thold_succ], dtype=to.get_default_dtype())
@@ -155,7 +155,7 @@ class BayRn(Algorithm, ABC):
             # Reset the subroutine's policy (and value function)
             self._subroutine.policy.init_param(self.policy_param_init)
             if isinstance(self._subroutine, ActorCritic):
-                self._subroutine.critic.value_fcn.init_param(self.critic_param_init)
+                self._subroutine.critic.value_fcn.init_param(self.valuefcn_param_init)
             if self.policy_param_init is None:
                 print_cbt('Learning the new solution from scratch', 'y')
             else:
@@ -167,8 +167,8 @@ class BayRn(Algorithm, ABC):
                 to.load(osp.join(self._save_dir, f'iter_{self._curr_iter - 1}_policy.pt')).state_dict()
             )
             if isinstance(self._subroutine, ActorCritic):
-                self._subroutine.critic.load_state_dict(
-                    to.load(osp.join(self._save_dir, f'iter_{self._curr_iter - 1}_critic.pt')).state_dict()
+                self._subroutine.critic.value_fcn.load_state_dict(
+                    to.load(osp.join(self._save_dir, f'iter_{self._curr_iter - 1}_valuefcn.pt')).state_dict()
                 )
             print_cbt(f'Initialized the new solution with the results from iteration {self._curr_iter - 1}', 'y')
 
@@ -369,9 +369,9 @@ class BayRn(Algorithm, ABC):
             to.save(self.bounds, osp.join(self._save_dir, 'bounds.pt'))
             to.save(self._subroutine.policy, osp.join(self._save_dir, 'policy.pt'))
             if isinstance(self._subroutine, ActorCritic):
-                to.save(self._subroutine.critic, osp.join(self._save_dir, 'critic.pt'))
+                to.save(self._subroutine.critic.value_fcn, osp.join(self._save_dir, 'valuefcn.pt'))
         else:
-            raise pyrado.ValueErr(msg="BayRn is not supposed be run as a subroutine!")
+            raise pyrado.ValueErr(msg=f'{self.name} is not supposed be run as a subroutine!')
 
     def load_snapshot(self, load_dir: str = None, meta_info: dict = None):
         # Get the directory to load from
@@ -460,7 +460,7 @@ class BayRn(Algorithm, ABC):
                         input('Evaluated in the target domain. Hit any key to continue.')
 
         else:
-            raise pyrado.ValueErr(msg='BayRn is not supposed be run as a subroutine!')
+            raise pyrado.ValueErr(msg=f'{self.name} is not supposed be run as a subroutine!')
 
     @staticmethod
     def argmax_posterior_mean(cands: to.Tensor,
@@ -508,7 +508,7 @@ class BayRn(Algorithm, ABC):
                             num_restarts: int,
                             num_samples: int,
                             policy_param_init: to.Tensor = None,
-                            critic_param_init: to.Tensor = None) -> Policy:
+                            valuefcn_param_init: to.Tensor = None) -> Policy:
         """
         Train a policy based on the maximizer of the posterior mean.
 
@@ -518,7 +518,7 @@ class BayRn(Algorithm, ABC):
         :param num_restarts: number of restarts for the optimization of the acquisition function
         :param num_samples: number of samples for the optimization of the acquisition function
         :param policy_param_init: initial policy parameter values for the subroutine, set `None` to be random
-        :param critic_param_init: initial value function parameter values for the subroutine, set `None` to be random
+        :param valuefcn_param_init: initial value function parameter values for the subroutine, set `None` to be random
         :return: the final BayRn policy
         """
         # Load the required data
@@ -539,7 +539,7 @@ class BayRn(Algorithm, ABC):
         # Reset the subroutine's policy (and value function)
         subroutine.policy.init_param(policy_param_init)
         if isinstance(subroutine, ActorCritic):
-            subroutine.critic.value_fcn.init_param(critic_param_init)
+            subroutine.critic.value_fcn.init_param(valuefcn_param_init)
         if policy_param_init is None:
             print_cbt('Learning the argmax solution from scratch', 'y')
         else:
@@ -547,7 +547,3 @@ class BayRn(Algorithm, ABC):
 
         subroutine.train(snapshot_mode='best')  # meta_info=dict(prefix='final')
         return subroutine.policy
-
-
-# Legacy
-BDR = BayRn

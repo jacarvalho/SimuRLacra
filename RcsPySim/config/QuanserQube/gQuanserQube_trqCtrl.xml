@@ -1,7 +1,7 @@
 <Graph name="QuanserQube">
 
-  <Body name="GroundPlane">
-    <Shape type="BOX" extents="2.0 2.0 0.004" transform="0 0 -0.002 0 0 0" graphics="true" physics="true" color="LIGHTBLUE" textureFile="../textures/fMRT_brown_squares_2x2.png"/>
+  <Body name="GroundPlane" physics="kinematic">
+    <Shape type="BOX" graphics="true" physics="true" extents="2.0 2.0 0.01" transform="0 0 -0.005 0 0 0" color="PEWTER" textureFile="../textures/fMRT_brown_squares_2x2.png"/>
   </Body>
 
   <Body name="Qube" mass="1.2" physics="kinematic">
