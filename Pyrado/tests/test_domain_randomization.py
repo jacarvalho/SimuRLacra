@@ -7,7 +7,7 @@ from pytest_lazyfixture import lazy_fixture
 from pyrado.domain_randomization.domain_parameter import NormalDomainParam, MultivariateNormalDomainParam, \
     BernoulliDomainParam
 from pyrado.domain_randomization.utils import param_grid
-from tests.conftest import m_needs_bullet
+from tests.conftest import m_needs_bullet, m_needs_mujoco
 
 
 @pytest.mark.sampling
@@ -131,11 +131,14 @@ def test_param_grid():
         lazy_fixture('default_qbb'),
         lazy_fixture('default_qcpst'),
         lazy_fixture('default_qcpsu'),
-        lazy_fixture('default_bop2d_bt'),
+        pytest.param(lazy_fixture('default_bop2d_bt'), marks=m_needs_bullet),
         pytest.param(lazy_fixture('default_bop5d_bt'), marks=m_needs_bullet),
-        lazy_fixture('default_blpos_bt'),
+        pytest.param(lazy_fixture('default_blpos_bt'), marks=m_needs_bullet),
+        pytest.param(lazy_fixture('default_cth'), marks=m_needs_mujoco),
+        pytest.param(lazy_fixture('default_hop'), marks=m_needs_mujoco),
+        pytest.param(lazy_fixture('default_wambic'), marks=m_needs_mujoco),
     ]
-    , ids=['bob', 'omo', 'pend', 'qbb', 'qcp-st', 'qcp-su', 'bop2d', 'bop5d', 'bl_pos']
+    , ids=['bob', 'omo', 'pend', 'qbb', 'qcp-st', 'qcp-su', 'bop2d', 'bop5d', 'bl_pos', 'cth', 'hop', 'wam-bic']
 )
 def test_setting_dp_vals(env):
     # Loop over all possible domain parameters and set them to a random value
