@@ -70,7 +70,7 @@ class WAMSim(MujocoSimEnv, Serializable):
         max_obs = np.full(obs_shape, pyrado.inf)
         self._obs_space = BoxSpace(-max_obs, max_obs)
 
-    def __create_task(self, task_args: dict = None) -> Task:
+    def _create_task(self, task_args: dict = None) -> Task:
         # TODO: Formulate proper task/reward
         state_des = np.concatenate([self.init_qpos.copy(), self.init_qvel.copy()])
         return DesStateTask(self.spec, state_des, ZeroPerStepRewFcn())
@@ -164,7 +164,7 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         # Observation space (normalized time)
         self._obs_space = BoxSpace(np.array([0.]), np.array([1.]), labels=['$t$'])
 
-    def __create_task(self, task_args: dict = None) -> Task:
+    def _create_task(self, task_args: dict = None) -> Task:
         # Create a DesStateTask that masks everything but the ball position
         idcs = list(range(self.state_space.flat_dim-3, self.state_space.flat_dim))  # Cartesian ball position
         spec = EnvSpec(
