@@ -195,6 +195,29 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
             max_steps=self.max_steps, factor=task_args.get('factor', 1.)
         )
 
+    def _adapt_model_file(self, xml_model: str, domain_param: dict) -> str:
+        # First replace special domain parameters
+        cup_scale = domain_param.pop('cup_scale', None)
+        rope_length = domain_param.pop('rope_length', None)
+
+        if cup_scale is not None:
+            # See https://github.com/psclklnk/self-paced-rl/blob/master/sprl/envs/ball_in_a_cup.py l.93-96
+            xml_model = xml_model.replace('[scale_mesh]', str(cup_scale * 0.001))
+            xml_model = xml_model.replace('[pos_mesh]', str(0.055 - (cup_scale - 1.) * 0.023))
+            xml_model = xml_model.replace('[pos_goal]', str(0.1165 + (cup_scale - 1.) * 0.0385))
+            xml_model = xml_model.replace('[size_cup]', str(cup_scale * 0.038))
+
+        if rope_length is not None:
+            # The rope consists of 29 capsules
+            xml_model = xml_model.replace('[pos_capsule]', str(rope_length / 29))
+            # Each joint is at the top of each capsule (therefore negative direction from center)
+            xml_model = xml_model.replace('[pos_capsule_joint]', str(-rope_length / 58))
+            # Pure visualization component
+            xml_model = xml_model.replace('[size_capsule_geom]', str(rope_length / 72))
+
+        # Resolve mesh directory and replace the remaining domain parameters
+        return super()._adapt_model_file(xml_model, domain_param)
+
     def _mujoco_step(self, act: np.ndarray) -> dict:
         # Get the desired positions and velocities for the selected joints
         des_qpos = self.init_pose_des.copy()  # the desired trajectory is relative to self.init_pose_des

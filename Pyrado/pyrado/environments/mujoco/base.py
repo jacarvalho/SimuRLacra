@@ -121,6 +121,25 @@ class MujocoSimEnv(SimEnv, ABC, Serializable):
         # Update task
         self._task = self._create_task(self.task_args)
 
+    def _adapt_model_file(self, xml_model: str, domain_param: dict) -> str:
+        """
+        Changes the model's XML-file given the current domain parameters before constructing the MuJoCo simulation.
+        One use case is for example the cup_scale for the `WAMBallInCupSim` where multiple values in the model's
+        XML-file are changed based on one domain parameter.
+
+        :param xml_model: parsed model file
+        :param domain_param: copy of the environments domain parameters
+        :return: adapted model file where the placeholders are filled with numerical values
+        """
+        # The mesh dir is not resolved when later passed as a string, thus we do it manually
+        xml_model = xml_model.replace(f'[ASSETS_DIR]', pyrado.MUJOCO_ASSETS_DIR)
+
+        # Replace all occurrences of the domain parameter placeholder with its value
+        for key, value in domain_param.items():
+            xml_model = xml_model.replace(f'[{key}]', str(value))
+
+        return xml_model
+
     @abstractmethod
     def _mujoco_step(self, act: np.ndarray) -> dict:
         """
@@ -138,29 +157,7 @@ class MujocoSimEnv(SimEnv, ABC, Serializable):
             This function is called from the constructor and from the domain parameter setter.
         """
         xml_model = self.xml_model_template  # don't change the template
-
-        # The mesh dir is not resolved when later passed as a string, thus we do it manually
-        xml_model = xml_model.replace(f'[ASSETS_DIR]', pyrado.MUJOCO_ASSETS_DIR)
-
-        # Replace all occurrences of the domain parameter placeholder with its value
-        for key, value in self.domain_param.items():
-            # The WAMBallInCupSim class has special domain parameters that modify multiple keys in the XML file.
-            # Note: cannot use from ... import as it results in circular import
-            if isinstance(self, pyrado.environments.mujoco.wam.WAMBallInCupSim):
-                if key == 'cup_scale':
-                    # Reference: https://github.com/psclklnk/self-paced-rl/blob/master/sprl/envs/ball_in_a_cup.py l.93-96
-                    xml_model = xml_model.replace('[scale_mesh]', str(value * 0.001))
-                    xml_model = xml_model.replace('[pos_mesh]', str(0.055 - (value - 1.) * 0.023))
-                    xml_model = xml_model.replace('[pos_goal]', str(0.1165 + (value - 1.) * 0.0385))
-                    xml_model = xml_model.replace('[size_cup]', str(value * 0.038))
-                if key == 'rope_length':
-                    # The rope consists of 29 capsules
-                    xml_model = xml_model.replace('[pos_capsule]', str(value / 29))
-                    # Each joint is at the top of each capsule (therefore negative direction from center)
-                    xml_model = xml_model.replace('[pos_capsule_joint]', str(-value / 58))
-                    # Pure visualization component
-                    xml_model = xml_model.replace('[size_capsule_geom]', str(value / 72))
-            xml_model = xml_model.replace(f'[{key}]', str(value))
+        xml_model = self._adapt_model_file(xml_model, self.domain_param)
 
         # Create MuJoCo model from parsed XML file
         self.model = mujoco_py.load_model_from_xml(xml_model)

@@ -127,7 +127,8 @@ if __name__ == '__main__':
     # Apply DualRBFLinearPolicy
     rbf_hparam = dict(num_feat_per_dim=7, bounds=(np.array([0.]), np.array([1.])))
     policy = DualRBFLinearPolicy(env.spec, rbf_hparam, dim_mask=1)
-    ro = rollout(env, policy, render_mode=RenderMode(video=True), eval=True)
+    ro = rollout(env, policy, render_mode=RenderMode(video=True), eval=True,
+                 reset_kwargs=dict(domain_param=dict(cup_scale=5.)))
     after_rollout_query(env, policy, ro)
 
     # Retrieve infos from rollout
