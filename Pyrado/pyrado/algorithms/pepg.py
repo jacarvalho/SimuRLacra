@@ -101,9 +101,9 @@ class PEPG(ParameterExploring):
             std_min=expl_std_min,
         ))
 
-        # self.optim = to.optim.Adam([{'params': self._policy.parameters()}], lr=lr, eps=1e-5)
-        self.optim = to.optim.SGD([{'params': self._policy.parameters()}], lr=lr, momentum=0.9, dampening=0.1)
+        self.optim = to.optim.SGD([{'params': self._policy.parameters()}], lr=lr, momentum=0.8, dampening=0.1)
 
+    @to.no_grad()
     def update(self, param_results: ParameterSamplingResult, ret_avg_curr: float = None):
         # Average the return values over the rollouts
         rets_avg_ros = param_results.mean_returns

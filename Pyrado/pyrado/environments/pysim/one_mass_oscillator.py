@@ -30,7 +30,7 @@ class OneMassOscillatorSim(SimPyEnv, Serializable):
         # Define the spaces
         max_state = np.array([1., 10.])  # pos [m], vel [m/s]
         min_init_state = np.array([-0.8*max_state[0], -0.01*max_state[1]])
-        max_init_state = np.array([-0.8*max_state[0], -0.01*max_state[1]])
+        max_init_state = np.array([-0.6*max_state[0], +0.01*max_state[1]])
         max_act = np.array([max_state[0]*k])  # max force [N]; should be big enough to reach every steady state
         self._curr_act = np.zeros_like(max_act)  # just for usage in render function
 
