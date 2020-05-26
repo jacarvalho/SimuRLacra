@@ -27,7 +27,9 @@ class PendulumSim(SimPyEnv, Serializable):
         self._init_space = SingularStateSpace(init_state, labels=[r'$\theta$', r'$\dot{\theta}$'])
         self._act_space = BoxSpace(-tau_max, tau_max, labels=[r'$\tau$'])
 
-    def _create_task(self, state_des: [np.ndarray, None]) -> Task:
+    def _create_task(self, task_args: dict) -> Task:
+        # Define the task including the reward function
+        state_des = task_args.get('state_des', None)
         if state_des is None:
             state_des = np.array([np.pi, 0.])
         # Define the task including the reward function

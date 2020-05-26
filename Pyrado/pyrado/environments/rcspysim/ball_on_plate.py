@@ -28,7 +28,7 @@ class BallOnPlateSim(RcsSim, Serializable):
         .. note::
             This constructor should only be called via the subclasses.
 
-        :param task_args: arguments for the task construction, e.g `dict(state_des=np.zeros(42))`
+        :param task_args: arguments for the task construction
         :param init_ball_vel: initial ball velocity applied to ball on `reset()`
         :param max_dist_force: maximum disturbance force, set to `None` (default) for no disturbance
         :param kwargs: keyword arguments forwarded to the `BallOnPlateSim` constructor

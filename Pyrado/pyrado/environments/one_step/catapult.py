@@ -5,7 +5,6 @@ import pyrado
 from pyrado.environments.sim_base import SimEnv
 from pyrado.spaces.box import BoxSpace
 from pyrado.spaces.singular import SingularStateSpace
-from pyrado.tasks.base import Task
 from pyrado.tasks.desired_state import DesStateTask
 from pyrado.tasks.reward_functions import AbsErrRewFcn
 from pyrado.utils.data_types import RenderMode
@@ -51,7 +50,7 @@ class CatapultSim(SimEnv, Serializable):
         self._act_space = BoxSpace(-max_act, max_act, labels=[r'$\theta$'])
 
         # Define the task including the reward function
-        self._task = self._create_task(None)
+        self._task = self._create_task(task_args=dict())
 
     @property
     def state_space(self):
@@ -69,7 +68,9 @@ class CatapultSim(SimEnv, Serializable):
     def act_space(self):
         return self._act_space
 
-    def _create_task(self, state_des: [np.ndarray, None]) -> Task:
+    def _create_task(self, task_args: dict) -> DesStateTask:
+        # Define the task including the reward function
+        state_des = task_args.get('state_des', None)
         if state_des is None:
             state_des = np.zeros(self._state_space.shape)
         return DesStateTask(self.spec, state_des, rew_fcn=AbsErrRewFcn(q=np.array([1.]), r=np.array([0.])))

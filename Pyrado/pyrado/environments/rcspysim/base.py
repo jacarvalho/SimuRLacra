@@ -43,7 +43,7 @@ class RcsSim(SimEnv, Serializable):
             The joint type (i.e. position or torque control) is set in the config-xml file in Rcs.
 
         :param envType: environment type name as defined on the C++ side
-        :param task_args: arguments for the task construction, e.g `dict(state_des=np.zeros(42))`
+        :param task_args: arguments for the task construction
         :param dt: integration step size in seconds
         :param max_steps: max number of simulation time steps
         :param domain_param: initial domain param values
@@ -121,7 +121,7 @@ class RcsSim(SimEnv, Serializable):
         return self._task
 
     @abstractmethod
-    def _create_task(self, task_args: [dict, None]) -> Task:
+    def _create_task(self, task_args: dict) -> Task:
         # Needs to implemented by subclasses
         raise NotImplementedError
 

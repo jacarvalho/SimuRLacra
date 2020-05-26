@@ -39,8 +39,9 @@ class OneMassOscillatorSim(SimPyEnv, Serializable):
         self._init_space = BoxSpace(min_init_state, max_init_state, labels=['$x$', r'$\dot{x}$'])
         self._act_space = BoxSpace(-max_act, max_act, labels=['$F$'])
 
-    def _create_task(self, state_des: [np.ndarray, None]) -> Task:
+    def _create_task(self, task_args: dict) -> Task:
         # Define the task including the reward function
+        state_des = task_args.get('state_des', None)
         if state_des is None:
             state_des = np.zeros(2)
         Q = np.diag([1e1, 1e-3])

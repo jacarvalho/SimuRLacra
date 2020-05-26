@@ -71,8 +71,8 @@ class EnvWrapper(Env, Serializable):
     def max_steps(self, num_steps: int):
         self._wrapped_env.max_steps = num_steps
 
-    def _create_task(self, state_des: [np.ndarray, None]) -> Task:
-        return self._create_task(state_des)
+    def _create_task(self, task_args: dict) -> Task:
+        return self._wrapped_env._create_task(task_args)
 
     @property
     def task(self) -> Task:

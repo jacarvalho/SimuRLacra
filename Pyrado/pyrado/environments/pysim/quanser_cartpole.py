@@ -268,10 +268,11 @@ class QCartPoleStabSim(QCartPoleSim, Serializable):
         self._init_space = BoxSpace(min_init_state, max_init_state,
                                     labels=['$x$', r'$\theta$', r'$\dot{x}$', r'$\dot{\theta}$'])
 
-    def _create_task(self, state_des: [np.ndarray, None]) -> Task:
+    def _create_task(self, task_args: dict) -> Task:
+        # Define the task including the reward function
+        state_des = task_args.get('state_des', None)
         if state_des is None:
             state_des = np.array([0., np.pi, 0., 0.])
-        # Define the task including the reward function
         return RadiallySymmDesStateTask(
             self.spec, state_des, QuadrErrRewFcn(Q=np.diag([1e-0, 1e-0, 1e-2, 1e-2]), R=np.diag([1e-3])), idcs=[1]
         )
@@ -314,10 +315,11 @@ class QCartPoleSwingUpSim(QCartPoleSim, Serializable):
         self._init_space = BoxSpace(-max_init_state, max_init_state,
                                     labels=['$x$', r'$\theta$', r'$\dot{x}$', r'$\dot{\theta}$'])
 
-    def _create_task(self, state_des: [np.ndarray, None]) -> Task:
+    def _create_task(self, task_args: dict) -> Task:
+        # Define the task including the reward function
+        state_des = task_args.get('state_des', None)
         if state_des is None:
             state_des = np.array([0., np.pi, 0., 0.])
-        # Define the task including the reward function
         return FinalRewTask(
             RadiallySymmDesStateTask(self.spec, state_des, UnderActuatedSwingUpRewFcn(), idcs=[1]),
             mode=FinalRewMode(always_negative=True)

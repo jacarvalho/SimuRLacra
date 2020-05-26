@@ -84,7 +84,7 @@ class GymEnv(SimEnv, Serializable):
     def act_space(self) -> Space:
         return self._act_space
 
-    def _create_task(self, state_des: [np.ndarray, None]) -> None:
+    def _create_task(self, task_args: dict) -> None:
         return None
 
     @property

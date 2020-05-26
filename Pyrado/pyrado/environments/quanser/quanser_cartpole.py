@@ -52,7 +52,7 @@ class QCartPoleReal(RealEnv, Serializable):
         self._act_space = BoxSpace(-max_act, max_act, labels=['$V$'])
 
     @abstractmethod
-    def _create_task(self, state_des: [np.ndarray, None]):
+    def _create_task(self, task_args: dict) -> Task:
         # Needs to implemented by subclasses
         return NotImplementedError
 
@@ -199,8 +199,9 @@ class QCartPoleStabReal(QCartPoleReal):
         max_state = np.array([+self._l_rail/2. - self._x_buffer, np.pi + stab_thold, np.inf, np.inf])
         self._state_space = BoxSpace(min_state, max_state, labels=['$x$', r'$\theta$', r'$\dot{x}$', r'$\dot{\theta}$'])
 
-    def _create_task(self, state_des: [np.ndarray, None]) -> Task:
+    def _create_task(self, task_args: dict) -> Task:
         # Define the task including the reward function
+        state_des = task_args.get('state_des', None)
         if state_des is None:
             state_des = np.array([0., np.pi, 0., 0.])
         Q = np.diag([1e-0, 5e-0, 1e-2, 1e-2])
@@ -286,8 +287,9 @@ class QCartPoleSwingUpReal(QCartPoleReal):
         min_state = np.array([self._l_rail/2. + self._x_buffer, -4*np.pi, np.inf, np.inf])  # [m, rad, m/s, rad/s]
         self._state_space = BoxSpace(min_state, max_state, labels=['$x$', r'$\theta$', r'$\dot{x}$', r'$\dot{\theta}$'])
 
-    def _create_task(self, state_des: [np.ndarray, None]) -> Task:
+    def _create_task(self, task_args: dict) -> Task:
         # Define the task including the reward function
+        state_des = task_args.get('state_des', None)
         if state_des is None:
             state_des = np.array([0., np.pi, 0., 0.])
         return FinalRewTask(

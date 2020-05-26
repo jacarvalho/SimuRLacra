@@ -35,8 +35,9 @@ class QQubeSim(SimPyEnv, Serializable):
                                     labels=[r'$\theta$', r'$\alpha$', r'$\dot{\theta}$', r'$\dot{\alpha}$'])
         self._act_space = BoxSpace(-max_volt, max_volt, labels=['$V$'])
 
-    def _create_task(self, state_des: [np.ndarray, None]) -> Task:
+    def _create_task(self, task_args: dict) -> Task:
         # Define the task including the reward function
+        state_des = task_args.get('state_des', None)
         if state_des is None:
             state_des = np.array([0., np.pi, 0., 0.])
         Q = np.diag([3e-1, 1., 2e-2, 5e-3])
@@ -247,8 +248,9 @@ class QQubeStabSim(QQubeSim):
         # Directly observe the noise-free state
         return state.copy()
 
-    def _create_task(self, state_des: [np.ndarray, None]) -> Task:
+    def _create_task(self, task_args: dict) -> Task:
         # Define the task including the reward function
+        state_des = task_args.get('state_des', None)
         if state_des is None:
             state_des = np.array([0., np.pi, 0., 0.])
         Q = np.diag([3., 4., 2., 2.])

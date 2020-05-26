@@ -85,7 +85,7 @@ class BoxFlippingSim(RcsSim, Serializable):
         .. note::
             This constructor should only be called via the subclasses.
 
-        :param task_args: arguments for the task construction, e.g `dict(state_des=np.zeros(42))`
+        :param task_args: arguments for the task construction
         :param ref_frame: reference frame for the position and orientation MPs, e.g. 'world', 'table', or 'box'
         :param position_mps: `True` if the MPs are defined on position level, `False` if defined on velocity level
         :param mps_left: left arm's movement primitives holding the dynamical systems and the goal states

@@ -22,19 +22,19 @@ class MockEnv(SimEnv):
 
         # Set empty domain param
         self._domain_param = {}
-        
+
         # Init check attributes
         self.next_obs = None
         self.next_reward = None
         self.next_step_done = False
         self.last_act = None
-    
+
     @property
     def obs_space(self):
         if self._obs_space is None:
             raise NotImplementedError
         return self._obs_space
-    
+
     @property
     def state_space(self):
         # Just use observation space here for now.
@@ -58,7 +58,7 @@ class MockEnv(SimEnv):
     def task(self):
         raise self._task
 
-    def _create_task(self, state_des):
+    def _create_task(self, task_args: dict = None):
         pass  # unused
 
     @property
@@ -72,25 +72,25 @@ class MockEnv(SimEnv):
 
     def get_nominal_domain_param(self):
         return {}
-    
+
     def _get_obs(self):
         # Return None if no obs space
         if self._obs_space is None:
             return None
-        
+
         # Return random if no next_obs set
         if self.next_obs is None:
             return self._obs_space.sample_uniform()
 
         return np.array(self.next_obs)
-    
+
     def reset(self, init_state=None, domain_param=None):
         # Init state is not needed for now.
-        
+
         # Set domain params
         if domain_param is not None:
             self.domain_param = domain_param
-        
+
         # Return next observation
         return self._get_obs()
 
@@ -98,15 +98,15 @@ class MockEnv(SimEnv):
         # Store as last action as list, to simplify asserts
         if self._act_space is not None:
             self.last_act = list(act)
-        
+
         # Return next observation
         obs = self._get_obs()
-        
+
         # And next reward
         rew = self.next_reward
         if rew is None:
             rew = random.random()
-            
+
         return obs, rew, self.next_step_done, dict()
 
     def render(self, mode=RenderMode(), render_step=1):
