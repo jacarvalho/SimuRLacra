@@ -115,6 +115,13 @@ class MujocoSimEnv(SimEnv, ABC, Serializable):
         # Update MuJoCo model
         self._create_mujoco_model()
 
+        if self.viewer is not None:
+            # If the viewer already exists and we reset the domain parameters, we must also recreate the viewer since
+            # it references to the simulation object which get's reconstructed during _create_mujoco_model()
+            import glfw
+            glfw.destroy_window(self.viewer.window)
+            self.viewer = None
+
         # Update spaces
         self._create_spaces()
 

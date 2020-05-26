@@ -114,22 +114,21 @@ if __name__ == '__main__':
 
     # Environment
     env = WAMBallInCupSim(max_steps=1750)
-    # To get same behavior of the policy as before the "nsubsteps-change" use:
-    # env = WAMBallInCupSim(max_steps=1750, frame_skip=1)
 
     # Stabilize around initial position
     env.reset(domain_param=dict(cup_scale=1., rope_length=0.3103, ball_mass=0.021))
     act = np.zeros((6,))  # desired deltas from the initial pose
-    for i in range(env.max_steps):
+    for i in range(500):
         env.step(act)
         env.render(mode=RenderMode(video=True))
 
     # Apply DualRBFLinearPolicy
     rbf_hparam = dict(num_feat_per_dim=7, bounds=(np.array([0.]), np.array([1.])))
     policy = DualRBFLinearPolicy(env.spec, rbf_hparam, dim_mask=1)
-    ro = rollout(env, policy, render_mode=RenderMode(video=True), eval=True,
-                 reset_kwargs=dict(domain_param=dict(cup_scale=5.)))
-    after_rollout_query(env, policy, ro)
+    done, param = False, None
+    while not done:
+        ro = rollout(env, policy, render_mode=RenderMode(video=True), eval=True, reset_kwargs=dict(domain_param=param))
+        done, _, param = after_rollout_query(env, policy, ro)
 
     # Retrieve infos from rollout
     t = ro.env_infos['t']
