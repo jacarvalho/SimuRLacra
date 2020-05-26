@@ -51,7 +51,7 @@ class PEPG(ParameterExploring):
                  max_iter: int,
                  num_rollouts: int,
                  expl_std_init: float,
-                 expl_std_min: float = 0.1,
+                 expl_std_min: float = 0.01,
                  pop_size: int = None,
                  clip_ratio_std: float = 0.05,
                  normalize_update: bool = True,
@@ -132,9 +132,9 @@ class PEPG(ParameterExploring):
 
         # Update the mean
         self.optim.zero_grad()
-        self._policy.param_grad = delta_mean
+        self._policy.param_grad = -delta_mean  # PyTorch optimizers are minimizers
         self.optim.step()
-        # Old version without PyTorch opimizer: self._expl_strat.policy.param_values += delta_mean * self.lr
+        # Old version without PyTorch optimizer: self._expl_strat.policy.param_values += delta_mean * self.lr
 
         # Update the std
         S = (epsilon**2 - self._expl_strat.std**2)/self._expl_strat.std
