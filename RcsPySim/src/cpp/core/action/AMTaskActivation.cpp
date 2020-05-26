@@ -219,7 +219,8 @@ void AMTaskActivation::computeCommand(MatNd* q_des, MatNd* q_dot_des, MatNd* T_d
     {
         MatNd_printComment("q_des", q_des);
         MatNd_printComment("q_dot_des", q_dot_des);
-        MatNd_printComment("T_des", T_des);
+        if (T_des)
+            MatNd_printComment("T_des", T_des);
     }
 }
 

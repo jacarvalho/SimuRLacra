@@ -20,10 +20,10 @@
 
     <Body name="Table" transform="1.5 0 0.76 0 0 0" physics="kinematic" color="ORANGE">
         <Shape type="BOX" extents="1.2 1.6 0.04" graphics="true" physics="true" material="table_mat" textureFile="textures/white-hardwood-floor.jpg"/>
-        <Shape type="CYLINDER" length="0.74" radius="0.04" transform=" 0.34  0.48 -0.39 0 0 0" graphics="true" physics="true" distance="true" material="wood" textureFile="textures/wood-ikea-birch.jpg"/>
-        <Shape type="CYLINDER" length="0.74" radius="0.04" transform="-0.34  0.48 -0.39 0 0 0" graphics="true" physics="true" distance="true" material="wood" textureFile="textures/wood-ikea-birch.jpg"/>
-        <Shape type="CYLINDER" length="0.74" radius="0.04" transform=" 0.34 -0.48 -0.39 0 0 0" graphics="true" physics="true" distance="true" material="wood" textureFile="textures/wood-ikea-birch.jpg"/>
-        <Shape type="CYLINDER" length="0.74" radius="0.04" transform="-0.34 -0.48 -0.39 0 0 0" graphics="true" physics="true" distance="true" material="wood" textureFile="textures/wood-ikea-birch.jpg"/>
+        <Shape type="CYLINDER" length="0.74" radius="0.04" transform=" 0.34  0.48 -0.39 0 0 0" graphics="true" physics="true" distance="true" material="table_mat" textureFile="textures/wood-ikea-birch.jpg"/>
+        <Shape type="CYLINDER" length="0.74" radius="0.04" transform="-0.34  0.48 -0.39 0 0 0" graphics="true" physics="true" distance="true" material="table_mat" textureFile="textures/wood-ikea-birch.jpg"/>
+        <Shape type="CYLINDER" length="0.74" radius="0.04" transform=" 0.34 -0.48 -0.39 0 0 0" graphics="true" physics="true" distance="true" material="table_mat" textureFile="textures/wood-ikea-birch.jpg"/>
+        <Shape type="CYLINDER" length="0.74" radius="0.04" transform="-0.34 -0.48 -0.39 0 0 0" graphics="true" physics="true" distance="true" material="table_mat" textureFile="textures/wood-ikea-birch.jpg"/>
         <Shape type="FRAME" scale="0.8"/>
     </Body>
 
