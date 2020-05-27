@@ -25,7 +25,7 @@ class ADR(Algorithm):
     Active Domain Randomization (ADR)
 
     .. seealso::
-        [1] B. Mehta, M. Diaz, F. Golemo, C.J. Pal, L. Paull, "Active Domain Randomization", arXiv, 2019
+        [1] B. Mehta, M. Diaz, F. Golemo, C.J. Pal, L. Paull, "Active Domain Randomization", CoRL, 2019
     """
 
     name: str = 'adr'
@@ -49,12 +49,12 @@ class ADR(Algorithm):
                  num_sampler_envs: int = 4,
                  num_trajs_per_config: int = 8,
                  max_step_length: float = 0.05,
-                 randomized_params=None,
+                 randomized_params: Sequence[str] = None,
                  logger: StepLogger = None):
         """
         Constructor
 
-        TODO @Robin
+        TODO @Robin: add doc
         :param save_dir: directory to save the snapshots i.e. the results in
         :param env:
         :param subroutine: algorithm which performs the policy / value-function optimization
@@ -103,7 +103,7 @@ class ADR(Algorithm):
         self.svpg_kl_factor = svpg_kl_factor
 
         # Get the number of params
-        self.params = self.PhysicsParameters(env, randomized_params)
+        self.params = self.PhysicsParameters(env, randomized_params)   # TODO @Robin: check out how DomainRandomizer holds DomainParam. Do we realyl need to implement PhysicsParameters?
         self.num_params = self.params.length
 
         # Initialize the sampler
@@ -153,7 +153,7 @@ class ADR(Algorithm):
 
     def compute_params(self, sim_instances: to.Tensor, t: int):
         """
-        TODO add doc
+        TODO @Robin: add doc
 
         :param sim_instances:
         :param t:
@@ -186,7 +186,6 @@ class ADR(Algorithm):
             rewards = []
             infos = []
             rand_trajs_now = []
-            ref_trajs_now = []
             if parallel:
                 with to.no_grad():
                     for t in range(10):
@@ -313,16 +312,16 @@ class ADR(Algorithm):
 
 
 class SVPGAdapter(EnvWrapper, Serializable):
-    """ Wrapper to encapsulate the physics parameter search as a reinforcement learning problem """
+    """ Wrapper to encapsulate the domain parameter search as a reinforcement learning problem """
 
     def __init__(self,
                  wrapped_env: Env,
                  parameters: ADR.PhysicsParameters,
                  inner_policy: Policy,
                  discriminator: RewardGenerator,
-                 step_length=0.01,
-                 horizon=50,
-                 num_trajs_per_config=8,
+                 step_length: float = 0.01,
+                 horizon: int = 50,
+                 num_trajs_per_config: int = 8,
                  num_sampler_envs: int = 4):
         """
         Constructor
@@ -337,7 +336,9 @@ class SVPGAdapter(EnvWrapper, Serializable):
         :param num_sampler_envs: the number of samplers operating in parallel
         """
         Serializable._init(self, locals())
+
         EnvWrapper.__init__(self, wrapped_env)
+
         self.parameters = parameters
         self.pool = SamplerPool(num_sampler_envs)
         self.inner_policy = inner_policy
@@ -350,7 +351,6 @@ class SVPGAdapter(EnvWrapper, Serializable):
         self._adapter_obs_space = BoxSpace(-np.ones(self.parameters.length), np.ones(self.parameters.length))
         self._adapter_act_space = BoxSpace(-np.ones(self.parameters.length), np.ones(self.parameters.length))
         self.horizon = horizon
-
         self.horizon_count = 0
 
     @property
@@ -369,10 +369,10 @@ class SVPGAdapter(EnvWrapper, Serializable):
         return self.state
 
     def step(self, act: np.ndarray):
-        # clip the action according to the maximum step length
+        # Clip the action according to the maximum step length
         action = np.clip(act, -1, 1)*self.svpg_max_step_length
 
-        # perform step by moving into direction of action
+        # Perform step by moving into direction of action
         self.state = np.clip(self.state + action, 0, 1)
         param_norm = self.state + 0.5
         rand_eval_params = [self.parameters.array_to_dict(param_norm*self.parameters.nominal)]*self.num_trajs
@@ -391,6 +391,7 @@ class SVPGAdapter(EnvWrapper, Serializable):
         if self.horizon_count >= self.horizon:
             self.horizon_count = 0
             self.state = np.random.random_sample(self.parameters.length)
+
         return self.state, reward, done, info
 
     def lite_step(self, act: np.ndarray):
