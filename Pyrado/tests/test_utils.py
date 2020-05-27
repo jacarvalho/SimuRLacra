@@ -6,7 +6,7 @@ from tqdm import tqdm
 from pyrado.sampling.utils import gen_batches, gen_ordered_batches
 from pyrado.utils.data_types import *
 from pyrado.utils.functions import noisy_nonlin_fcn
-from pyrado.utils.math import cosine_similarity
+from pyrado.utils.math import cosine_similarity, cov
 from pyrado.environments.pysim.ball_on_beam import BallOnBeamSim
 from pyrado.policies.dummy import DummyPolicy
 from pyrado.sampling.rollout import rollout
@@ -17,7 +17,27 @@ from pyrado.utils.standardizing import RunningStandardizer, Standardizer
 from pyrado.utils.normalizing import RunningNormalizer, normalize
 
 
-@pytest.mark.util
+@pytest.mark.parametrize(
+    'x, data_along_rows', [
+        (np.random.rand(100, 4), True),
+        (np.random.rand(4, 100), False)
+    ], ids=['100_4', '4_100']
+)
+def test_cov(x, data_along_rows):
+    rowvar = not data_along_rows
+    cov_np = np.cov(x, rowvar=rowvar)
+    cov_pyrado = cov(to.from_numpy(x), data_along_rows=data_along_rows).numpy()
+
+    assert cov_pyrado.shape[0] == cov_pyrado.shape[1]
+    if data_along_rows:
+        assert cov_np.shape[0] == x.shape[1]
+        assert cov_pyrado.shape[0] == x.shape[1]
+    else:
+        assert cov_np.shape[0] == x.shape[0]
+        assert cov_pyrado.shape[0] == x.shape[0]
+    assert np.allclose(cov_np, cov_pyrado)
+
+
 @pytest.mark.parametrize(
     'env, expl_strat', [
         (BallOnBeamSim(dt=0.02, max_steps=100),
@@ -289,7 +309,7 @@ def test_gss_optimizer_identical_bounds(identical_bounds):
     class Dummy:
         def loss_fcn(self):
             # Some function to minimize
-            return (self.x + self.y + 4) ** 2
+            return (self.x + self.y + 4)**2
 
         def __init__(self):
             # Test with different lower and upper bounds
@@ -315,7 +335,7 @@ def test_gss_optimizer_functional():
     class Dummy:
         def loss_fcn(self):
             # Some function to minimize
-            return (self.x + 4) ** 2
+            return (self.x + 4)**2
 
         def __init__(self):
             # Test with different lower and upper bounds

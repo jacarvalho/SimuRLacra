@@ -49,6 +49,33 @@ class UnitCubeProjector:
             raise pyrado.TypeErr(given=x, expected_type=[np.ndarray, to.Tensor])
 
 
+def cov(x: to.Tensor, data_along_rows: bool = False):
+    """
+    Compute the covariance matrix given data.
+
+    .. note::
+        Only real valued matrices are supported
+
+    :param x: matrix containing multiple observations of multiple variables
+    :param data_along_rows: if `True` the variables are stacked along the columns, else they are along the rows
+    :return: covariance matrix given the data
+    """
+    if x.dim() > 2:
+        raise ValueError('m has more than 2 dimensions')
+    if x.dim() < 2:
+        x = x.view(1, -1)
+    if data_along_rows and x.size(0) != 1:
+        # Transpose if necessary
+        x = x.t()
+
+    num_samples = x.size(1)
+    if num_samples < 2:
+        raise pyrado.ShapeErr(msg='Need at least 2 samples to compute the covariance!')
+
+    x -= to.mean(x, dim=1, keepdim=True)
+    return x.matmul(x.t()).squeeze()/(num_samples - 1)
+
+
 def explained_var(y_mdl: [np.ndarray, to.Tensor], y_obs: [np.ndarray, to.Tensor]) -> (np.ndarray, to.Tensor):
     """
     Calculate proportion of the variance "explained" by the model (see coefficient of determination R^2)
