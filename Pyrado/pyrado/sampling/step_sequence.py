@@ -146,22 +146,22 @@ class Step(DictIndexProxy):
     A single step in a rollout.
     
     This object is a proxy, referring a specific index in the rollout. When querying an attribute from the step,
-    it will try to return the corresponding slice from the rollout. Additionally, one can prefix attributes with next_
-    to access the value for the next step, ie next_observationis the observation made at the start of the next step.
+    it will try to return the corresponding slice from the rollout. Additionally, one can prefix attributes with `next_`
+    to access the value for the next step, i.e. `next_observations` the observation made at the start of the next step.
     """
     __slots__ = ('_rollout')
 
     def __init__(self, rollout, index):
-        super(Step, self).__init__(rollout.__dict__, index)
-        # Store rollout
-        self._rollout = rollout
+        """
+        Constructor
 
-    #     @property
-    #     def done(self):
-    #         """
-    #         True if this is the final step of a rollout.
-    #         """
-    #         return self._index == len(self._rollout)-1 and self._rollout.complete
+        :param rollout: `StepSequence` object to which this step belongs
+        :param index:  index of this step in the rollout
+        """
+        # Call DictIndexProxy's constructor
+        super(Step, self).__init__(rollout.__dict__, index)
+
+        self._rollout = rollout
 
     def _process_key(self, key: str, index: int, error_type: Type[Exception]):
         if key.startswith('next_'):
@@ -175,10 +175,7 @@ class Step(DictIndexProxy):
 
     # Serialize rollout and index
     def __getstate__(self):
-        return {
-            'rollout', self._rollout,
-            'index', self._index
-        }
+        return {'rollout', self._rollout, 'index', self._index}
 
     def __setstate__(self, state):
         self._rollout = state['rollout']
@@ -222,12 +219,12 @@ class StepSequence(Sequence[Step]):
         """
         Constructor
 
-        :param complete: False if the rollout is incomplete, ie as part of a minibatch
+        :param complete: `False` if the rollout is incomplete, i.e. as part of a mini-batch
         :param rollout_info: data staying constant through the whole episode
         :param data_format: 'torch' to use Tensors, 'numpy' to use ndarrays.
                              Will use Tensors if any data argument does, else ndarrays
         :param done: boolean ndarray, specifying for each step whether it led to termination.
-                     By default, the last step is done if complete is true.
+                     The last step of continuous rollouts, i.e. not mini-batches, is done if `complete` is `True`.
         :param continuous: true if the steps form one continuous sequence.
         :param rewards: list of reward values, required, determines sequence length
         :param data: additional data lists, their length must be `len(rewards)` or `len(rewards) + 1`
@@ -345,7 +342,7 @@ class StepSequence(Sequence[Step]):
         :param with_after_last: `True` if there is one more element than the length (e.g. last observation)
         """
         if name in self._data_names:
-            raise ValueError(f'Duplicate data name {name}')
+            raise pyrado.ValueErr(msg=f'Trying to add a duplicate data field for {name}')
 
         if value is None:
             # Compute desired step length
@@ -387,8 +384,7 @@ class StepSequence(Sequence[Step]):
         elif isinstance(entry, list):
             return entry[index]
         else:
-            # Unsupported
-            return None
+            return None  # unsupported
 
     def __getitem__(self, index):
         if isinstance(index, slice) or isinstance(index, Iterable):
@@ -431,7 +427,7 @@ class StepSequence(Sequence[Step]):
         elif isinstance(entry, list):
             if len(entry) == self.length + 1:
                 return entry[:-1]
-        # no truncation
+        # No truncation
         return entry
 
     def get_data_values(self, name: str, truncate_last: bool = False):
@@ -448,7 +444,6 @@ class StepSequence(Sequence[Step]):
         if truncate_last:
             # Check length
             entry = self._truncate_after_last(entry)
-
         return entry
 
     def __map_tensors(self, mapper, elem):
@@ -485,9 +480,10 @@ class StepSequence(Sequence[Step]):
         Convert data to specified format.
 
         :param data_format: torch to use Tensors, numpy to use ndarrays
-        :param data_type: optional torch/numpy dtype for data. When None is passed, the data type is left unchanged.
+        :param data_type: optional torch/numpy dtype for data. When `None` is passed, the data type is left unchanged.
         """
-        assert data_format in {'torch', 'numpy'}, f'Unknown data format: {data_format}'
+        if data_format not in {'torch', 'numpy'}:
+            raise pyrado.ValueErr(given=data_format, eq_constraint="'torch' or 'numpy'")
 
         if self._data_format == data_format:
             return
@@ -697,7 +693,9 @@ class StepSequence(Sequence[Step]):
 def discounted_reverse_cumsum(data, gamma: float):
     """
     Use a linear filter to compute the reverse discounted cumulative sum.
-    .. note:: `scipy.signal.lfilter` assumes an initialization with 0 by default.
+
+    .. note::
+        `scipy.signal.lfilter` assumes an initialization with 0 by default.
 
     :param data: input data with samples along the 0 axis (e.g. time series)
     :param gamma: discount factor
