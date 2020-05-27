@@ -49,7 +49,7 @@ class PoWER(ParameterExploring):
         :param pop_size: number of solutions in the population
         :param max_iter: maximum number of iterations (i.e. policy updates) that this algorithm runs
         :param num_rollouts: number of rollouts per policy sample
-        :param num_is_samples: of samples (policy parameter sets & returns) for importance sampling
+        :param num_is_samples: number of samples (policy parameter sets & returns) for importance sampling
         :param expl_std_init: initial standard deviation for the exploration strategy
         :param expl_std_min: minimal standard deviation for the exploration strategy
         :param symm_sampling: use an exploration strategy which samples symmetric populations
