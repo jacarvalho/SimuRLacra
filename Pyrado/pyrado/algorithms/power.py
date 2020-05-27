@@ -1,6 +1,7 @@
 import torch as to
 from warnings import warn
 
+import pyrado
 from pyrado.algorithms.parameter_exploring import ParameterExploring
 from pyrado.environments.base import Env
 from pyrado.exploration.stochastic_params import NormalParamNoise, SymmParamExplStrat
@@ -80,14 +81,14 @@ class PoWER(ParameterExploring):
         )
         if symm_sampling:
             # Exploration strategy based on symmetrical normally distributed noise
-            # Symmetric buffer needs to have an even number of samples
             if self.pop_size%2 != 0:
+                # Symmetric buffer needs to have an even number of samples
                 self.pop_size += 1
             self._expl_strat = SymmParamExplStrat(self._expl_strat)
 
         # Initialize memory for importance sampling
         self.num_is_samples = min(pop_size, num_is_samples)
-        self.is_mem_ret = to.zeros(self.num_is_samples)  # will be ignored since returns are > 0
+        self.is_mem_ret = 1e-6*to.ones(self.num_is_samples)  # has to be initialized > 0 due to first covariance update
         self.is_mem_params = to.zeros(self.num_is_samples, self._policy.num_param)
         self.is_mem_W = to.zeros(self.num_is_samples, self._policy.num_param, self._policy.num_param)
 
@@ -96,7 +97,7 @@ class PoWER(ParameterExploring):
         super().reset(seed)
 
         # Reset memory for importance sampling
-        self.is_mem_ret = to.zeros(self.num_is_samples)  # will be ignored since returns are > 0
+        self.is_mem_ret = 1e-6*to.ones(self.num_is_samples)  # has to be initialized > 0 due to first covariance update
         self.is_mem_params = to.zeros(self.num_is_samples, self._policy.num_param)
         self.is_mem_W = to.zeros(self.num_is_samples, self._policy.num_param, self._policy.num_param)
 

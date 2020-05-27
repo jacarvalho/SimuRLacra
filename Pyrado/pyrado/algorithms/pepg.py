@@ -94,6 +94,7 @@ class PEPG(ParameterExploring):
 
         # Exploration strategy based on symmetrical normally distributed noise
         if self.pop_size%2 != 0:
+            # Symmetric buffer needs to have an even number of samples
             self.pop_size += 1
         self._expl_strat = SymmParamExplStrat(NormalParamNoise(
             self._policy.num_param,

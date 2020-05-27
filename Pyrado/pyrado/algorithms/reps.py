@@ -96,8 +96,8 @@ class REPS(ParameterExploring):
         )
         if symm_sampling:
             # Exploration strategy based on symmetrical normally distributed noise
-            # Symmetric buffer needs to have an even number of samples
             if self.pop_size % 2 != 0:
+                # Symmetric buffer needs to have an even number of samples
                 self.pop_size += 1
             self._expl_strat = SymmParamExplStrat(self._expl_strat)
 
@@ -107,9 +107,9 @@ class REPS(ParameterExploring):
 
         # Dual specific
         if grad_free_optim:
-            self.optim_dual = GSS([{'params': self.kappa}],
-                                  param_min=to.log(to.tensor([1e-4])),
-                                  param_max=to.log(to.tensor([1e4])))
+            self.optim_dual = GSS(
+                [{'params': self.kappa}], param_min=to.log(to.tensor([1e-4])), param_max=to.log(to.tensor([1e4]))
+            )
         else:
             self.optim_dual = to.optim.Adam([{'params': self.kappa}], lr=lr_dual, eps=1e-5)
             # self.optim_dual = to.optim.SGD([{'params': self.kappa}], lr=lr_dual, momentum=0.7, weight_decay=1e-4)
