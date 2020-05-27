@@ -30,12 +30,12 @@ if __name__ == '__main__':
     algo_hparam = dict(
         max_iter=100,
         num_rollouts=8,
-        pop_size=20,
-        expl_std_init=0.5,
+        pop_size=60,
+        expl_std_init=1.0,
         clip_ratio_std=0.05,
-        normalize_update=True,
+        normalize_update=False,
         transform_returns=True,
-        lr=1e-3,
+        lr=1e-2,
         num_sampler_envs=8,
     )
     algo = PEPG(ex_dir, env, policy, **algo_hparam)
