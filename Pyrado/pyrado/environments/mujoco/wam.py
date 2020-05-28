@@ -165,6 +165,9 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         self._obs_space = BoxSpace(np.array([0.]), np.array([1.]), labels=['$t$'])
 
     def _create_task(self, task_args: dict = None) -> Task:
+        if task_args is None:
+            task_args = dict()
+
         # Create a DesStateTask that masks everything but the ball position
         idcs = list(range(self.state_space.flat_dim-3, self.state_space.flat_dim))  # Cartesian ball position
         spec = EnvSpec(
@@ -182,14 +185,12 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         # Now
         state_des = np.array([0., -0.8566, 1.164])
         rew_fcn = ExpQuadrErrRewFcn(
-            Q=20.*np.eye(3),  # distance ball - cup
-            R=np.diag([1e-1, 1e-1, 1e-1, 1e-2, 1e-2, 1e-2])  # joint angles and velocities
+            Q=task_args.get('Q', 20.*np.eye(3)),  # distance ball - cup
+            R=task_args.get('R', np.diag([1e-1, 1e-1, 1e-1, 1e-2, 1e-2, 1e-2]))  # joint angles and velocities
         )
         dst = DesStateTask(spec, state_des, rew_fcn)
 
         # Wrap the masked DesStateTask to add a bonus for the best state in the rollout
-        if task_args is None:
-            task_args = dict(factor=1.)
         return BestStateFinalRewTask(
             MaskedTask(self.spec, dst, idcs),
             max_steps=self.max_steps, factor=task_args.get('factor', 1.)
