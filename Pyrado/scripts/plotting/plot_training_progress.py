@@ -1,5 +1,5 @@
 """
-Script to plot the training progress
+Script to plot the training progress.
 """
 import numpy as np
 import os.path as osp
@@ -12,6 +12,7 @@ from pyrado.utils.argparser import get_argparser
 from pyrado.utils.experiments import read_csv_w_replace
 from pyrado.utils.input_output import print_cbt
 
+
 if __name__ == '__main__':
     # Parse command line arguments
     args = get_argparser().parse_args()
@@ -21,7 +22,7 @@ if __name__ == '__main__':
     ex_dir = ask_for_experiment()
     file = osp.join(ex_dir, 'progress.csv')
 
-    # Create plot manager that loads the grogress data from the CSV into a Pandas data frame called df
+    # Create plot manager that loads the progress data from the CSV into a Pandas data frame called df
     lfm = LiveFigureManager(file, read_csv_w_replace, args, update_interval=5)
 
 
@@ -49,7 +50,7 @@ if __name__ == '__main__':
 
     @lfm.figure('Return -- Average & Minimum & Maximum')
     def return_min_max_avg(fig, df, args):
-        if 'avg_return' not in df.columns or 'min_return' not in df.columns or 'max_return' not in df.columns:
+        if not all(c in df.columns for c in ['avg_return', 'min_return', 'max_return']):
             if args.verbose:
                 print_cbt('Did not find the key avg_return, min_return or max_return in the data frame.'
                           'Skipped the associated plot.')
@@ -57,26 +58,16 @@ if __name__ == '__main__':
         render_lo_up_avg(fig.gca(), np.arange(len(df.min_return)), df.min_return, df.max_return, df.avg_return,
                          x_label='iteration', y_label='return', curve_label='average')
 
-    @lfm.figure('Return -- Average & Standard Deviation')
-    def return_min_max_avg(fig, df, args):
-        if 'avg_return' not in df.columns or 'std_return' not in df.columns:
+
+    @lfm.figure('Return -- Average & Standard Deviation & Median (& Current)')
+    def return_avg_median(fig, df, args):
+        if not all(c in df.columns for c in ['avg_return', 'std_return', 'median_return']):
             if args.verbose:
-                print_cbt('Did not find the key avg_return or std_return in the data frame.'
+                print_cbt('Did not find the key avg_return, std_return or median_return in the data frame.'
                           'Skipped the associated plot.')
             return False
         render_mean_std(fig.gca(), np.arange(len(df.avg_return)), df.avg_return, df.std_return,
                         x_label='iteration', y_label='return', curve_label='average')
-        plt.legend(loc='lower right')
-
-
-    @lfm.figure('Return -- Average & Median (& Current)')
-    def return_avg_median(fig, df, args):
-        if 'avg_return' not in df.columns or 'median_return' not in df.columns:
-            if args.verbose:
-                print_cbt('Did not find the key avg_return or median_return in the data frame.'
-                          'Skipped the associated plot.')
-            return False
-        plt.plot(np.arange(len(df.avg_return)), df.avg_return, label='average')
         plt.plot(np.arange(len(df.median_return)), df.median_return, label='median')
         if 'curr_policy_return' in df.columns:
             # If the algorithm is a subclass of ParameterExploring
@@ -107,7 +98,6 @@ if __name__ == '__main__':
             if args.verbose:
                 print_cbt('Did not find the key avg_expl_strat_std in the data frame. Skipped the associated plot.')
             return False
-        # df.expl_strat_std = df.expl_strat_std.apply(lambda x: np.array(x))
         plt.plot(np.arange(len(df.avg_expl_strat_std)), df.avg_expl_strat_std, label='average')
         if 'min_expl_strat_std' in df.columns and 'max_expl_strat_std' in df.columns:
             plt.plot(np.arange(len(df.min_expl_strat_std)), df.min_expl_strat_std, label='smallest')
@@ -141,7 +131,7 @@ if __name__ == '__main__':
 
     @lfm.figure('Smallest and Largest Magnitude Policy Parameter')
     def extreme_policy_params(fig, df, args):
-        if 'min_mag_policy_param' not in df.columns or 'max_mag_policy_param' not in df.columns:
+        if not all(c in df.columns for c in ['min_mag_policy_param', 'max_mag_policy_param']):
             if args.verbose:
                 print_cbt('Did not find the key min_mag_policy_param or max_mag_policy_param in the data'
                           'frame. Skipped the associated plot.')
@@ -155,7 +145,7 @@ if __name__ == '__main__':
 
     @lfm.figure('Loss Before and After Update Step')
     def loss_before_after(fig, df, args):
-        if 'loss_before' not in df.columns or 'loss_after' not in df.columns:
+        if not all(c in df.columns for c in ['loss_before', 'loss_after']):
             if args.verbose:
                 print_cbt('Did not find the key loss_before or loss_after in the data frame.'
                           'Skipped the associated plot.')
@@ -169,7 +159,7 @@ if __name__ == '__main__':
 
     @lfm.figure('Policy and Value Function Gradient L-2 Norm')
     def avg_grad_norm(fig, df, args):
-        if 'avg_policy_grad_norm' not in df.columns or 'avg_V_fcn_grad_norm' not in df.columns:
+        if not all(c in df.columns for c in ['avg_policy_grad_norm', 'avg_V_fcn_grad_norm']):
             if args.verbose:
                 print_cbt('Did not find the key avg_policy_grad_norm or avg_V_fcn_grad_norm in the data frame.'
                           'Skipped the associated plot.')
@@ -181,7 +171,7 @@ if __name__ == '__main__':
         plt.legend(loc='best')
 
 
-    """ CVaR Sampler """
+    """ CVaR sampler specific """
 
 
     @lfm.figure('Full Average StepSequence Length')
@@ -198,8 +188,7 @@ if __name__ == '__main__':
 
     @lfm.figure('Full Return -- Average & Minimum & Maximum')
     def full_return_min_max_avg(fig, df, args):
-        if 'full_avg_return' not in df.columns or 'full_min_return' not in df.columns or \
-           'full_max_return' not in df.columns:
+        if not all(c in df.columns for c in ['full_avg_return', 'full_min_return', 'full_max_return']):
             if args.verbose:
                 print_cbt('Did not find the key full_avg_return, full_min_return or full_max_return in the data frame.'
                           'Skipped the associated plot.')
@@ -212,8 +201,7 @@ if __name__ == '__main__':
 
     @lfm.figure('Full Return -- Average & Median & Standard Deviation')
     def return_avg_median_std(fig, df, args):
-        if 'full_avg_return' not in df.columns or 'full_median_return' not in df.columns or \
-           'full_std_return' not in df.columns:
+        if not all(c in df.columns for c in ['full_avg_return', 'full_median_return', 'full_std_return']):
             if args.verbose:
                 print_cbt('Did not find the key full_avg_return, full_median_return or full_std_return in the data'
                           'frame. Skipped the associated plot.')
@@ -224,25 +212,25 @@ if __name__ == '__main__':
         plt.legend(loc='lower right')
 
 
-    """ REPS """
+    """ REPS specific """
 
 
     @lfm.figure('REPS Dual Parameter')
     def eta(fig, df, args):
         if 'eta' not in df.columns:
             if args.verbose:
-                print_cbt('Did not find the key eta in the data frame.' 'Skipped the associated plot.')
+                print_cbt('Did not find the key eta in the data frame. Skipped the associated plot.')
             return False
         plt.plot(np.arange(len(df.eta)), df.eta)
         plt.xlabel('iteration')
-        plt.ylabel('$\eta$')
+        plt.ylabel(r'$\eta$')
 
 
     @lfm.figure('Dual Loss Before and After Update Step')
     def loss_before_after(fig, df, args):
-        if 'dual_loss_before' not in df.columns or 'dual_loss_after' not in df.columns:
+        if not all(c in df.columns for c in ['dual_loss_before', 'dual_loss_after']):
             if args.verbose:
-                print_cbt('Did not find the key dual_loss_before or dual_loss_after in the data frame.'
+                print_cbt('Did not find the key dual_loss_before or dual_loss_after in the data frame. '
                           'Skipped the associated plot.')
             return False
         plt.plot(np.arange(len(df.dual_loss_before)), df.dual_loss_before, label='before')
@@ -252,14 +240,14 @@ if __name__ == '__main__':
         plt.legend(loc='best')
 
 
-    """ SAC """
+    """ SAC specific """
 
 
     @lfm.figure('SAC Temperature Parameter')
     def eta(fig, df, args):
         if 'alpha' not in df.columns:
             if args.verbose:
-                print_cbt('Did not find the key alpha in the data frame.' 'Skipped the associated plot.')
+                print_cbt('Did not find the key alpha in the data frame. Skipped the associated plot.')
             return False
         plt.plot(np.arange(len(df.alpha)), df.alpha)
         plt.xlabel('iteration')
@@ -268,10 +256,9 @@ if __name__ == '__main__':
 
     @lfm.figure('Q-function Losses')
     def loss_before_after(fig, df, args):
-        if 'Q1_loss' not in df.columns or 'Q2_loss' not in df.columns:
+        if not all(c in df.columns for c in ['Q1_loss', 'Q2_loss']):
             if args.verbose:
-                print_cbt('Did not find the key Q1_loss or Q2_loss in the data frame.'
-                          'Skipped the associated plot.')
+                print_cbt('Did not find the key Q1_loss or Q2_loss in the data frame. Skipped the associated plot.')
             return False
         plt.plot(np.arange(len(df.Q1_loss)), df.Q1_loss, label='$Q_1$')
         plt.plot(np.arange(len(df.Q2_loss)), df.Q2_loss, label='$Q_2$')
@@ -284,11 +271,30 @@ if __name__ == '__main__':
     def loss_before_after(fig, df, args):
         if 'policy_loss' not in df.columns:
             if args.verbose:
-                print_cbt('Did not find the key policy_loss in the data frame.' 'Skipped the associated plot.')
+                print_cbt('Did not find the key policy_loss in the data frame. Skipped the associated plot.')
             return False
         plt.plot(np.arange(len(df.policy_loss)), df.policy_loss)
         plt.xlabel('iteration')
         plt.ylabel('loss value')
+
+
+    """ CEM specific """
+
+
+    @lfm.figure('Return -- Importance Samples')
+    def importance_samples(fig, df, args):
+        if not all(c in df.columns for c in ['min_imp_samp_return', 'median_imp_samp_return', 'max_return']):
+            if args.verbose:
+                print_cbt('Did not find the key min_imp_samp_return or median_imp_samp_return or max_return in the data'
+                          'frame. Skipped the associated plot.')
+            return False
+        plt.plot(np.arange(len(df.min_imp_samp_return)), df.min_imp_samp_return, label='min')
+        plt.plot(np.arange(len(df.median_imp_samp_return)), df.median_imp_samp_return, label='median')
+        plt.plot(np.arange(len(df.max_return)), df.max_return, label='max')
+        plt.xlabel('iteration')
+        plt.ylabel('return')
+        plt.legend(loc='best')
+
 
     # Start update loop
     lfm.spin()
