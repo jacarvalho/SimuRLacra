@@ -2,6 +2,7 @@ import gym.envs
 import gym.spaces as gs
 import numpy as np
 from init_args_serializer import Serializable
+from warnings import warn
 
 import pyrado
 from pyrado.environments.sim_base import SimEnv
@@ -21,7 +22,9 @@ def _space_to_ps(gym_space) -> [BoxSpace, DiscreteSpace]:
     if isinstance(gym_space, gs.Box):
         return BoxSpace(gym_space.low, gym_space.high)
     if isinstance(gym_space, gs.Discrete):
-        return DiscreteSpace(range(gym_space.n))
+        warn('Guessing the conversion of discrete OpenAI gym space. This feature is not really supported.'
+             'Rather use their control environments with continuous action spaces.')
+        return DiscreteSpace(np.ones((gym_space.n, 1), dtype=np.float64))  # PyTorch policies operate on doubles
     else:
         raise pyrado.TypeErr(msg=f'Unsupported space form gym {gym_space}')
 
@@ -55,12 +58,17 @@ class GymEnv(SimEnv, Serializable):
             dt = 0.02  # there is no dt in the source file
         elif env_name == 'Pendulum-v0':
             dt = 0.05
+        elif env_name == 'LunarLander-v2':
+            dt = 0.02
         else:
             raise NotImplementedError(f'GymEnv does not wrap the environment {env_name}.')
         super().__init__(dt)
 
         # Create the gym environment
         self._gym_env = gym.envs.make(env_name)
+
+        # Set the maximum number of time steps to 1000 if not given by the gym env
+        self.max_steps = getattr(self._gym_env.spec, 'max_episode_steps', 1000)
 
         # Create spaces compatible to Pyrado
         self._obs_space = _space_to_ps(self._gym_env.observation_space)
@@ -111,6 +119,9 @@ class GymEnv(SimEnv, Serializable):
         return self._gym_env.reset()
 
     def step(self, act) -> tuple:
+        if isinstance(self.act_space, DiscreteSpace):
+            act = act.astype(dtype=np.int64)  # PyTorch policies operate on doubles but discrete gym envs want integers
+            act = act.item()  # discrete gym envs want integers or scalar arrays
         return self._gym_env.step(act)
 
     def render(self, mode: RenderMode = RenderMode(), render_step: int = 1):
