@@ -4,20 +4,29 @@ Train an agent to solve the WAM Ball-in-cup environment using Policy learning by
 import numpy as np
 
 from pyrado.algorithms.power import PoWER
+from pyrado.domain_randomization.domain_parameter import NormalDomainParam
+from pyrado.domain_randomization.domain_randomizer import DomainRandomizer
+from pyrado.environment_wrappers.domain_randomization import DomainRandWrapperLive
 from pyrado.environments.mujoco.wam import WAMBallInCupSim
 from pyrado.logger.experiment import setup_experiment, save_list_of_dicts_to_yaml
 from pyrado.policies.environment_specific import DualRBFLinearPolicy
 
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
-    ex_dir = setup_experiment(WAMBallInCupSim.name, PoWER.name, seed=101)
+    ex_dir = setup_experiment(WAMBallInCupSim.name, PoWER.name, 'randomized', seed=101)
 
     # Environment
     env_hparams = dict(
-        max_steps=1750,
-        task_args=dict(factor=0.1)
+        max_steps=1000,
+        task_args=dict(factor=0.05)
     )
     env = WAMBallInCupSim(**env_hparams)
+
+    # Simple Randomizer
+    randomizer = DomainRandomizer(
+        NormalDomainParam(name='cup_scale', mean=1.75, std=0.2, clip_lo=1., clip_up=2.5)
+    )
+    env = DomainRandWrapperLive(env, randomizer)
 
     # Policy
     policy_hparam = dict(
@@ -28,9 +37,9 @@ if __name__ == '__main__':
 
     # Algorithm
     algo_hparam = dict(
-        max_iter=100,
-        pop_size=100,
-        num_rollouts=1,
+        max_iter=50,
+        pop_size=30,
+        num_rollouts=3,
         num_is_samples=10,
         expl_std_init=0.5,
         expl_std_min=0.05,

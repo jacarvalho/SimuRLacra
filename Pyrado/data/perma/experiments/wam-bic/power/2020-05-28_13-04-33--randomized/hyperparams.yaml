@@ -1,0 +1,22 @@
+env:
+  max_steps: 1000
+  task_args:
+    factor: 0.05
+seed: 101
+policy:
+  dim_mask: 2
+  rbf_hparam:
+    bounds: !!python/tuple
+    - 0.0
+    - 1.0
+    num_feat_per_dim: 7
+    scale: None
+algo:
+  expl_std_init: 0.5
+  expl_std_min: 0.05
+  max_iter: 50
+  num_is_samples: 10
+  num_rollouts: 3
+  num_sampler_envs: 2
+  pop_size: 30
+algo_name: power
