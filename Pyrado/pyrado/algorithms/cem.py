@@ -2,6 +2,7 @@ import os.path as osp
 import torch as to
 from copy import deepcopy
 
+import pyrado
 from pyrado.algorithms.parameter_exploring import ParameterExploring
 from pyrado.environments.base import Env
 from pyrado.exploration.normal_noise import FullNormalNoise, DiagNormalNoise
@@ -15,13 +16,15 @@ from pyrado.utils.math import cov
 class CEM(ParameterExploring):
     r"""
     Cross-Entropy Method (CEM)
-    This implementation is basically Algorithm 3.3. in [1].
+    This implementation is basically Algorithm 3.3. in [1] with the addition of decreasing noise [2].
     CEM is closely related to PoWER. The most significant difference is that the importance sampels are not kept over
     iterations and that the covariance matrix is not scaled with the returns, thus allowing for negative returns.
 
     .. seealso::
         [1] P.T. de Boer, D.P. Kroese, S. Mannor, R.Y. Rubinstein, "A Tutorial on the Cross-Entropy Method",
         Annals OR, 2005
+
+        [2] I. Szita, A. Lörnicz, "Learning Tetris Using the NoisyCross-Entropy Method", Neural Computation, 2006
     """
 
     name: str = 'cem'
@@ -36,7 +39,9 @@ class CEM(ParameterExploring):
                  num_is_samples: int,
                  expl_std_init: float,
                  expl_std_min: float = 0.01,
-                 full_cov: bool = True,
+                 extra_expl_std_init: float = 2.,
+                 extra_expl_decay_iter: int = 10,
+                 full_cov: bool = False,
                  symm_sampling: bool = False,
                  num_sampler_envs: int = 4,
                  base_seed: int = None,
@@ -56,10 +61,19 @@ class CEM(ParameterExploring):
         :param expl_std_min: minimal standard deviation for the exploration strategy
         :param full_cov: pass `True` to compute a full covariance matrix for sampling the next policy parameter values,
                          else a diagonal covariance is used
+        :param extra_expl_std_init: additional standard deviation for the parameter exploration added to the diagonal
+                                    entries of the covariance matirx.
+        :param extra_expl_decay_iter: limit for the linear decay of the additional standard deviation, i.e. last
+                                      iteration in which the additional exploration noise is applied
         :param symm_sampling: use an exploration strategy which samples symmetric populations
         :param base_seed: seed added to all other seeds in order to make the experiments distinct but repeatable
         :param logger: logger for every step of the algorithm, if `None` the default logger will be created
         """
+        if not extra_expl_std_init >= 0:
+            raise pyrado.ValueErr(given=extra_expl_std_init, ge_constraint='0')
+        if not extra_expl_decay_iter > 0:
+            raise pyrado.ValueErr(given=extra_expl_decay_iter, g_constraint='0')
+
         # Call ParameterExploring's constructor
         super().__init__(
             save_dir,
@@ -89,6 +103,12 @@ class CEM(ParameterExploring):
 
         self.num_is_samples = min(pop_size, num_is_samples)
         self.best_policy_param_values = policy.param_values.clone()
+        if isinstance(self._expl_strat.noise, DiagNormalNoise):
+            self.extra_expl_std_init = to.ones_like(self._policy.param_values)*extra_expl_std_init
+        elif isinstance(self._expl_strat.noise, FullNormalNoise):
+            self.extra_expl_std_init = to.eye(self._policy.num_param)*extra_expl_std_init
+        else:
+            raise NotImplementedError  # CEM could also sample using different distributions
 
     @to.no_grad()
     def update(self, param_results: ParameterSamplingResult, ret_avg_curr: float = None):
@@ -101,19 +121,25 @@ class CEM(ParameterExploring):
         rets_avg_is = rets_avg_ros[idcs_dcs]
         params_is = param_results.parameters[idcs_dcs, :]
 
+        # Store the very best policy parameter values for saving it later
+        self.best_policy_param_values = params_is[0, :].clone()
+
         # Update the policy parameters from the mean importance samples
         self._policy.param_values = to.mean(params_is, dim=0)
 
         # Update the exploration covariance from the empirical variance of the importance samples
         if isinstance(self._expl_strat.noise, DiagNormalNoise):
-            self._expl_strat.noise.adapt(std=to.std(params_is, dim=0))
+            std_is = to.std(params_is, dim=0)
+            extra_expl_std = to.max(self.extra_expl_std_init - self._curr_iter/self.extra_expl_std_init,
+                                    to.zeros_like(self.extra_expl_std_init))  # see [2, p.4]
+            self._expl_strat.noise.adapt(std=std_is + extra_expl_std)
         elif isinstance(self._expl_strat.noise, FullNormalNoise):
-            self._expl_strat.noise.adapt(cov=cov(params_is, data_along_rows=True))
+            cov_is = cov(params_is, data_along_rows=True)
+            extra_expl_cov = to.max(self.extra_expl_std_init - self._curr_iter/self.extra_expl_std_init,
+                                    to.zeros_like(self.extra_expl_std_init))  # see [2, p.4]
+            self._expl_strat.noise.adapt(cov=cov_is + extra_expl_cov)
         else:
             raise NotImplementedError  # CEM could also sample using different distributions
-
-        # Store the very best policy parameter values for saving it later
-        self.best_policy_param_values = params_is[0, :].clone()
 
         # Logging
         self.logger.add_value('median imp samp return', to.median(rets_avg_is))
