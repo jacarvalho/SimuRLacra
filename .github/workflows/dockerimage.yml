@@ -20,10 +20,6 @@ jobs:
         run: |
           mkdir cov
           docker run --rm -i -v $(pwd):/cov simurlacra conda run -n pyrado bash -c "pytest Pyrado/tests --cov=./Pyrado --cov-report=xml --verbose -m 'not visualization and not longtime' && mv coverage.xml /cov"
-      - name: Coveralls
-        uses: coverallsapp/github-action@master
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: codecov/codecov-action@v1
         with:
           file: coverage.xml # optional
