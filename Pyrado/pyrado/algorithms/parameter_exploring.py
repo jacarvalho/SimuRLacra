@@ -121,6 +121,7 @@ class ParameterExploring(Algorithm):
         self.logger.add_value('max return', float(np.max(all_rets)))
         self.logger.add_value('median return', float(np.median(all_rets)))
         self.logger.add_value('avg return', float(np.mean(all_rets)))
+        self.logger.add_value('std return', float(np.std(all_rets)))
         self.logger.add_value('avg rollout len', float(np.mean(all_lengths)))
         self.logger.add_value('min mag policy param',
                               self._policy.param_values[to.argmin(abs(self._policy.param_values))])
