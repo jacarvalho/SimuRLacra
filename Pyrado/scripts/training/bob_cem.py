@@ -8,6 +8,7 @@ from pyrado.logger.experiment import setup_experiment, save_list_of_dicts_to_yam
 from pyrado.policies.features import FeatureStack, RBFFeat, identity_feat, sin_feat
 from pyrado.policies.linear import LinearPolicy
 
+
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
     ex_dir = setup_experiment(BallOnBeamSim.name, CEM.name, 'rbf', seed=101)
@@ -32,9 +33,11 @@ if __name__ == '__main__':
         num_is_samples=20,
         expl_std_init=0.5,
         expl_std_min=0.02,
-        full_cov=False,
+        extra_expl_std_init=1.,
+        extra_expl_decay_iter=5,
+        full_cov=True,
         symm_sampling=False,
-        num_sampler_envs=1,
+        num_sampler_envs=8,
     )
     algo = CEM(ex_dir, env, policy, **algo_hparam)
 
