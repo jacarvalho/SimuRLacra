@@ -136,7 +136,7 @@ wam_url = f"https://github.com/psclklnk/self-paced-rl/archive/{wam_repo_version}
 
 # PyTorch
 # NOTE: Assumes that the current environment does NOT already contain PyTorch!
-pytorch_version = "1.3.1"
+pytorch_version = "1.5.0"
 pytorch_git_repo = "https://github.com/pytorch/pytorch.git"
 pytorch_src_dir = osp.join(dependency_dir, "pytorch")
 
@@ -145,7 +145,7 @@ rcspysim_src_dir = osp.join(project_dir, "RcsPySim")
 rcspysim_build_dir = osp.join(rcspysim_src_dir, "build")
 uselibtorch = "ON" if args.uselibtorch else "OFF"
 rcspysim_cmake_vars = {
-    "PYBIND11_PYTHON_VERSION": "3.6",
+    "PYBIND11_PYTHON_VERSION": "3.8",
     "SETUP_PYTHON_DEVEL": "ON",
     "Rcs_DIR": rcs_build_dir,
     "USE_LIBTORCH": uselibtorch,  # use the manually build PyTorch from thirdParty/pytorch 
