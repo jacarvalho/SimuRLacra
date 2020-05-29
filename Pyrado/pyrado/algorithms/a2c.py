@@ -140,9 +140,8 @@ class A2C(ActorCritic):
 
         for batch in tqdm(concat_ros.split_shuffled_batches(
                 self.batch_size,
-                complete_rollouts=self._policy.is_recurrent or isinstance(self._critic.value_fcn, RecurrentPolicy)
-        ),
-                total=num_iter_from_rollouts(None, concat_ros, self.batch_size, self._policy.is_recurrent),
+                complete_rollouts=self._policy.is_recurrent or isinstance(self._critic.value_fcn, RecurrentPolicy)),
+                total=num_iter_from_rollouts(None, concat_ros, self.batch_size),
                 desc='Updating', unit='batches', file=sys.stdout, leave=False):
             # Reset the gradients
             self.optim.zero_grad()
