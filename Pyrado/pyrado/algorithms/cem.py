@@ -130,13 +130,13 @@ class CEM(ParameterExploring):
         # Update the exploration covariance from the empirical variance of the importance samples
         if isinstance(self._expl_strat.noise, DiagNormalNoise):
             std_is = to.std(params_is, dim=0)
-            extra_expl_std = to.max(self.extra_expl_std_init - self._curr_iter/self.extra_expl_std_init,
-                                    to.zeros_like(self.extra_expl_std_init))  # see [2, p.4]
+            extra_expl_std = self.extra_expl_std_init*to.max(1. - self._curr_iter/self.extra_expl_std_init,
+                                                             to.zeros_like(self.extra_expl_std_init))  # see [2, p.4]
             self._expl_strat.noise.adapt(std=std_is + extra_expl_std)
         elif isinstance(self._expl_strat.noise, FullNormalNoise):
             cov_is = cov(params_is, data_along_rows=True)
-            extra_expl_cov = to.max(to.pow(self.extra_expl_std_init, 2) - self._curr_iter/self.extra_expl_std_init,
-                                    to.zeros_like(self.extra_expl_std_init))  # see [2, p.4]
+            extra_expl_cov = to.pow(self.extra_expl_std_init, 2)*to.max(1. - self._curr_iter/self.extra_expl_std_init,
+                                                                        to.zeros_like(self.extra_expl_std_init))  # see [2, p.4]
             self._expl_strat.noise.adapt(cov=cov_is + extra_expl_cov)
         else:
             raise NotImplementedError  # CEM could also sample using different distributions
