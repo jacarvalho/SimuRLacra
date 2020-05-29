@@ -43,8 +43,7 @@ class RecurrentPolicy(Policy, ABC):
         :param obs: observation from the environment
 
         :param hidden: the network's hidden state. If None, use init_hidden()
-        :return: action to be taken
-        :return: new hidden state
+        :return: action to be taken and new hidden state
         """
         raise NotImplementedError
 
@@ -53,7 +52,7 @@ class RecurrentPolicy(Policy, ABC):
         Re-evaluate the given rollout and return a derivable action tensor.
         This method makes sure that the gradient is propagated through the hidden state.
 
-        :param rollout: recorded, complete rollout
+        :param rollout: complete rollout
         :param hidden_states_name: name of hidden states rollout entry, used for recurrent networks.
                                    Change this string for value functions.
         :return: actions with gradient data
@@ -64,7 +63,7 @@ class RecurrentPolicy(Policy, ABC):
                 # Get initial hidden state from first step
                 hs = ro[0][hidden_states_name]
             else:
-                # Let the network pick the default hidden state.
+                # Let the network pick the default hidden state
                 hs = None
 
             # Run each step separately
