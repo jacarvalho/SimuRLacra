@@ -4,7 +4,7 @@ import torch as to
 from pytest_lazyfixture import lazy_fixture
 
 from pyrado.policies.environment_specific import DualRBFLinearPolicy
-from tests.conftest import m_needs_cuda, m_needs_bullet, m_needs_mujoco
+from tests.conftest import m_needs_cuda, m_needs_bullet, m_needs_mujoco, m_needs_rcs, m_needs_libtorch
 from pyrado.policies.adn import ADNPolicy, pd_cubic
 from pyrado.policies.dummy import DummyPolicy, IdlePolicy
 from pyrado.policies.fnn import FNNPolicy
@@ -650,7 +650,7 @@ def test_trace_recurrent(env, policy):
 
 
 @to.no_grad()
-@pytest.mark.m_needs_libtorch
+@m_needs_libtorch
 @pytest.mark.parametrize(
     'env', [
         lazy_fixture('default_bob'),
@@ -699,8 +699,8 @@ def test_export_cpp(env, policy, tmpdir):
 
 
 @to.no_grad()
-@pytest.mark.m_needs_rcs
-@pytest.mark.m_needs_libtorch
+@m_needs_rcs
+@m_needs_libtorch
 @pytest.mark.parametrize(
     'env', [
         lazy_fixture('default_bob'),

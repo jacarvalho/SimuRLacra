@@ -193,7 +193,7 @@ def test_rcspysim_animations(env):
     assert env.curr_step <= env.max_steps
 
 
-@pytest.mark.m_needs_mujoco
+@m_needs_mujoco
 @pytest.mark.visualization
 @pytest.mark.parametrize(
     'env', [

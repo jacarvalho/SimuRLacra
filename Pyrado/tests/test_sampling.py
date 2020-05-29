@@ -21,6 +21,7 @@ from pyrado.policies.linear import LinearPolicy
 from pyrado.policies.features import *
 from pyrado.sampling.cvar_sampler import select_cvar
 from pyrado.utils.data_types import RenderMode
+from tests.conftest import m_needs_cuda
 
 
 @pytest.mark.parametrize(
@@ -178,7 +179,6 @@ def test_rollout_wo_exploration(env, policy):
     assert len(ro) <= env.max_steps
 
 
-@pytest.mark.conceptual
 @pytest.mark.parametrize(
     'mean, cov', [
         (to.tensor([5., 7.]), to.tensor([[2., 0.], [0., 2.]])),
@@ -326,23 +326,16 @@ def test_param_expl_sampler(default_bob, bob_pert):
             assert pivot[0].observation == pytest.approx(ro[0].observation)
 
 
-@pytest.mark.parametrize(
-    'cuda', [True, False], ids=['cuda', 'cpu']
-)
-def test_cuda_sampling(default_bob, bob_pert, cuda):
+@m_needs_cuda
+def test_cuda_sampling_w_dr(default_bob, bob_pert):
     # Add randomizer
     env = DomainRandWrapperLive(default_bob, bob_pert)
 
     # Use a simple policy
-    policy = FNNPolicy(env.spec, hidden_sizes=[8], hidden_nonlin=to.tanh, use_cuda=cuda)
+    policy = FNNPolicy(env.spec, hidden_sizes=[8], hidden_nonlin=to.tanh, use_cuda=True)
 
     # Create the sampler
-    sampler = ParallelSampler(
-        env,
-        policy,
-        num_envs=2,
-        min_rollouts=10
-    )
+    sampler = ParallelSampler(env, policy, num_envs=2, min_rollouts=10)
 
     samples = sampler.sample()
     assert samples is not None
