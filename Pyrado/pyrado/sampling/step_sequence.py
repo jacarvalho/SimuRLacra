@@ -575,11 +575,16 @@ class StepSequence(Sequence[Step]):
         """
         Batch generation. Split the step collection into mini-batches of size batch_size.
 
-        :param batch_size: number of steps to sample
-        :param complete_rollouts: if complete_rollouts `True`, the batches will not contain partial rollouts.
+        :param batch_size: number of steps per batch
+        :param complete_rollouts: if `complete_rollouts = True`, the batches will not contain partial rollouts.
                                   However, the size of the returned batches cannot be strictly maintained in this case.
+
+        .. note::
+            This method is also supposed to be called for recurrent networks, which have a different `evaluate()`
+            method that recognized where the rollouts end within a batch.
         """
         if batch_size >= self.length:
+            # Yield all at once if there are less steps than the batch size
             yield self
 
         elif complete_rollouts and self.continuous:
