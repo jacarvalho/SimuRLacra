@@ -8,6 +8,7 @@ from typing import Callable, Any, Optional
 import pyrado
 from pyrado.algorithms.a2c import A2C
 from pyrado.algorithms.bayrn import BayRn
+from pyrado.algorithms.cem import CEM
 from pyrado.algorithms.epopt import EPOpt
 from pyrado.algorithms.hc import HC
 from pyrado.algorithms.nes import NES
@@ -127,7 +128,7 @@ def load_experiment(ex_dir: str, args: Any = None) -> ([SimEnv, EnvWrapper], Pol
             kwout['target2'] = to.load(osp.join(ex_dir, 'target2.pt'))
             print_cbt(f"Loaded {osp.join(ex_dir, 'target1.pt')} and {osp.join(ex_dir, 'target2.pt')}", 'g')
 
-        elif any([a.name in hparams.get('algo_name', '') for a in [HC, PEPG, NES, REPS, PoWER]]):
+        elif any([a.name in hparams.get('algo_name', '') for a in [HC, PEPG, NES, REPS, PoWER, CEM]]):
             # Environment
             env = joblib.load(osp.join(ex_dir, 'env.pkl'))
             # Policy
