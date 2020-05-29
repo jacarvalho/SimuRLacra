@@ -20,12 +20,12 @@ if __name__ == '__main__':
     # Get the experiment's directory to load from if not given as command line argument
     ex_dir = ask_for_experiment() if args.ex_dir is None else args.ex_dir
 
-    # Load the policy (trained in simulation) and the environment (for constructing the real-world counterpart)
+    # Load the policy and the environment (for constructing the real-world counterpart)
     env_sim, policy, _ = load_experiment(ex_dir)
 
-    # Create real-world counterpart of the Quanser Ball-Balancer environment
+    # Create real-world counterpart (without domain randomization)
     env_real = QQubeReal(env_sim.dt, env_sim.max_steps)
-    print_cbt(f'Set up the QBallBalancerReal environment with dt={env_real.dt} max_steps={env_real.max_steps}.', 'c')
+    print_cbt(f'Set up the QQubeReal environment with dt={env_real.dt} max_steps={env_real.max_steps}.', 'c')
     env_real = wrap_like_other_env(env_real, env_sim)
 
     # Run the policy on the real system
