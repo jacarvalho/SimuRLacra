@@ -85,13 +85,13 @@ if __name__ == '__main__':
     ex_dir = ask_for_experiment()
     ex_tag = ex_dir.split('--', 1)[1]
 
-    # Load the policy (trained in simulation) and the environment (for constructing the real-world counterpart)
+    # Load the policy and the environment (for constructing the real-world counterpart)
     env, policy, _ = load_experiment(ex_dir)
 
     if args.verbose:
         print(f'Policy params:\n{policy.param_values.detach().numpy()}')
 
-    # Create real-world counterpart of the Quanser Cart-Pole environment
+    # Create real-world counterpart (without domain randomization)
     env = QCartPoleStabReal(args.dt, args.max_steps)
     print_cbt('Set up the QCartPoleStabReal environment.', 'c')
 
@@ -120,7 +120,6 @@ if __name__ == '__main__':
     save_dir = setup_experiment('evaluation', 'qcp-st_experiment', ex_tag, base_dir=pyrado.TEMP_DIR)
     joblib.dump(ros, osp.join(save_dir, 'experiment_rollouts.pkl'))
     save_list_of_dicts_to_yaml(
-        [
-            dict(ex_dir=ex_dir, avg_return=avg_return, num_runs=len(ros), steps_disturb=steps_disturb)
-        ],
-        save_dir, file_name='experiment_summary')
+        [dict(ex_dir=ex_dir, avg_return=avg_return, num_runs=len(ros), steps_disturb=steps_disturb)],
+        save_dir, file_name='experiment_summary'
+    )
