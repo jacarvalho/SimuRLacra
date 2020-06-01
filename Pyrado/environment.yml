@@ -86,7 +86,7 @@ dependencies:
     - fasteners==0.15
     - glfw==1.11.1
     - imageio==2.8.0
-    - init-args-serializer==1.0
+    - git+https://github.com/Xfel/init-args-serializer.git@master
     - monotonic==1.5
     - mujoco-py==2.0.2.9
     - pycparser==2.20
