@@ -307,9 +307,10 @@ def setup_pytorch():
     # Let it's setup do the magic
     env = os.environ.copy()
     env.update(env_vars)
-    env["USE_CUDA"]="1" if args.usecuda else "0"  # CUDA is disabled by default
-    env["USE_MKLDNN"]="0" # disable MKLDNN; mkl/blas deprecated error https://github.com/pytorch/pytorch/issues/17874
-    env["_GLIBCXX_USE_CXX11_ABI"]="1"
+    env["USE_CUDA"] = "1" if args.usecuda else "0"  # CUDA is disabled by default
+    env["USE_CUDNN"] = "1" if args.usecuda else "0"  # CUDA is disabled by default
+    env["USE_MKLDNN"] = "0"  # disable MKLDNN; mkl/blas deprecated error https://github.com/pytorch/pytorch/issues/17874
+    env["_GLIBCXX_USE_CXX11_ABI"] = "1"
     sp.check_call([sys.executable, "setup.py", "install"], cwd=pytorch_src_dir, env=env)
 
 
