@@ -32,7 +32,7 @@ jobs:
           pip install coveralls==1.10.0
       - name: Test with pytest
         env:
-          COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+          COVERALLS_REPO_TOKEN: ${{ github.token }}
         run: |
           coveralls
       - uses: codecov/codecov-action@v1
