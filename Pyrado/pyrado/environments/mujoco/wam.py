@@ -124,11 +124,11 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
             azimuth=-90  # camera rotation around the camera's vertical axis
         )
 
-        # Note: Access of protected attribute (as in https://github.com/psclklnk/self-paced-rl/tree/master/sprl/envs/ball_in_a_cup.py)
-        # .. a method like 'model.geom_names[geom_id]' cannot be used as not every geom has a name.
+        # We access a private attribute since a method like 'model.geom_names[geom_id]' cannot be used because
+        # not every geom has a name
         self._collision_geom_ids = [self.model._geom_name2id[name] for name in ['cup_geom1', 'cup_geom2']]
         self._collision_bodies = ['wam/wrist_pitch_link', 'wam/wrist_yaw_link', 'wam/forearm_link',
-                                 'wam/upper_arm_link', 'wam/shoulder_pitch_link', 'wam/shoulder_yaw_link']
+                                  'wam/upper_arm_link', 'wam/shoulder_pitch_link', 'wam/shoulder_yaw_link']
 
     @property
     def torque_space(self) -> Space:
@@ -175,7 +175,7 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
             task_args = dict()
 
         # Create a DesStateTask that masks everything but the ball position
-        idcs = list(range(self.state_space.flat_dim-3, self.state_space.flat_dim))  # Cartesian ball position
+        idcs = list(range(self.state_space.flat_dim - 3, self.state_space.flat_dim))  # Cartesian ball position
         spec = EnvSpec(
             self.spec.obs_space,
             self.spec.act_space,
@@ -209,18 +209,18 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
 
         if cup_scale is not None:
             # See https://github.com/psclklnk/self-paced-rl/blob/master/sprl/envs/ball_in_a_cup.py l.93-96
-            xml_model = xml_model.replace('[scale_mesh]', str(cup_scale * 0.001))
-            xml_model = xml_model.replace('[pos_mesh]', str(0.055 - (cup_scale - 1.) * 0.023))
-            xml_model = xml_model.replace('[pos_goal]', str(0.1165 + (cup_scale - 1.) * 0.0385))
-            xml_model = xml_model.replace('[size_cup]', str(cup_scale * 0.038))
+            xml_model = xml_model.replace('[scale_mesh]', str(cup_scale*0.001))
+            xml_model = xml_model.replace('[pos_mesh]', str(0.055 - (cup_scale - 1.)*0.023))
+            xml_model = xml_model.replace('[pos_goal]', str(0.1165 + (cup_scale - 1.)*0.0385))
+            xml_model = xml_model.replace('[size_cup]', str(cup_scale*0.038))
 
         if rope_length is not None:
             # The rope consists of 29 capsules
-            xml_model = xml_model.replace('[pos_capsule]', str(rope_length / 29))
+            xml_model = xml_model.replace('[pos_capsule]', str(rope_length/29))
             # Each joint is at the top of each capsule (therefore negative direction from center)
-            xml_model = xml_model.replace('[pos_capsule_joint]', str(-rope_length / 58))
+            xml_model = xml_model.replace('[pos_capsule_joint]', str(-rope_length/58))
             # Pure visualization component
-            xml_model = xml_model.replace('[size_capsule_geom]', str(rope_length / 72))
+            xml_model = xml_model.replace('[size_capsule_geom]', str(rope_length/72))
 
         # Resolve mesh directory and replace the remaining domain parameters
         return super()._adapt_model_file(xml_model, domain_param)
@@ -262,27 +262,37 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
 
         # Add possibility to check for collisions/contacts
         # is_colliding = self._check_contacts()
-        
+
         return dict(
             des_qpos=des_qpos, des_qvel=des_qvel, qpos=qpos[:7], qvel=qvel[:7], ball_pos=ball_pos,
             state_des=state_des[-3:], failed=mjsim_crashed
         )
 
     def _check_contacts(self) -> bool:
-        """ Check if an undesired collision with the ball occurs """
+        """
+        Check if an undesired collision with the ball occurs.
+
+        :return: `True` if the ball collides with something else than the central parts of the cup
+        """
         for i in range(self.sim.data.ncon):
             # Get current contact object
             contact = self.sim.data.contact[i]
+
             # Extract body-id and body-name of both contact geoms
             body1 = self.model.geom_bodyid[contact.geom1]
             body1_name = self.model.body_names[body1]
             body2 = self.model.geom_bodyid[contact.geom2]
             body2_name = self.model.body_names[body2]
-            # Evaluate if the ball collides with part of the WAM (collision bodies) or the connection of WAM and cup (geom_ids)
-            c1 = body1_name == 'ball' and (body2_name in self._collision_bodies or contact.geom2 in self._collision_geom_ids)
-            c2 = body2_name == 'ball' and (body1_name in self._collision_bodies or contact.geom1 in self._collision_geom_ids)
+
+            # Evaluate if the ball collides with part of the WAM (collision bodies)
+            # or the connection of WAM and cup (geom_ids)
+            c1 = body1_name == 'ball' and (
+                    body2_name in self._collision_bodies or contact.geom2 in self._collision_geom_ids)
+            c2 = body2_name == 'ball' and (
+                    body1_name in self._collision_bodies or contact.geom1 in self._collision_geom_ids)
             if c1 or c2:
                 return True
+
         return False
 
     def observe(self, state: np.ndarray) -> np.ndarray:

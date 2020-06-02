@@ -372,8 +372,9 @@ def get_default_randomizer_bl() -> DomainRandomizer:
 @default_randomizer('pyrado.environments.mujoco.wam', 'WAMBallInCupSim')
 def get_default_randomizer_wambic() -> DomainRandomizer:
     return DomainRandomizer(
-        UniformDomainParam(name='cup_scale', mean=1.5, halfspan=0.6)
+        UniformDomainParam(name='cup_scale', mean=1.3, halfspan=0.5)
     )
+
 
 def get_default_domain_param_map_omo() -> Dict[int, Tuple[str, str]]:
     """

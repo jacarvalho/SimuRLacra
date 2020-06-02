@@ -267,9 +267,8 @@ class BayRn(Algorithm, ABC):
         :param prefix: to control the saving for the evaluation of an initial policy, `None` to deactivate
         :return: estimated return in the target domain
         """
-        # if isinstance(env_real, RealEnv):
-        #     input('Evaluated in the target domain. Hit any key to continue.')
-        input('[Press Enter to connect to the target system ...] ')
+        if isinstance(env_real, RealEnv):
+            input('Evaluating in the target domain. Hit any key to continue.')
         print_cbt(f'Evaluating {prefix}_policy on the target system ...', 'c', bright=True)
 
         rets_real = to.zeros(num_rollouts)

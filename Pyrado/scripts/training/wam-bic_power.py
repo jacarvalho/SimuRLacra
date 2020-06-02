@@ -1,16 +1,13 @@
 """
 Train an agent to solve the WAM Ball-in-cup environment using Policy learning by Weighting Exploration with the Returns.
 """
-import numpy as np
-
 from pyrado.algorithms.power import PoWER
-from pyrado.domain_randomization.domain_parameter import NormalDomainParam
-from pyrado.domain_randomization.domain_randomizer import DomainRandomizer
 from pyrado.domain_randomization.default_randomizers import get_default_randomizer_wambic
 from pyrado.environment_wrappers.domain_randomization import DomainRandWrapperLive
 from pyrado.environments.mujoco.wam import WAMBallInCupSim
 from pyrado.logger.experiment import setup_experiment, save_list_of_dicts_to_yaml
 from pyrado.policies.environment_specific import DualRBFLinearPolicy
+
 
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
@@ -18,15 +15,12 @@ if __name__ == '__main__':
 
     # Environment
     env_hparams = dict(
-        max_steps=1000,
+        max_steps=1500,
         task_args=dict(factor=0.2)
     )
     env = WAMBallInCupSim(**env_hparams)
 
-    # Simple Randomizer
-    # randomizer = DomainRandomizer(
-    #     NormalDomainParam(name='cup_scale', mean=1.5, std=0.3, clip_lo=1., clip_up=2.5)
-    # )
+    # Randomizer
     env = DomainRandWrapperLive(env, get_default_randomizer_wambic())
 
     # Policy
@@ -38,13 +32,13 @@ if __name__ == '__main__':
 
     # Algorithm
     algo_hparam = dict(
-        max_iter=15,
-        pop_size=35,
-        num_rollouts=5,
-        num_is_samples=15,
-        expl_std_init=1.0,
-        expl_std_min=0.05,
-        num_sampler_envs=8,
+        max_iter=25,
+        pop_size=100,
+        num_rollouts=10,
+        num_is_samples=20,
+        expl_std_init=0.5,
+        expl_std_min=0.02,
+        num_sampler_envs=12,
     )
     algo = PoWER(ex_dir, env, policy, **algo_hparam)
 

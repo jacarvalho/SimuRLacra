@@ -4,7 +4,6 @@ randomization for the remaining domain parameters
 """
 import torch as to
 
-import pyrado
 from pyrado.algorithms.power import PoWER
 from pyrado.domain_randomization.default_randomizers import get_zero_var_randomizer, get_default_domain_param_map_wambic
 from pyrado.environment_wrappers.domain_randomization import DomainRandWrapperLive, MetaDomainRandWrapper
@@ -36,34 +35,34 @@ if __name__ == '__main__':
 
     # Subroutine
     subroutine_hparam = dict(
-        max_iter=15,
-        pop_size=35,
-        num_rollouts=5,
-        num_is_samples=15,
-        expl_std_init=1.0,
-        expl_std_min=0.05,
-        num_sampler_envs=8,
+        max_iter=25,
+        pop_size=100,
+        num_rollouts=20,
+        num_is_samples=20,
+        expl_std_init=0.5,
+        expl_std_min=0.02,
+        num_sampler_envs=12,
     )
     power = PoWER(ex_dir, env_sim, policy, **subroutine_hparam)
 
     # Set the boundaries for the GP
-    # .. cup scale: mean in (1.0, 1.5), halfspan in (0.1, 0.6)
     bounds = to.tensor(
-        [[1.0, 0.1],
-         [1.5, 0.6]]
+        [[0.7, 0.05],  # mean cup_scale, halfspan cup_scale
+         [1.6, 0.5]]  # mean cup_scale, halfspan cup_scale
     )
 
     # Algorithm
     bayrn_hparam = dict(
         max_iter=15,
         acq_fc='EI',
-        acq_restarts=50,
-        acq_samples=500,
-        num_init_cand=4,
+        acq_restarts=500,
+        acq_samples=1000,
+        num_init_cand=3,
         warmstart=False,
-        num_eval_rollouts=10,
-        thold_succ=500  # May need to be tunes...
+        num_eval_rollouts_real=500 if isinstance(env_real, WAMBallInCupSim) else 5,
+        num_eval_rollouts_sim=500
     )
+
     # Save the environments and the hyper-parameters (do it before the init routine of BDR)
     save_list_of_dicts_to_yaml([
         dict(env=env_hparams, seed=ex_dir.seed),
