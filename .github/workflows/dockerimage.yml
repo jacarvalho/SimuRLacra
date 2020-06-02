@@ -19,6 +19,22 @@ jobs:
       - name: Execute tests
         run: |
           docker run --rm -i -v $(pwd):/cov simurlacra conda run -n pyrado bash -c "pytest Pyrado/tests --cov=Pyrado --cov-report=xml --verbose -m 'not visualization and not longtime' && cat coverage.xml && mv coverage.xml /cov"
+      - name: Set up Python 3.x
+        uses: actions/setup-python@v2
+        with:
+          # Semantic version range syntax or exact version of a Python version
+          python-version: '3.8'
+      - run: |
+          python -m pip install --upgrade pip
+          pip install pytest
+          pip install coverage
+          pip install pytest-cov
+          pip install coveralls==1.10.0
+      - name: Test with pytest
+        env:
+          COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+        run: |
+          coveralls
       - uses: codecov/codecov-action@v1
         with:
           file: coverage.xml # optional
