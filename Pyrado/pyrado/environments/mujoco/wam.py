@@ -124,6 +124,12 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
             azimuth=-90  # camera rotation around the camera's vertical axis
         )
 
+        # Note: Access of protected attribute (as in https://github.com/psclklnk/self-paced-rl/tree/master/sprl/envs/ball_in_a_cup.py)
+        # .. a method like 'model.geom_names[geom_id]' cannot be used as not every geom has a name.
+        self._collision_geom_ids = [self.model._geom_name2id[name] for name in ['cup_geom1', 'cup_geom2']]
+        self._collision_bodies = ['wam/wrist_pitch_link', 'wam/wrist_yaw_link', 'wam/forearm_link',
+                                 'wam/upper_arm_link', 'wam/shoulder_pitch_link', 'wam/shoulder_yaw_link']
+
     @property
     def torque_space(self) -> Space:
         return self._torque_space
@@ -254,18 +260,30 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         state_des[-3:] = self.sim.data.get_body_xpos('B0').copy()
         self._task.wrapped_task.state_des = state_des
 
-        """
-        # Extract contacts
-        for i in range(self.sim.data.ncon):
-            contact = self.sim.data.contact[i]
-            body1 = self.model.geom_bodyid[contact.geom1]
-            body1_name = self.model.body_names[body1]  # Console output: >> ball
-        """
+        # Add possibility to check for collisions/contacts
+        # is_colliding = self._check_contacts()
         
         return dict(
             des_qpos=des_qpos, des_qvel=des_qvel, qpos=qpos[:7], qvel=qvel[:7], ball_pos=ball_pos,
             state_des=state_des[-3:], failed=mjsim_crashed
         )
+
+    def _check_contacts(self) -> bool:
+        """ Check if an undesired collision with the ball occurs """
+        for i in range(self.sim.data.ncon):
+            # Get current contact object
+            contact = self.sim.data.contact[i]
+            # Extract body-id and body-name of both contact geoms
+            body1 = self.model.geom_bodyid[contact.geom1]
+            body1_name = self.model.body_names[body1]
+            body2 = self.model.geom_bodyid[contact.geom2]
+            body2_name = self.model.body_names[body2]
+            # Evaluate if the ball collides with part of the WAM (collision bodies) or the connection of WAM and cup (geom_ids)
+            c1 = body1_name == 'ball' and (body2_name in self._collision_bodies or contact.geom2 in self._collision_geom_ids)
+            c2 = body2_name == 'ball' and (body1_name in self._collision_bodies or contact.geom1 in self._collision_geom_ids)
+            if c1 or c2:
+                return True
+        return False
 
     def observe(self, state: np.ndarray) -> np.ndarray:
         # Only observe the normalized time
