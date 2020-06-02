@@ -23,9 +23,9 @@ class ParameterExploring(Algorithm):
                  policy: Policy,
                  max_iter: int,
                  num_rollouts: int,
-                 pop_size: int = None,
+                 pop_size: [int, None] = None,
                  num_sampler_envs: int = 4,
-                 base_seed: int = None,
+                 base_seed: [int, None] = None,
                  logger: StepLogger = None):
         """
         Constructor
@@ -35,14 +35,18 @@ class ParameterExploring(Algorithm):
         :param policy: policy to be updated
         :param max_iter: maximum number of iterations (i.e. policy updates) that this algorithm runs
         :param num_rollouts: number of rollouts per solution
-        :param pop_size: number of solutions in the population
+        :param pop_size: number of solutions in the population, pass `None` to use a default that scales logarithmically
+                         with the number of policy parameters
         :param num_sampler_envs: number of parallel environments in the sampler
         :param base_seed: seed added to all other seeds in order to make the experiments distinct but repeatable
         :param logger: logger for every step of the algorithm, if `None` the default logger will be created
         """
         if not isinstance(env, Env):
             raise pyrado.TypeErr(given=env, expected_type=Env)
-        assert isinstance(pop_size, int) and pop_size > 0 or pop_size is None
+        if not (isinstance(pop_size, int) or pop_size is None):
+            raise pyrado.TypeErr(given=pop_size, expected_type=int)
+        if isinstance(pop_size, int) and pop_size <= 0:
+            raise pyrado.ValueErr(given=pop_size, g_constraint='0')
 
         # Call Algorithm's constructor
         super().__init__(save_dir, max_iter, policy, logger)
@@ -82,11 +86,10 @@ class ParameterExploring(Algorithm):
         Check if the average reward of the mean policy did not change more than the specified threshold over the
         last iterations.
         """
-        return False
-        # if np.std(self.ret_avg_stack) < self.thold_ret_std:
-        #     return True
-        # else:
-        #     return False
+        if np.std(self.ret_avg_stack) < self.thold_ret_std:
+            return True
+        else:
+            return False
 
     def step(self, snapshot_mode: str, meta_info: dict = None):
         # Sample new policy parameters
@@ -118,6 +121,7 @@ class ParameterExploring(Algorithm):
         self.logger.add_value('max return', float(np.max(all_rets)))
         self.logger.add_value('median return', float(np.median(all_rets)))
         self.logger.add_value('avg return', float(np.mean(all_rets)))
+        self.logger.add_value('std return', float(np.std(all_rets)))
         self.logger.add_value('avg rollout len', float(np.mean(all_lengths)))
         self.logger.add_value('min mag policy param',
                               self._policy.param_values[to.argmin(abs(self._policy.param_values))])

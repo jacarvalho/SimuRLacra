@@ -71,7 +71,7 @@ if __name__ == '__main__':
         acq_samples=1000,
         num_init_cand=5,
         warmstart=False,
-        num_eval_rollouts=1000 if isinstance(env_real, QQubeSim) else 5,
+        num_eval_rollouts_real=1000 if isinstance(env_real, QQubeSim) else 5,
     )
 
     # Save the environments and the hyper-parameters (do it before the init routine of BayRn)

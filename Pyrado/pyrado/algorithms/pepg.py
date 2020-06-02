@@ -54,7 +54,7 @@ class PEPG(ParameterExploring):
                  expl_std_min: float = 0.01,
                  pop_size: int = None,
                  clip_ratio_std: float = 0.05,
-                 normalize_update: bool = True,
+                 normalize_update: bool = False,
                  transform_returns: bool = True,
                  num_sampler_envs: int = 4,
                  lr: float = 5e-4,
@@ -94,6 +94,7 @@ class PEPG(ParameterExploring):
 
         # Exploration strategy based on symmetrical normally distributed noise
         if self.pop_size%2 != 0:
+            # Symmetric buffer needs to have an even number of samples
             self.pop_size += 1
         self._expl_strat = SymmParamExplStrat(NormalParamNoise(
             self._policy.num_param,
@@ -125,7 +126,7 @@ class PEPG(ParameterExploring):
 
         if self.normalize_update:
             # See equation (15, top) in [1]
-            delta_mean = (rets_fds/(2*rets_max - rets_fds + 1e-8))@epsilon  # epsilon = T from [1]
+            delta_mean = (rets_fds/(2*rets_max - rets_fds + 1e-6))@epsilon  # epsilon = T from [1]
         else:
             # See equation (13) in [1]
             delta_mean = 0.5*rets_fds@epsilon  # epsilon = T from [1]
@@ -144,7 +145,7 @@ class PEPG(ParameterExploring):
             delta_std = (rets_avg_symm - baseline)@S
         else:
             # See equation (14) in [1]
-            delta_std = ((rets_avg_symm - baseline)/(rets_max - baseline + 1e-8))@S
+            delta_std = ((rets_avg_symm - baseline)/(rets_max - baseline + 1e-6))@S
 
         # Bound the change on the exploration standard deviation (i.e. the entropy)
         delta_std *= self.lr

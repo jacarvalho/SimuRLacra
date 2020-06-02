@@ -3,6 +3,7 @@ from pytest_lazyfixture import lazy_fixture
 
 from pyrado.algorithms.a2c import A2C
 from pyrado.algorithms.adr import ADR
+from pyrado.algorithms.cem import CEM
 from pyrado.algorithms.hc import HCNormal, HCHyper
 from pyrado.algorithms.advantage import GAE
 from pyrado.algorithms.reps import REPS
@@ -14,6 +15,7 @@ from pyrado.algorithms.ppo import PPO, PPO2
 from pyrado.algorithms.spota import SPOTA
 from pyrado.algorithms.svpg import SVPG
 from pyrado.domain_randomization.default_randomizers import get_default_randomizer
+from pyrado.environment_wrappers.action_normalization import ActNormWrapper
 from pyrado.environment_wrappers.domain_randomization import DomainRandWrapperBuffer
 from pyrado.logger import set_log_prefix_dir
 from pyrado.policies.features import *
@@ -63,10 +65,11 @@ def ex_dir(tmpdir):
         (HCHyper, dict(expl_r_init=0.05, expl_factor=1.1)),
         (NES, dict(expl_std_init=0.1)),
         (PEPG, dict(expl_std_init=0.1)),
-        (PoWER, dict(expl_std_init=0.1, pop_size=5, num_is_samples=5)),
+        (PoWER, dict(expl_std_init=0.1, pop_size=10, num_is_samples=5)),
+        (CEM, dict(expl_std_init=0.1, pop_size=10, num_is_samples=5)),
         (REPS, dict(eps=0.1, gamma=0.99, pop_size=100, expl_std_init=0.1)),
     ],
-    ids=['a2c', 'ppo', 'ppo2', 'hc_normal', 'hc_hyper', 'nes', 'pepg', 'power', 'reps'])
+    ids=['a2c', 'ppo', 'ppo2', 'hc_normal', 'hc_hyper', 'nes', 'pepg', 'power', 'cem', 'reps'])
 def test_snapshots_notmeta(ex_dir, env, policy, algo_class, algo_hparam):
     # Collect hyper-parameters, create algorithm, and train
     common_hparam = dict(max_iter=1, num_sampler_envs=1)
@@ -114,9 +117,12 @@ def test_snapshots_notmeta(ex_dir, env, policy, algo_class, algo_hparam):
         (NES, dict(expl_std_init=0.1, transform_returns=True)),
         (NES, dict(expl_std_init=0.1, symm_sampling=True)),
         (PEPG, dict(expl_std_init=0.1)),
+        (PoWER, dict(expl_std_init=0.1, pop_size=10, num_is_samples=5)),
+        (CEM, dict(expl_std_init=0.1, pop_size=10, num_is_samples=5, full_cov=True)),
+        (CEM, dict(expl_std_init=0.1, pop_size=10, num_is_samples=5, full_cov=True)),
         (REPS, dict(eps=0.1, gamma=0.99, pop_size=100, expl_std_init=0.1)),
     ],
-    ids=['hc_normal', 'hc_hyper', 'nes', 'nes_tr', 'nes_symm', 'pepg', 'reps']
+    ids=['hc_normal', 'hc_hyper', 'nes', 'nes_tr', 'nes_symm', 'pepg', 'power', 'cem-fcov', 'cem-dcov', 'reps']
 )
 def test_param_expl(env, linear_policy, ex_dir, algo_class, algo_hparam):
     # Hyper-parameters
@@ -311,25 +317,39 @@ def test_actor_critic(env, linear_policy, ex_dir, algo, algo_hparam, value_fcn_t
     ], ids=['omo']
 )
 @pytest.mark.parametrize(
-    'algo_hparam', [
-        dict(max_iter=30, pop_size=40, num_rollouts=6, num_is_samples=20, expl_std_init=1.0),
-    ], ids=['casual_hparam']
+    'algo, algo_hparam', [
+        (HCNormal, dict(max_iter=10, pop_size=50, num_rollouts=8, expl_std_init=0.5, expl_factor=1.1)),
+        (NES, dict(max_iter=10, pop_size=50, num_rollouts=8, expl_std_init=0.5, symm_sampling=True)),
+        (PEPG, dict(max_iter=10, pop_size=50, num_rollouts=8, expl_std_init=0.5, lr=1e-2, normalize_update=False)),
+        (PoWER, dict(max_iter=10, pop_size=50, num_rollouts=8, num_is_samples=10, expl_std_init=0.5)),
+        (CEM, dict(max_iter=10, pop_size=50, num_rollouts=8, num_is_samples=10, expl_std_init=0.5, full_cov=False)),
+        (REPS, dict(max_iter=10, pop_size=200, num_rollouts=8, eps=0.1, gamma=0.99, expl_std_init=0.5,
+                    use_map=True, grad_free_optim=False)),
+    ], ids=['hc_normal', 'nes', 'pepg', 'power', 'cem', 'reps']
 )
-def test_power_training(env, algo_hparam, ex_dir):
+def test_training_parameter_exploring(env, algo, algo_hparam, ex_dir):
     # Environment and policy
+    env = ActNormWrapper(env)
     policy_hparam = dict(feats=FeatureStack([const_feat, identity_feat]))
     policy = LinearPolicy(spec=env.spec, **policy_hparam)
 
-    # Get init return for comparison
-    ret_before = rollout(env, policy, eval=True).undiscounted_return()
+    # Get initial return for comparison
+    rets_before = np.zeros(5)
+    for i in range(rets_before.size):
+        pyrado.set_seed(i)
+        rets_before[i] = rollout(env, policy, eval=True).undiscounted_return()
 
-    # Create algorithm and train
-    algo = PoWER(ex_dir, env, policy, **algo_hparam)
+    # Create the algorithm and train
+    algo = algo(ex_dir, env, policy, **algo_hparam)
     algo.train()
 
-    # Compare returns befor and after training for max_iter iteration
-    ret_after = rollout(env, policy, eval=True).undiscounted_return()
-    assert ret_after > ret_before
+    # Compare returns before and after training for max_iter iteration
+    rets_after = np.zeros_like(rets_before)
+    for i in range(rets_before.size):
+        pyrado.set_seed(i)
+        rets_after[i] = rollout(env, policy, eval=True).undiscounted_return()
+
+    assert all(rets_after > rets_before)
 
 
 @pytest.mark.algorithm

@@ -205,7 +205,7 @@ class GAE(LoggerAware, to.nn.Module):
 
             for batch in tqdm(concat_ros.split_shuffled_batches(
                     self.batch_size, complete_rollouts=isinstance(self.value_fcn, RecurrentPolicy)),
-                    total=num_iter_from_rollouts(None, concat_ros, self.batch_size, False),
+                    total=num_iter_from_rollouts(None, concat_ros, self.batch_size),
                     desc=f'Epoch {e}', unit='batches', file=sys.stdout, leave=False):
                 # Reset the gradients
                 self.optim.zero_grad()

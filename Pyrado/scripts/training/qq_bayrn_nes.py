@@ -5,7 +5,6 @@ randomization for the remaining domain parameters
 import os.path as osp
 import torch as to
 
-import pyrado
 from pyrado.algorithms.nes import NES
 from pyrado.domain_randomization.default_randomizers import get_default_domain_param_map_qq, get_zero_var_randomizer
 from pyrado.environment_wrappers.action_normalization import ActNormWrapper
@@ -63,9 +62,6 @@ if __name__ == '__main__':
          [1.1*dp_nom['Mp'], dp_nom['Mp']/20, 1.1*dp_nom['Mr'], dp_nom['Mr']/20,
           1.1*dp_nom['Lp'], dp_nom['Lp']/20, 1.1*dp_nom['Lr'], dp_nom['Lr']/20]])
 
-    policy_init = to.load(osp.join(pyrado.PERMA_DIR, QQubeSim.name, NES.name,
-                                   '2020-01-06_16-53-50--fnn_actnorm--perfect', 'policy.pt'))
-
     # Algorithm
     bayrn_hparam = dict(
         max_iter=10,
@@ -75,8 +71,8 @@ if __name__ == '__main__':
         acq_samples=1000,
         num_init_cand=10,
         warmstart=True,
-        num_eval_rollouts=100 if isinstance(env_real, QQubeSim) else 5,
-        policy_param_init=policy_init.param_values.data
+        num_eval_rollouts_real=100 if isinstance(env_real, QQubeSim) else 5,
+        # policy_param_init=policy_init.param_values.data
     )
 
     # Save the environments and the hyper-parameters (do it before the init routine of BayRn)

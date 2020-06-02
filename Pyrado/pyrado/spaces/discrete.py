@@ -14,7 +14,7 @@ class DiscreteSpace(Space):
         """
         Constructor
 
-        :param eles: 2D ndarray of all elements listed along the columns
+        :param eles: N x D array of all actions, where N is the number of actions and D is the dimension of each action
         :param labels: label element of the space. This is useful for giving the states and actions names to later
                        identify them (e.g. for plotting).
         """

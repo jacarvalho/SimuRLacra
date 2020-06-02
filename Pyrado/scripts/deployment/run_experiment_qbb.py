@@ -26,13 +26,13 @@ if __name__ == '__main__':
     ex_dir = ask_for_experiment()
     ex_tag = ex_dir.split('--', 1)[1]
 
-    # Load the policy (trained in simulation) and the environment (for constructing the real-world counterpart)
+    # Load the policy and the environment (for constructing the real-world counterpart)
     env_sim, policy, _ = load_experiment(ex_dir)
 
     if args.verbose:
         print(f'Policy params:\n{policy.param_values.detach().numpy()}')
 
-    # Create real-world counterpart of the Quanser Ball-Balancer environment
+    # Create real-world counterpart (without domain randomization)
     env_real = QBallBalancerReal(args.dt)
     print_cbt('Set up the QBallBalancerReal environment.', 'c')
 
@@ -40,8 +40,8 @@ if __name__ == '__main__':
     pdctrl = QBallBalancerPDCtrl(env_real.spec)
     if args.random_init_state:
         # Random initial state
-        min_init_state = np.array([0.7 * 0.275 / 2, 0])
-        max_init_state = np.array([0.8 * 0.275 / 2, 2 * np.pi])
+        min_init_state = np.array([0.7*0.275/2, 0])
+        max_init_state = np.array([0.8*0.275/2, 2*np.pi])
         init_space = Polar2DPosSpace(min_init_state, max_init_state)
         init_state = init_space.sample_uniform()
     else:
@@ -79,8 +79,10 @@ if __name__ == '__main__':
     print_cbt(f'Average return: {avg_return}', 'g', bright=True)
     save_dir = setup_experiment('evaluation', 'qbb_experiment', ex_tag, base_dir=pyrado.TEMP_DIR)
     joblib.dump(ros, osp.join(save_dir, 'experiment_rollouts.pkl'))
-    save_list_of_dicts_to_yaml([dict(ex_dir=ex_dir, init_state=init_state, avg_return=avg_return, num_runs=len(ros))],
-                               save_dir, file_name='experiment_summary')
+    save_list_of_dicts_to_yaml(
+        [dict(ex_dir=ex_dir, init_state=init_state, avg_return=avg_return, num_runs=len(ros))],
+        save_dir, file_name='experiment_summary'
+    )
 
     # Stabilize at the end
     pdctrl.reset(state_des=np.zeros(2))

@@ -193,7 +193,7 @@ def test_rcspysim_animations(env):
     assert env.curr_step <= env.max_steps
 
 
-@pytest.mark.m_needs_mujoco
+@m_needs_mujoco
 @pytest.mark.visualization
 @pytest.mark.parametrize(
     'env', [
@@ -253,19 +253,18 @@ def test_real_env_contructors(dt, max_steps):
         'Acrobot-v1',
         'MountainCarContinuous-v0',
         'Pendulum-v0',
-    ], ids=['MountainCar-v0', 'CartPole-v1', 'Acrobot-v1', 'MountainCarContinuous-v0', 'Pendulum-v0']
+        'LunarLander-v2'
+    ], ids=['MountainCar-v0', 'CartPole-v1', 'Acrobot-v1', 'MountainCarContinuous-v0', 'Pendulum-v0', 'LunarLander-v2']
 )
 def test_gym_env(env_name):
     # Checking the classic control problems
-    gym_module = pytest.importorskip('pyrado.environments.openai_gym')
+    gym_module = pytest.importorskip('pyrado.environments.pysim.openai_classical_control')
 
     env = gym_module.GymEnv(env_name)
     assert env is not None
     env.reset()
     for _ in range(50):
-        env.render(RenderMode())
+        env.render(RenderMode(video=True))
         act = env.act_space.sample_uniform()
-        if isinstance(env.act_space, DiscreteSpace):
-            act = act.item()
         env.step(act)
     env.close()

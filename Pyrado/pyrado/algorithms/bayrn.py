@@ -56,9 +56,11 @@ class BayRn(Algorithm, ABC):
                  acq_samples: int,
                  acq_param: dict = None,
                  montecarlo_estimator: bool = True,
-                 num_eval_rollouts: int = 5,
+                 num_eval_rollouts_real: int = 5,
+                 num_eval_rollouts_sim: int = 50,
                  num_init_cand: int = 5,
                  thold_succ: float = pyrado.inf,
+                 thold_succ_subroutine: float = -pyrado.inf,
                  warmstart: bool = True,
                  policy_param_init: to.Tensor = None,
                  valuefcn_param_init: to.Tensor = None):
@@ -84,9 +86,12 @@ class BayRn(Algorithm, ABC):
         :param acq_param: hyper-parameter for the acquisition function, e.g. $\beta$ for UCB
         :param montecarlo_estimator: estimate the return with a sample average (`True`) or a lower confidence
                                      bound (`False`) obtained from bootstrapping
-        :param num_eval_rollouts: number of rollouts for the evaluation in simulation
+        :param num_eval_rollouts_real: number of rollouts in the target domain to estimate the return
+        :param num_eval_rollouts_sim: number of rollouts in simulation to estimate the return after training
         :param num_init_cand: number of initial policies to train, ignored if `init_dir` is provided
-        :param thold_succ: success threshold on the return, stop BayRn if current return on the real system is bigger
+        :param thold_succ: success threshold on the real system's return for BayRn, stop the algorithm if exceeded
+        :param thold_succ_subroutine: success threshold on the simulated system's return for the subroutine, repeat the
+                                      subroutine until the threshold is exceeded or the for a given number of iterations
         :param warmstart: initialize the policy parameters with the one of the previous iteration. This option has no
                           effect for initial policies and can be overruled by passing init policy params explicitly.
         :param policy_param_init: initial policy parameter values for the subroutine, set `None` to be random
@@ -117,8 +122,11 @@ class BayRn(Algorithm, ABC):
         self.policy_param_init = policy_param_init.detach() if policy_param_init is not None else None
         self.valuefcn_param_init = valuefcn_param_init.detach() if valuefcn_param_init is not None else None
         self.warmstart = warmstart
-        self.num_eval_rollouts = num_eval_rollouts
-        self.thold_succ = to.tensor([thold_succ], dtype=to.get_default_dtype())
+        self.num_eval_rollouts_real = num_eval_rollouts_real
+        self.num_eval_rollouts_sim = num_eval_rollouts_sim
+        self.thold_succ = to.tensor([thold_succ])
+        self.thold_succ_subroutine = to.tensor([thold_succ_subroutine])
+        self.max_subroutine_rep = 3  # number of tries to exceed thold_succ_subroutine during training in simulation
         self.curr_cand_value = -pyrado.inf  # for the stopping criterion
         self.uc_normalizer = UnitCubeProjector(bounds[0, :], bounds[1, :])
 
@@ -176,8 +184,8 @@ class BayRn(Algorithm, ABC):
         self._subroutine.train(snapshot_mode='best', meta_info=dict(prefix=prefix))
 
         # Return the average return of the trained policy in simulation
-        sampler = ParallelSampler(self._env_sim, self._subroutine.policy, num_envs=8,
-                                  min_rollouts=80)
+        sampler = ParallelSampler(self._env_sim, self._subroutine.policy, num_envs=4,
+                                  min_rollouts=self.num_eval_rollouts_sim)
         ros = sampler.sample()
         avg_ret_sim = np.mean([ro.undiscounted_return() for ro in ros])
         return float(avg_ret_sim)
@@ -195,7 +203,9 @@ class BayRn(Algorithm, ABC):
             cands[i, :] = (self.bounds[1, :] - self.bounds[0, :])*to.rand(self.bounds.shape[1]) + self.bounds[0, :]
             # Train a policy for each candidate, repeat if the resulting policy did not exceed the success thold
             print_cbt(f'Randomly sampled the next candidate: {cands[i].numpy()}', 'g')
-            wrapped_trn_fcn = until_thold_exceeded(self.thold_succ.item(), max_iter=3)(self.train_policy_sim)
+            wrapped_trn_fcn = until_thold_exceeded(
+                self.thold_succ_subroutine.item(), max_iter=self.max_subroutine_rep
+            )(self.train_policy_sim)
             wrapped_trn_fcn(cands[i], prefix=f'init_{i}')
 
         # Save candidates into a single tensor (policy is saved during training or exists already)
@@ -227,7 +237,7 @@ class BayRn(Algorithm, ABC):
         for i in range(num_init_cand):
             policy = to.load(osp.join(self._save_dir, f'init_{i}_policy.pt'))
             cands_values[i] = self.eval_policy(self._save_dir, self._env_real, policy, self.montecarlo_estimator,
-                                               prefix=f'init_{i}', num_rollouts=self.num_eval_rollouts)
+                                               prefix=f'init_{i}', num_rollouts=self.num_eval_rollouts_real)
 
         # Save candidates's and their returns into tensors (policy is saved during training or exists already)
         to.save(cands, osp.join(self._save_dir, 'candidates.pt'))
@@ -298,13 +308,15 @@ class BayRn(Algorithm, ABC):
         :return: estimated return of the trained policy in the target domain
         """
         # Train a policy using the subroutine (saves to iter_{self._curr_iter}_policy.pt)
-        wrapped_trn_fcn = until_thold_exceeded(self.thold_succ.item(), max_iter=3)(self.train_policy_sim)
+        wrapped_trn_fcn = until_thold_exceeded(
+            self.thold_succ_subroutine.item(), max_iter=self.max_subroutine_rep
+        )(self.train_policy_sim)
         wrapped_trn_fcn(cand, prefix)
 
         # Evaluate the current policy on the target domain
         policy = to.load(osp.join(self._save_dir, f'{prefix}_policy.pt'))
         return self.eval_policy(self._save_dir, self._env_real, policy, self.montecarlo_estimator, prefix,
-                                self.num_eval_rollouts)
+                                self.num_eval_rollouts_real)
 
     def step(self, snapshot_mode: str, meta_info: dict = None):
         if not self.initialized:
@@ -452,7 +464,7 @@ class BayRn(Algorithm, ABC):
                 if self.cands.shape[0] == self.cands_values.shape[0] + 1:
                     curr_cand_value = self.eval_policy(self._save_dir, self._env_real, self._subroutine.policy,
                                                        self.montecarlo_estimator, prefix=f'iter_{self._curr_iter - 1}',
-                                                       num_rollouts=self.num_eval_rollouts)
+                                                       num_rollouts=self.num_eval_rollouts_real)
                     self.cands_values = to.cat([self.cands_values, curr_cand_value.view(1)], dim=0)
                     to.save(self.cands_values, osp.join(self._save_dir, 'candidates_values.pt'))
 
