@@ -18,7 +18,7 @@ jobs:
         run: docker build . --file Dockerfile --tag simurlacra
       - name: Execute tests
         run: |
-          docker run --rm -i -v $(pwd):/cov simurlacra conda run -n pyrado bash -c "pytest Pyrado/tests --cov=./Pyrado --cov-report=xml --verbose -m 'not visualization and not longtime' && mv coverage.xml /cov"
+          docker run --rm -i -v $(pwd):/cov simurlacra conda run -n pyrado bash -c "pytest Pyrado/tests --cov=Pyrado --cov-report=xml --verbose -m 'not visualization and not longtime' && mv coverage.xml /cov"
       - uses: codecov/codecov-action@v1
         with:
           file: coverage.xml # optional
