@@ -54,7 +54,7 @@ if __name__ == '__main__':
         expl_std_init=2.0,
         expl_std_min=0.02,
         symm_sampling=False,
-        num_sampler_envs=16,
+        num_sampler_envs=8,
     )
     power = PoWER(ex_dir, env_sim, policy, **subroutine_hparam)
 
@@ -81,7 +81,7 @@ if __name__ == '__main__':
         acq_samples=1000,
         num_init_cand=2,
         warmstart=False,
-        num_eval_rollouts=100 if isinstance(env_real, QQubeSim) else 5,
+        num_eval_rollouts_real=100 if isinstance(env_real, QQubeSim) else 5,
     )
 
     # Save the environments and the hyper-parameters (do it before the init routine of BDR)

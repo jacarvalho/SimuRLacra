@@ -59,7 +59,7 @@ def until_thold_exceeded(thold: float, max_iter: int = None):
         def wrapper_trn_eval_fcn(*args, **kwargs):
             ret = -pyrado.inf
             cnt_iter = 0
-            while ret < thold:
+            while ret <= thold:  # <= guarantees that we at least train once, even if thold is -inf
                 # Train and evaluate
                 ret = trn_eval_fcn(*args, **kwargs)
                 cnt_iter += 1
