@@ -93,11 +93,9 @@ Rcs::RcsSimEnv::~RcsSimEnv()
     MatNd_destroy(currentObservation);
     
     delete initStateSetter;
-    
     delete physicsSim;
     delete physicsManager;
     delete disturber;
-    
     delete config;
 }
 
@@ -227,7 +225,7 @@ MatNd* Rcs::RcsSimEnv::step(const MatNd* action, const MatNd* disturbance)
      *-------------------------------------------------------------------------*/
     if (!allJointsPosCtrl)
     {
-        Rcs::ControllerBase::computeInvDynJointSpace(T_ctrl, config->graph, q_ctrl, 500.);
+        Rcs::ControllerBase::computeInvDynJointSpace(T_ctrl, config->graph, q_ctrl, 1000.);
     }
     
     /*-------------------------------------------------------------------------*
