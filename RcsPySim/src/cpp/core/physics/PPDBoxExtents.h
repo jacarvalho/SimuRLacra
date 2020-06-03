@@ -7,7 +7,7 @@ namespace Rcs
 {
 
 /**
- * Adjusts the length width and high of a box shaped body.
+ * Adjusts the length, width and high of a box shaped body.
  * This class does not consider potentially necessary offsets, e.g. if the box is initially in contact with another body.
  * The individual dimensions can be masked out by passing false.
  */
@@ -26,9 +26,29 @@ protected:
 private:
     //! The shape's index given the body. THis is given by the order of the shapes in the config xml-file.
     unsigned int shapeIdx;
+};
 
-    //! The body's initial extents
-    double initExtents[3];
+
+/**
+ * Equally adjusts the length, width and high of a box shaped body.
+ * This class does not consider potentially necessary offsets, e.g. if the box is initially in contact with another body.
+ * The 3 dimensions are changes simultaneously to keep the cube shape.
+ */
+class PPDCubeExtents : public PPDCompound
+{
+public:
+    PPDCubeExtents(unsigned int shapeIdx);
+
+    ~PPDCubeExtents();
+
+    virtual void setValues(PropertySource* inValues);
+
+protected:
+    virtual void init(BodyParamInfo* bpi);
+
+private:
+    //! The shape's index given the body. THis is given by the order of the shapes in the config xml-file.
+    unsigned int shapeIdx;
 };
 
 }
