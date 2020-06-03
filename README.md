@@ -1,4 +1,4 @@
-<img alt="logo" align="left" height="110px" src="logo.png" style="padding-right: 20px">
+<img alt="logo" align="left" height="150px" src="logo.png" style="padding-right: 20px">
 
 **[Overview](#overview)**  
 **[Citing](#citing)**  
