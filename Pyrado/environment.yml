@@ -8,6 +8,7 @@ dependencies:
   - blas=1.0=mkl
   - ca-certificates=2020.4.5.1=hecc5488_0
   - certifi=2020.4.5.1=py38h32f6830_0
+  - cmake=3.14.0=h52cb24c_0
   - colorama=0.4.3=py_0
   - coverage=5.0=py38h7b6447c_0
   - cycler=0.10.0=py38_0
@@ -33,7 +34,6 @@ dependencies:
   - libtiff=4.1.0=h2733197_0
   - libuuid=1.0.3=h1bed415_2
   - libxcb=1.13=h1bed415_1
-#  - libxml2=2.9.9=hea5a465_1
   - matplotlib=3.1.3=py38_0
   - matplotlib-base=3.1.3=py38hef1b27d_0
   - mkl=2020.1=217
