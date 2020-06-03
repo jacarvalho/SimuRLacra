@@ -29,7 +29,7 @@ class StochasticActionExplStrat(Policy, ABC):
     def is_recurrent(self) -> bool:
         return self.policy.is_recurrent
 
-    def init_hidden(self, batch_size: int = None):
+    def init_hidden(self, batch_size: int = None) -> to.Tensor:
         return self.policy.init_hidden(batch_size)
 
     def init_param(self, init_values: to.Tensor = None, **kwargs):

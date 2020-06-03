@@ -305,7 +305,7 @@ class ADNPolicy(RecurrentPolicy):
         else:
             self.param_values = init_values
 
-    def init_hidden(self, batch_size: int = None):
+    def init_hidden(self, batch_size: int = None) -> to.Tensor:
         """
         Provide initial values for the hidden parameters. This should usually be a zero tensor.
 
@@ -320,8 +320,8 @@ class ADNPolicy(RecurrentPolicy):
         Then pass it to the wrapped RNN.
 
         :param obs: observations coming from the environment i.e. noisy
-        :param hidden: current hidden states, in this case the linearly combined actions of the last step
-        :return: action and new hidden states i.e. linearly combined actions
+        :param hidden: current hidden states, in this case action and potentials of the last time step
+        :return: current action and new hidden states
         """
         obs = obs.to(self.device)
 

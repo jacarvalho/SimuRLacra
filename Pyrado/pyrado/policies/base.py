@@ -88,7 +88,7 @@ class Policy(nn.Module, ABC):
         """ Bool to signalise it the policy has a recurrent architecture. """
         return False
 
-    def init_hidden(self, batch_size: int = None):
+    def init_hidden(self, batch_size: int = None) -> to.Tensor:
         """
         Provide initial values for the hidden parameters. This should usually be a zero tensor.
         The default implementation will raise an error, to enforce override this function for recurrent policies.

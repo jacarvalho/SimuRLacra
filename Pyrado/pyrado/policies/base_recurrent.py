@@ -25,7 +25,7 @@ class RecurrentPolicy(Policy, ABC):
         """ Get the number of hidden state variables. """
         raise NotImplementedError
 
-    def init_hidden(self, batch_size: int = None):
+    def init_hidden(self, batch_size: int = None) -> to.Tensor:
         """
         Provide initial values for the hidden parameters. This should usually be a zero tensor.
 
