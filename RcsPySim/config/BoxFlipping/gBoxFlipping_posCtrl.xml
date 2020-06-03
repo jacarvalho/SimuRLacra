@@ -2,11 +2,11 @@
 
   <xi:include href="gBoxFlipping_common.xml"/>
 
-  <Group name="_L">
+  <Group name="_L" transform="0 0 0.1 0 0 0">
     <xi:include href="../common/SimpleEffector_posCtrl.xml"/>
   </Group>
 
-  <Group name="_R">
+  <Group name="_R" transform="0 0 0.2 0 0 0">
     <xi:include href="../common/SimpleEffector_posCtrl.xml"/>
   </Group>
 
@@ -15,8 +15,8 @@
     <joint_state joint="DofX_R" position="1.25"/>
     <joint_state joint="DofY_L" position="0.3"/>
     <joint_state joint="DofY_R" position="-0.3"/>
-    <joint_state joint="DofZ_L" position="1.0"/>
-    <joint_state joint="DofZ_R" position="1.0"/>
+    <joint_state joint="DofZ_L" position="0.9"/>
+    <joint_state joint="DofZ_R" position="0.8"/>
   </model_state>
 
 </Graph>

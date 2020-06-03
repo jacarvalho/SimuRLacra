@@ -39,14 +39,14 @@ void ISSBoxFlipping::getMinMax(double* min, double* max) const
     max[0] = 1.25;
     min[1] = 0.2;
     max[1] = 0.2;
-    min[2] = 0.95;
-    max[2] = 0.95;
+    min[2] = 0.85;
+    max[2] = 0.85;
     min[3] = 1.25;
     max[3] = 1.25;
     min[4] = -0.2;
     max[4] = -0.2;
-    min[5] = 0.95;
-    max[5] = 0.95;
+    min[5] = 0.75;
+    max[5] = 0.75;
 }
 
 std::vector<std::string> ISSBoxFlipping::getNames() const

@@ -8,45 +8,48 @@ from pyrado.algorithms.nes import NES
 from pyrado.environment_wrappers.observation_normalization import ObsNormWrapper
 from pyrado.environments.rcspysim.box_flipping import BoxFlippingPosMPsSim
 from pyrado.logger.experiment import setup_experiment, save_list_of_dicts_to_yaml
-from pyrado.policies.adn import ADNPolicy, pd_cubic, pd_capacity_21_abs
+from pyrado.policies.adn import ADNPolicy, pd_cubic, pd_capacity_21_abs, pd_capacity_21
 
 
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
-    # ex_dir = setup_experiment(BoxFlippingPosMPsSim.name, f'adn-{NES.name}', 'lin', seed=1001)
-    ex_dir = setup_experiment(BoxFlippingPosMPsSim.name, f'adn-{NES.name}', 'lin_obsnorm', seed=1001)
+    ex_dir = setup_experiment(BoxFlippingPosMPsSim.name, f'adn-{NES.name}', 'lin', seed=1001)
+    # ex_dir = setup_experiment(BoxFlippingPosMPsSim.name, f'adn-{NES.name}', 'lin_obsnorm', seed=1001)
 
     # Environment
     env_hparams = dict(
         physicsEngine='Bullet',  # Bullet or Vortex
-        graphFileName='gBoxFlipping_posCtrl.xml',  # gBoxFlipping_posCtrl.xml or gBoxFlipping_trqCtrl.xml
-        dt=1/50.,
-        max_steps=1000,
-        ref_frame='table',  # world, table, or box
+        graphFileName='gBoxFlipping_trqCtrl.xml',  # gBoxFlipping_posCtrl.xml or gBoxFlipping_trqCtrl.xml
+        dt=1/100.,
+        max_steps=2000,
+        ref_frame='world',  # world, table, or box
         collisionConfig={'file': 'collisionModel.xml'},
         mps_left=None,  # use defaults
         mps_right=None,  # use defaults
         checkJointLimits=True,
-        collisionAvoidanceIK=True,
+        collisionAvoidanceIK=False,
+        observeManipulators=False,
+        observeBoxOrientation=False,
         observeVelocities=False,
         observeForceTorque=True,
         observeCollisionCost=False,
         observePredictedCollisionCost=False,
         observeManipulabilityIndex=False,
         observeDynamicalSystemDiscrepancy=False,
-        observeTaskSpaceDiscrepancy=True,
+        observeTaskSpaceDiscrepancy=False,
         observeDSGoalDistance=False,
     )
     env = BoxFlippingPosMPsSim(**env_hparams)
-    env = ObsNormWrapper(env)
+    # env = ObsNormWrapper(env)
 
     # Policy
     policy_hparam = dict(
         tau_init=1.,
         tau_learnable=True,
         capacity_learnable=False,
-        output_nonlin=to.tanh,
-        potentials_dyn_fcn=pd_capacity_21_abs,
+        scaling_layer=False,
+        output_nonlin=to.sigmoid,
+        potentials_dyn_fcn=pd_capacity_21,
     )
     policy = ADNPolicy(spec=env.spec, dt=env.dt, **policy_hparam)
 
@@ -55,12 +58,12 @@ if __name__ == '__main__':
         max_iter=5000,
         pop_size=None,
         num_rollouts=1,
-        eta_mean=1.,
+        eta_mean=2.,
         eta_std=None,
         expl_std_init=1.0,
         symm_sampling=False,
         transform_returns=True,
-        num_sampler_envs=4,
+        num_sampler_envs=6,
     )
     algo = NES(ex_dir, env, policy, **algo_hparam)
 
@@ -73,5 +76,5 @@ if __name__ == '__main__':
     )
 
     # Jeeeha
-    print(env.obs_space.labels)
-    algo.train(snapshot_mode='best', seed=ex_dir.seed)
+    print(env.obs_space)
+    algo.train(snapshot_mode='latest', seed=ex_dir.seed)

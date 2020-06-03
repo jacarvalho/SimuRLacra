@@ -40,22 +40,26 @@ def create_idle_setup(physicsEngine, graphFileName, dt, max_steps, ref_frame, ch
 
 def create_position_mps_setup(physicsEngine, graphFileName, dt, max_steps, ref_frame, checkJointLimits):
     # def policy(t: float):
-    #     if t < 3.1:
-    #         return [0, 0, 0, 0,
-    #                 0, 0, 0, 0, 1]
-    #     elif t <= 4.5:
-    #         return [0, 0, 0, 0,
-    #                 0, 0, 0, 0, 1]
-    #     else:
-    #         return [0, 0, 0, 0,
-    #                 0, 0, 0, 0, 1]
+        # if t < 3.:
+        #     return [0, 0, 0, 0,
+        #             1, 0, 0, 0, 0]
+        # elif t <= 5.:
+        #     return [0, 0, 0, 0,
+        #             0, 1, 0, 0, 0]
+        # elif t <= 8.:
+        #     return [1, 0, 0, 0,
+        #             0, 0, 0, 0, 0]
+        # else:
+        #     return [0, 0, 0, 0,
+        #             0, 0, 0, 0, 0]
+    import numpy as np
     def policy(t: float):
         if t <= 5:
-            return [0.2, 0, 0, 0,
-                    0, 1]
+            return [0.2, 0,
+                    0.1, 0.3]
         else:
-            return [-0.1, 0, 0, 0,
-                    0.1, 1.]
+            return [0, 1,
+                    1, 0]
 
     # Set up environment
     env = BoxFlippingPosMPsSim(
@@ -88,15 +92,21 @@ def create_position_mps_setup(physicsEngine, graphFileName, dt, max_steps, ref_f
 
 def create_velocity_mps_setup(physicsEngine, graphFileName, dt, max_steps, ref_frame, checkJointLimits):
     def policy(t: float):
-        if t < 2.5:
-            return [.8, 0., 0., 0.,
-                    0, 0, 0, 0]
-        elif t <= 3.:
-            return [0.2, 0., .8, 0.,
-                    0, 0, 0, 0]
+        if t < 3:
+            return [0, 0,
+                    1, 0]
+        elif t <= 5:
+            return [0, 0,
+                    0, 1]
+        elif t <= 8:
+            return [0, 1,
+                    1, 1]
+        elif t <= 10:
+            return [1, 0,
+                    0, 1]
         else:
-            return [0., 0.15, 0., 0.,
-                    0, 0, 0, 0]
+            return [1., 1.,
+                    1., 1.]
 
     # Set up environment
     env = BoxFlippingVelMPsSim(
@@ -130,10 +140,10 @@ if __name__ == '__main__':
     # Choose setup
     setup_type = 'pos'  # idle, pos, or vel
     physicsEngine = 'Bullet'  # Bullet or Vortex
-    graphFileName = 'gBoxFlipping_posCtrl.xml'  # gBoxFlipping_posCtrl.xml or gBoxFlipping_trqCtrl.xml
+    graphFileName = 'gBoxFlipping_trqCtrl.xml'  # gBoxFlipping_posCtrl.xml or gBoxFlipping_trqCtrl.xml
     dt = 1/100.
-    max_steps = int(20/dt)
-    ref_frame = 'table'  # world, box, table, or table
+    max_steps = int(15/dt)
+    ref_frame = 'world'  # world, box, table, or table
     checkJointLimits = False
     randomize = False
 
@@ -161,6 +171,6 @@ if __name__ == '__main__':
     done, param, state = False, None, None
     while not done:
         ro = rollout(env, policy, render_mode=RenderMode(text=False, video=True), eval=True, max_steps=max_steps,
-                     reset_kwargs=dict(domain_param=param, init_state=state), stop_on_done=False)
+                     reset_kwargs=dict(domain_param=param, init_state=state), stop_on_done=True)
         print_cbt(f'Return: {ro.undiscounted_return()}', 'g', bright=True)
         done, state, param = after_rollout_query(env, policy, ro)

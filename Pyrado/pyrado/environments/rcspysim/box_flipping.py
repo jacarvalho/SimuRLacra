@@ -1,6 +1,7 @@
 import functools
 import numpy as np
 import os.path as osp
+from copy import deepcopy
 from init_args_serializer import Serializable
 from typing import Sequence
 
@@ -11,10 +12,12 @@ from pyrado.spaces.singular import SingularStateSpace
 from pyrado.tasks.base import Task
 from pyrado.tasks.desired_state import DesStateTask
 from pyrado.tasks.endless_flipping import EndlessFlippingTask
+from pyrado.tasks.final_reward import FinalRewTask, FinalRewMode
 from pyrado.tasks.masked import MaskedTask
 from pyrado.tasks.reward_functions import ExpQuadrErrRewFcn, MinusOnePerStepRewFcn, AbsErrRewFcn, CosOfOneEleRewFcn, \
     CombinedRewFcn, RewFcn
 from pyrado.tasks.parallel import ParallelTasks
+from pyrado.tasks.sequential import SequentialTasks
 from pyrado.tasks.utils import proximity_succeeded, never_succeeded
 from pyrado.tasks.predefined import create_check_all_boundaries_task, create_collision_task
 from pyrado.utils.data_types import EnvSpec
@@ -25,7 +28,7 @@ rcsenv.addResourcePath(rcsenv.RCSPYSIM_CONFIG_PATH)
 
 def create_task_space_discrepancy_task(env_spec: EnvSpec, rew_fcn: RewFcn) -> MaskedTask:
     # Define the indices for selection. This needs to match the observations' names in RcsPySim.
-    idcs = ['DiscrepTS_Y', 'DiscrepTS_Z']
+    idcs = ['DiscrepTS_Y']
 
     # Get the masked environment specification
     spec = EnvSpec(
@@ -69,6 +72,34 @@ def create_box_flip_task(env_spec: EnvSpec, continuous_rew_fcn):
     return MaskedTask(env_spec, ef_task, idcs)
 
 
+def create_box_push_task(env_spec: EnvSpec, effector_label: str):
+    # Define the indices for selection. This needs to match the observations' names in RcsPySim.
+    idcs = ['Box_Y', 'Box_Yd']
+
+    # Get the masked environment specification
+    spec = EnvSpec(
+        env_spec.obs_space,
+        env_spec.act_space,
+        env_spec.state_space.subspace(env_spec.state_space.create_mask(idcs))
+    )
+
+    # Create a desired state task
+    state_des_L = np.array([0.14, 0.])  # box position is measured world coordinates
+    state_des_R = np.array([-0.14, 0.])  # box position is measured world coordinates
+    rew_fcn = ExpQuadrErrRewFcn(Q=np.diag([2e1, 1e-2]), R=1e-2*np.eye(spec.act_space.flat_dim))
+    dst_L = DesStateTask(spec, state_des_L, rew_fcn, functools.partial(proximity_succeeded, thold_dist=5e-3, dims=[0]))
+    dst_R = DesStateTask(spec, state_des_R, rew_fcn, functools.partial(proximity_succeeded, thold_dist=5e-3, dims=[0]))
+
+    fst_L = FinalRewTask(dst_L, FinalRewMode(always_positive=True), factor=5000)
+    fst_R = FinalRewTask(dst_R, FinalRewMode(always_positive=True), factor=5000)
+    st = FinalRewTask(SequentialTasks(
+        [deepcopy(fst_L), deepcopy(fst_R), deepcopy(fst_L), deepcopy(fst_R)], verbose=True, hold_rew_when_done=True
+    ), FinalRewMode(time_dependent=True))
+
+    # Return the masked tasks
+    return MaskedTask(env_spec, st, idcs)
+
+
 class BoxFlippingSim(RcsSim, Serializable):
     """ Base class for simplified robotic manipulator flipping a box over and over again """
 
@@ -93,6 +124,8 @@ class BoxFlippingSim(RcsSim, Serializable):
         :param kwargs: keyword arguments which are available for all task-based `RcsSim`
                        checkJointLimits: bool = False,
                        collisionAvoidanceIK: bool = True,
+                       observeManipulators: bool = True,
+                       observeBoxOrientation: bool = True,
                        observeVelocities: bool = False,
                        observeCollisionCost: bool = True,
                        observePredictedCollisionCost: bool = False,
@@ -123,7 +156,8 @@ class BoxFlippingSim(RcsSim, Serializable):
     def _create_task(self, task_args: dict) -> Task:
         # Create the tasks
         continuous_rew_fcn = task_args.get('continuous_rew_fcn', True)
-        task_box = create_box_flip_task(self.spec, continuous_rew_fcn)
+        # task_main = create_box_flip_task(self.spec, continuous_rew_fcn)
+        task_main = create_box_push_task(self.spec, 'ContactPoint_L_Y')
         task_check_bounds = create_check_all_boundaries_task(self.spec, penalty=1e3)
         # task_collision = create_collision_task(self.spec, factor=1e-2)
         # task_ts_discrepancy = create_task_space_discrepancy_task(self.spec,
@@ -131,7 +165,7 @@ class BoxFlippingSim(RcsSim, Serializable):
         #                                                                       r=np.zeros(self.act_space.shape)))
 
         return ParallelTasks([
-            task_box,
+            task_main,
             task_check_bounds,
             # task_collision,
             # task_ts_discrepancy
@@ -139,8 +173,7 @@ class BoxFlippingSim(RcsSim, Serializable):
 
     @classmethod
     def get_nominal_domain_param(cls):
-        return dict(box_length=0.18,
-                    box_width=0.14,
+        return dict(box_size=0.12,  # it's ac cube
                     box_mass=0.3,
                     box_friction_coefficient=1.4,
                     table_friction_coefficient=1.0)
@@ -167,6 +200,8 @@ class BoxFlippingPosMPsSim(BoxFlippingSim, Serializable):
         :param kwargs: keyword arguments which are available for all task-based `RcsSim`
                        checkJointLimits: bool = False,
                        collisionAvoidanceIK: bool = True,
+                       observeManipulators: bool = True,
+                       observeBoxOrientation: bool = True,
                        observeVelocities: bool = False,
                        observeCollisionCost: bool = True,
                        observePredictedCollisionCost: bool = False,
@@ -183,31 +218,31 @@ class BoxFlippingPosMPsSim(BoxFlippingSim, Serializable):
             mps_left = [
                 # Y
                 {'function': 'msd_nlin', 'attractorStiffness': 30., 'mass': 1., 'damping': 60.,
-                 'goal': np.array([-0.8])},  # [m]
+                 'goal': np.array([-0.7])},  # [m]
                 {'function': 'msd_nlin', 'attractorStiffness': 30., 'mass': 1., 'damping': 60.,
-                 'goal': np.array([+0.8])},  # [m]
+                 'goal': np.array([+0.7])},  # [m]
                 # Z
-                {'function': 'msd_nlin', 'attractorStiffness': 30., 'mass': 1., 'damping': 60.,
-                 'goal': np.array([-0.0])},  # [m]
-                {'function': 'msd_nlin', 'attractorStiffness': 30., 'mass': 1., 'damping': 60.,
-                 'goal': np.array([+0.2])},  # [m]
+                # {'function': 'msd_nlin', 'attractorStiffness': 30., 'mass': 1., 'damping': 60.,
+                #  'goal': np.array([-0.0])},  # [m]
+                # {'function': 'msd_nlin', 'attractorStiffness': 30., 'mass': 1., 'damping': 60.,
+                #  'goal': np.array([+0.2])},  # [m]
             ]
         if mps_right is None:
             mps_right = [
                 # Y
-                # {'function': 'msd_nlin', 'attractorStiffness': 30., 'mass': 1., 'damping': 60.,
-                #  'goal': np.array([-0.8])},  # [m]
-                # {'function': 'msd_nlin', 'attractorStiffness': 30., 'mass': 1., 'damping': 60.,
-                #  'goal': np.array([+0.8])},  # [m]
-                # # Z
+                {'function': 'msd_nlin', 'attractorStiffness': 30., 'mass': 1., 'damping': 60.,
+                 'goal': np.array([-0.7])},  # [m]
+                {'function': 'msd_nlin', 'attractorStiffness': 30., 'mass': 1., 'damping': 60.,
+                 'goal': np.array([+0.7])},  # [m]
+                # Z
                 # {'function': 'msd_nlin', 'attractorStiffness': 30., 'mass': 1., 'damping': 60.,
                 #  'goal': np.array([-0.0])},  # [m]
-                {'function': 'msd_nlin', 'attractorStiffness': 30., 'mass': 1., 'damping': 60.,
-                 'goal': np.array([+0.2])},  # [m]
+                # {'function': 'msd_nlin', 'attractorStiffness': 30., 'mass': 1., 'damping': 60.,
+                #  'goal': np.array([+0.2])},  # [m]
                 # Distance
                 # {'function': 'msd', 'attractorStiffness': 50., 'mass': 1., 'damping': 10.,
-                {'function': 'lin', 'errorDynamics': 1.,  # [m/s]
-                 'goal': np.array([0.0])},  # [m]
+                # {'function': 'lin', 'errorDynamics': 1.,  # [m/s]
+                #  'goal': np.array([0.0])},  # [m]
             ]
 
         # Forward to the BoxFlippingSim's constructor
@@ -242,6 +277,8 @@ class BoxFlippingVelMPsSim(BoxFlippingSim, Serializable):
         :param kwargs: keyword arguments which are available for all task-based `RcsSim`
                        checkJointLimits: bool = False,
                        collisionAvoidanceIK: bool = True,
+                       observeManipulators: bool = True,
+                       observeBoxOrientation: bool = True,
                        observeVelocities: bool = False,
                        observeCollisionCost: bool = True,
                        observePredictedCollisionCost: bool = False,
@@ -259,20 +296,20 @@ class BoxFlippingVelMPsSim(BoxFlippingSim, Serializable):
         if mps_left is None:
             mps_left = [
                 # Yd
-                {'function': 'lin', 'errorDynamics': 1., 'goal': dt*np.array([0.1])},  # [m/s]
-                {'function': 'lin', 'errorDynamics': 1., 'goal': dt*np.array([-0.1])},  # [m/s]
+                {'function': 'lin', 'errorDynamics': 3., 'goal': dt*np.array([0.1])},  # [m/s]
+                {'function': 'lin', 'errorDynamics': 3., 'goal': dt*np.array([-0.1])},  # [m/s]
                 # Zd
-                {'function': 'lin', 'errorDynamics': 1., 'goal': dt*np.array([0.1])},  # [m/s]
-                {'function': 'lin', 'errorDynamics': 1., 'goal': dt*np.array([-0.1])},  # [m/s]
+                # {'function': 'lin', 'errorDynamics': 3., 'goal': dt*np.array([0.1])},  # [m/s]
+                # {'function': 'lin', 'errorDynamics': 3., 'goal': dt*np.array([-0.1])},  # [m/s]
             ]
         if mps_right is None:
             mps_right = [
                 # Yd
-                {'function': 'lin', 'errorDynamics': 1., 'goal': dt*np.array([0.1])},  # [m/s]
-                {'function': 'lin', 'errorDynamics': 1., 'goal': dt*np.array([-0.1])},  # [m/s]
+                {'function': 'lin', 'errorDynamics': 3., 'goal': dt*np.array([0.1])},  # [m/s]
+                {'function': 'lin', 'errorDynamics': 3., 'goal': dt*np.array([-0.1])},  # [m/s]
                 # Zd
-                {'function': 'lin', 'errorDynamics': 1., 'goal': dt*np.array([0.1])},  # [m/s]
-                {'function': 'lin', 'errorDynamics': 1., 'goal': dt*np.array([-0.1])},  # [m/s]
+                # {'function': 'lin', 'errorDynamics': 3., 'goal': dt*np.array([0.1])},  # [m/s]
+                # {'function': 'lin', 'errorDynamics': 3., 'goal': dt*np.array([-0.1])},  # [m/s]
             ]
 
         # Forward to the BoxFlippingSim's constructor

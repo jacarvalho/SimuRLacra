@@ -1,26 +1,25 @@
 """
-Train an agent to solve the simplified Box Flipping task using Activation Dynamics Networks and
-Natural Evolutionary Strategies.
+Train an agent to solve the simplified Box Flipping task using Cross-Entorpy Method.
 """
-import torch as to
-
-from pyrado.algorithms.nes import NES
+from pyrado.algorithms.cem import CEM
 from pyrado.environment_wrappers.observation_normalization import ObsNormWrapper
-from pyrado.environments.rcspysim.box_flipping import BoxFlippingVelMPsSim
+from pyrado.environment_wrappers.observation_partial import ObsPartialWrapper
+from pyrado.environments.rcspysim.box_flipping import BoxFlippingPosMPsSim
 from pyrado.logger.experiment import setup_experiment, save_list_of_dicts_to_yaml
-from pyrado.policies.adn import ADNPolicy, pd_cubic, pd_capacity_21_abs
+from pyrado.policies.features import FeatureStack, identity_feat, const_feat
+from pyrado.policies.linear import LinearPolicy
 
 
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
-    ex_dir = setup_experiment(BoxFlippingVelMPsSim.name, f'adn-{NES.name}', 'lin_obsnorm', seed=1001)
+    ex_dir = setup_experiment(BoxFlippingPosMPsSim.name, f'{CEM.name}', 'trqctrl_obsnorm', seed=1001)
 
     # Environment
     env_hparams = dict(
         physicsEngine='Bullet',  # Bullet or Vortex
         graphFileName='gBoxFlipping_trqCtrl.xml',  # gBoxFlipping_posCtrl.xml or gBoxFlipping_trqCtrl.xml
         dt=1/100.,
-        max_steps=2500,
+        max_steps=2000,
         ref_frame='world',  # world, table, or box
         collisionConfig={'file': 'collisionModel.xml'},
         mps_left=None,  # use defaults
@@ -29,7 +28,7 @@ if __name__ == '__main__':
         collisionAvoidanceIK=False,
         observeManipulators=False,
         observeBoxOrientation=False,
-        observeVelocities=False,
+        observeVelocities=True,
         observeForceTorque=True,
         observeCollisionCost=False,
         observePredictedCollisionCost=False,
@@ -38,33 +37,31 @@ if __name__ == '__main__':
         observeTaskSpaceDiscrepancy=False,
         observeDSGoalDistance=False,
     )
-    env = BoxFlippingVelMPsSim(**env_hparams)
+    env = BoxFlippingPosMPsSim(**env_hparams)
     env = ObsNormWrapper(env)
+    # env = ObsPartialWrapper(env, idcs=['Box_Yd'])
 
     # Policy
     policy_hparam = dict(
-        tau_init=2.,
-        tau_learnable=True,
-        capacity_learnable=False,
-        scaling_layer=False,
-        output_nonlin=to.sigmoid,
-        potentials_dyn_fcn=pd_cubic,
+        feats=FeatureStack([const_feat, identity_feat])
     )
-    policy = ADNPolicy(spec=env.spec, dt=env.dt, **policy_hparam)
+    policy = LinearPolicy(spec=env.spec, **policy_hparam)
 
     # Algorithm
     algo_hparam = dict(
-        max_iter=5000,
-        pop_size=None,
+        max_iter=100,
+        pop_size=100,
         num_rollouts=1,
-        eta_mean=1.,
-        eta_std=None,
-        expl_std_init=0.5,
+        num_is_samples=20,
+        expl_std_init=2.,
+        expl_std_min=0.02,
+        extra_expl_std_init=2.,
+        extra_expl_decay_iter=20,
+        full_cov=False,
         symm_sampling=False,
-        transform_returns=True,
-        num_sampler_envs=10,
+        num_sampler_envs=8,
     )
-    algo = NES(ex_dir, env, policy, **algo_hparam)
+    algo = CEM(ex_dir, env, policy, **algo_hparam)
 
     # Save the hyper-parameters
     save_list_of_dicts_to_yaml([

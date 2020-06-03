@@ -94,17 +94,19 @@ protected:
 
             // Left
             innerAM->addTask(new TaskPosition1D("Y", graph, leftCP, refBody, refFrame));
-            innerAM->addTask(new TaskPosition1D("Z", graph, leftCP, refBody, refFrame));
+//            innerAM->addTask(new TaskPosition1D("Z", graph, leftCP, refBody, refFrame));
             // Right
-//            innerAM->addTask(new TaskPosition1D("Y", graph, rightCP, refBody, refFrame));
-            innerAM->addTask(new TaskPosition1D("Z", graph, rightCP, refBody, refFrame));
-            innerAM->addTask(new TaskDistance(graph, rightCP, box));
+            innerAM->addTask(new TaskPosition1D("Y", graph, rightCP, refBody, refFrame));
+//            innerAM->addTask(new TaskPosition1D("Z", graph, rightCP, refBody, refFrame));
+//            innerAM->addTask(new TaskDistance(graph, rightCP, box));
 
             // Obtain task data (depends on the order of the MPs coming from Pyrado)
             // Left
             unsigned int i = 0;
-            std::vector<unsigned int> taskDimsLeft{1, 1, 1, 1};
-            std::vector<unsigned int> offsetsLeft{0, 0, 1, 1};
+//            std::vector<unsigned int> taskDimsLeft{1, 1, 1, 1};
+            std::vector<unsigned int> taskDimsLeft{1, 1};
+//            std::vector<unsigned int> offsetsLeft{0, 0, 1, 1};
+            std::vector<unsigned int> offsetsLeft{0, 0};
             auto& tsLeft = properties->getChildList("tasksLeft");
             for (auto tsk : tsLeft)
             {
@@ -118,7 +120,7 @@ protected:
             std::vector<unsigned int> taskDimsRight{1, 1};
             unsigned int oL = offsetsLeft.back() + taskDimsLeft.back();
 //            std::vector<unsigned int> offsetsRight{oL, oL, oL + 1, oL + 1, oL + 2};
-            std::vector<unsigned int> offsetsRight{oL, oL + 1};
+            std::vector<unsigned int> offsetsRight{oL, oL};
             auto& tsRight = properties->getChildList("tasksRight");
             for (auto tsk : tsRight)
             {
@@ -132,16 +134,18 @@ protected:
         {
             // Left
             innerAM->addTask(new TaskVelocity1D("Yd", graph, leftCP, refBody, refFrame));
-            innerAM->addTask(new TaskVelocity1D("Zd", graph, leftCP, refBody, refFrame));
+//            innerAM->addTask(new TaskVelocity1D("Zd", graph, leftCP, refBody, refFrame));
             // Right
             innerAM->addTask(new TaskVelocity1D("Yd", graph, rightCP, refBody, refFrame));
-            innerAM->addTask(new TaskVelocity1D("Zd", graph, rightCP, refBody, refFrame));
+//            innerAM->addTask(new TaskVelocity1D("Zd", graph, rightCP, refBody, refFrame));
 
             // Obtain task data (depends on the order of the MPs coming from Pyrado)
             // Left
             unsigned int i = 0;
-            std::vector<unsigned int> taskDimsLeft{1, 1, 1, 1};
-            std::vector<unsigned int> offsetsLeft{0, 0, 1, 1};
+            std::vector<unsigned int> taskDimsLeft{1, 1,};
+//            std::vector<unsigned int> taskDimsLeft{1, 1, 1, 1};
+            std::vector<unsigned int> offsetsLeft{0, 0};
+//            std::vector<unsigned int> offsetsLeft{0, 0, 1, 1};
             auto& tsLeft = properties->getChildList("tasksLeft");
             for (auto tsk : tsLeft)
             {
@@ -151,9 +155,11 @@ protected:
             }
             // Right
             i = 0;
-            std::vector<unsigned int> taskDimsRight{1, 1, 1, 1};
+            std::vector<unsigned int> taskDimsRight{1, 1};
+//            std::vector<unsigned int> taskDimsRight{1, 1, 1, 1};
             unsigned int oL = offsetsLeft.back() + taskDimsLeft.back();
-            std::vector<unsigned int> offsetsRight{oL, oL, oL + 1, oL + 1};
+            std::vector<unsigned int> offsetsRight{oL, oL};
+//            std::vector<unsigned int> offsetsRight{oL, oL, oL + 1, oL + 1};
             auto& tsRight = properties->getChildList("tasksRight");
             for (auto tsk : tsRight)
             {
@@ -196,33 +202,36 @@ protected:
         // Observe effector positions (and velocities)
         std::unique_ptr<OMCombined> fullState(new OMCombined());
 
-        if (properties->getPropertyBool("observeVelocities", false))
+        if (properties->getPropertyBool("observeManipulators", true))
         {
-            // Left
-            auto omLeftLin = new OMBodyStateLinear(graph, "ContactPoint_L"); // in world coordinates
-            omLeftLin->setMinState({0., -1., 0.75});  // [m]
-            omLeftLin->setMaxState({1.6, 1., 1.5});  // [m]
-            omLeftLin->setMaxVelocity(2.); // [m/s]
-            fullState->addPart(OMPartial::fromMask(omLeftLin, {false, true, true}));
-            // Right
-            auto omRightLin = new OMBodyStateLinear(graph, "ContactPoint_R"); // in world coordinates
-            omRightLin->setMinState({0., -1., 0.75});  // [m]
-            omRightLin->setMaxState({1.6, 1., 1.5});  // [m]
-            omRightLin->setMaxVelocity(2.); // [m/s]
-            fullState->addPart(OMPartial::fromMask(omRightLin, {false, true, true}));
-        }
-        else
-        {
-            // Left
-            auto omLeftLin = new OMBodyStateLinearPositions(graph, "ContactPoint_L"); // in world coordinates
-            omLeftLin->setMinState({0., -1., 0.75});  // [m]
-            omLeftLin->setMaxState({1.6, 1., 1.5});  // [m]
-            fullState->addPart(OMPartial::fromMask(omLeftLin, {false, true, true}));
-            // Right
-            auto omRightLin = new OMBodyStateLinearPositions(graph, "ContactPoint_R"); // in world coordinates
-            omRightLin->setMinState({0., -1., 0.75});  // [m]
-            omRightLin->setMaxState({1.6, 1., 1.5});  // [m]
-            fullState->addPart(OMPartial::fromMask(omRightLin, {false, true, true}));
+            if (properties->getPropertyBool("observeVelocities", false))
+            {
+                // Left
+                auto omLeftLin = new OMBodyStateLinear(graph, "ContactPoint_L"); // in world coordinates
+                omLeftLin->setMinState({0., -1., 0.75});  // [m]
+                omLeftLin->setMaxState({1.6, 1., 1.5});  // [m]
+                omLeftLin->setMaxVelocity(2.); // [m/s]
+                fullState->addPart(OMPartial::fromMask(omLeftLin, {false, true, false}));
+                // Right
+                auto omRightLin = new OMBodyStateLinear(graph, "ContactPoint_R"); // in world coordinates
+                omRightLin->setMinState({0., -1., 0.75});  // [m]
+                omRightLin->setMaxState({1.6, 1., 1.5});  // [m]
+                omRightLin->setMaxVelocity(2.); // [m/s]
+                fullState->addPart(OMPartial::fromMask(omRightLin, {false, true, false}));
+            }
+            else
+            {
+                // Left
+                auto omLeftLin = new OMBodyStateLinearPositions(graph, "ContactPoint_L"); // in world coordinates
+                omLeftLin->setMinState({0., -1., 0.75});  // [m]
+                omLeftLin->setMaxState({1.6, 1., 1.5});  // [m]
+                fullState->addPart(OMPartial::fromMask(omLeftLin, {false, true, false}));
+                // Right
+                auto omRightLin = new OMBodyStateLinearPositions(graph, "ContactPoint_R"); // in world coordinates
+                omRightLin->setMinState({0., -1., 0.75});  // [m]
+                omRightLin->setMaxState({1.6, 1., 1.5});  // [m]
+                fullState->addPart(OMPartial::fromMask(omRightLin, {false, true, false}));
+            }
         }
 
         // Observe box positions (and velocities)
@@ -232,27 +241,30 @@ protected:
             omBoxLin->setMinState({0.9, -0.8, 0.66});  // [m]
             omBoxLin->setMaxState({2.1, 0.8, 1.26});  // [m]
             omBoxLin->setMaxVelocity(2.); // [m/s]
-            fullState->addPart(OMPartial::fromMask(omBoxLin, {false, true, true}));
+            fullState->addPart(OMPartial::fromMask(omBoxLin, {false, true, false}));
         }
         else
         {
             auto omBoxLin = new OMBodyStateLinearPositions(graph, "Box"); // in world coordinates
             omBoxLin->setMinState({0.9, -0.8, 0.66});  // [m]
             omBoxLin->setMaxState({2.1, 0.8, 1.26});  // [m]
-            fullState->addPart(OMPartial::fromMask(omBoxLin, {false, true, true}));
+            fullState->addPart(OMPartial::fromMask(omBoxLin, {false, true, false}));
         }
 
         // Observe box orientation (and velocities)
-        if (properties->getPropertyBool("observeVelocities", false))
+        if (properties->getPropertyBool("observeBoxOrientation", true))
         {
-            auto omBoxAng = new OMBodyStateAngular(graph, "Box"); // in world coordinates
-            omBoxAng->setMaxVelocity(RCS_DEG2RAD(720)); // [rad/s]
-            fullState->addPart(OMPartial::fromMask(omBoxAng, {true, false, false}));
-        }
-        else
-        {
-            auto omBoxAng = new OMBodyStateAngularPositions(graph, "Box"); // in world coordinates
-            fullState->addPart(OMPartial::fromMask(omBoxAng, {true, false, false}));
+            if (properties->getPropertyBool("observeVelocities", false))
+            {
+                auto omBoxAng = new OMBodyStateAngular(graph, "Box"); // in world coordinates
+                omBoxAng->setMaxVelocity(RCS_DEG2RAD(720)); // [rad/s]
+                fullState->addPart(OMPartial::fromMask(omBoxAng, {true, false, false}));
+            }
+            else
+            {
+                auto omBoxAng = new OMBodyStateAngularPositions(graph, "Box"); // in world coordinates
+                fullState->addPart(OMPartial::fromMask(omBoxAng, {true, false, false}));
+            }
         }
 
         // Add goal distances
@@ -269,14 +281,14 @@ protected:
             RcsSensor* ftsL = RcsGraph_getSensorByName(graph, "WristLoadCell_L");
             if (ftsL)
             {
-                auto omForceTorque = new OMForceTorque(graph, ftsL->name, 10000);
-                fullState->addPart(OMPartial::fromMask(omForceTorque, {false, true, true, false, false, false}));
+                auto omForceTorque = new OMForceTorque(graph, ftsL->name, 100);
+                fullState->addPart(OMPartial::fromMask(omForceTorque, {false, true, false, false, false, false}));
             }
             RcsSensor* ftsR = RcsGraph_getSensorByName(graph, "WristLoadCell_R");
             if (ftsR)
             {
-                auto omForceTorque = new OMForceTorque(graph, ftsR->name, 10000);
-                fullState->addPart(OMPartial::fromMask(omForceTorque, {false, true, true, false, false, false}));
+                auto omForceTorque = new OMForceTorque(graph, ftsR->name, 100);
+                fullState->addPart(OMPartial::fromMask(omForceTorque, {false, true, false, false, false, false}));
             }
         }
 
@@ -344,7 +356,7 @@ protected:
 
     virtual void populatePhysicsParameters(PhysicsParameterManager* manager)
     {
-        manager->addParam("Box", new PPDBoxExtents(0, true, true, false)); // the Box body has only 1 shape
+        manager->addParam("Box", new PPDCubeExtents(0)); // the Box body has only 1 shape
         manager->addParam("Box", new PPDMassProperties());
         manager->addParam("Box", new PPDMaterialProperties());
         manager->addParam("Table", new PPDMassProperties());
