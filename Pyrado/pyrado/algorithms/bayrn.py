@@ -151,7 +151,7 @@ class BayRn(Algorithm, ABC):
         :param prefix: set a prefix to the saved file name by passing it to `meta_info`
         """
         # Save the individual candidate
-        to.save(cand, osp.join(self._save_dir, f'{prefix}_candidate.pt'))
+        to.save(cand.view(-1), osp.join(self._save_dir, f'{prefix}_candidate.pt'))
 
         # Set the domain randomizer given the hyper-parameters
         self._env_sim.adapt_randomizer(cand.numpy())
