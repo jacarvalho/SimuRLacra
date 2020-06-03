@@ -11,7 +11,9 @@ from pyrado.policies.initialization import init_param
 
 def pd_linear(p: to.Tensor, s: to.Tensor, tau: to.Tensor, **kwargs) -> to.Tensor:
     r"""
-    Basic proportional dynamics $\tau \dot{p} = -(s+p)$
+    Basic proportional dynamics
+
+    $\tau \dot{p} = s - p$
 
     :param p: potential, higher values lead to higher activations
     :param s: stimulus, higher values lead to larger changes of the potentials (depends on the dynamics function)
@@ -20,12 +22,14 @@ def pd_linear(p: to.Tensor, s: to.Tensor, tau: to.Tensor, **kwargs) -> to.Tensor
     """
     if not all(tau > 0):
         raise pyrado.ValueErr(given=tau, g_constraint='0')
-    return -(s + p)/tau
+    return (s - p)/tau
 
 
 def pd_cubic(p: to.Tensor, s: to.Tensor, tau: to.Tensor, **kwargs) -> to.Tensor:
     r"""
-    Basic proportional dynamics with additional cubic decay $\tau \dot{p} = -(s+p) - \kappa p^3$
+    Basic proportional dynamics with additional cubic decay
+
+    $\tau \dot{p} = s - p - \kappa p^3$
 
     :param p: potential, higher values lead to higher activations
     :param s: stimulus, higher values lead to larger changes of the potentials (depends on the dynamics function)
@@ -36,13 +40,15 @@ def pd_cubic(p: to.Tensor, s: to.Tensor, tau: to.Tensor, **kwargs) -> to.Tensor:
         raise pyrado.ValueErr(given=tau, g_constraint='0')
     if not all(kwargs['kappa'] >= 0):
         raise pyrado.ValueErr(given=kwargs['kappa'], ge_constraint='0')
-    return (-(s + p) - kwargs['kappa']*to.pow((s + p), 3))/tau
+    return (s - p - kwargs['kappa']*to.pow(p, 3))/tau
 
 
 def pd_capacity_21(p: to.Tensor, s: to.Tensor, tau: to.Tensor, **kwargs) -> to.Tensor:
     r"""
     Capacity-based dynamics with 2 stable ($p=-C$, $p=C$) and 1 unstable fix points ($p=0$) for $s=0$
 
+    $\tau \dot{p} =  s + p (1 - \frac{p^2}{C^2})$
+
     .. note::
         Intended to be used with sigmoid activation function, e.g. for the position tasks in RcsPySim.
 
@@ -53,13 +59,16 @@ def pd_capacity_21(p: to.Tensor, s: to.Tensor, tau: to.Tensor, **kwargs) -> to.T
     """
     if not all(tau > 0):
         raise pyrado.ValueErr(given=tau, g_constraint='0')
-    return ((s + p)*(to.ones_like(p) - (s + p) ** 2/kwargs['capacity'] ** 2))/tau
+    return (s + p*(to.ones_like(p) - p**2/kwargs['capacity']**2))/tau
 
 
 def pd_capacity_21_abs(p: to.Tensor, s: to.Tensor, tau: to.Tensor, **kwargs) -> to.Tensor:
     r"""
     Capacity-based dynamics with 2 stable ($p=-C$, $p=C$) and 1 unstable fix points ($p=0$) for $s=0$
-    The "absolute version" has a lower magnitude and a lower oder of the resulting polynomial.
+
+    $\tau \dot{p} =  s + p (1 - \frac{\left| p \right|}{C})$
+
+    The "absolute version" of `pd_capacity_21` has a lower magnitude and a lower oder of the resulting polynomial.
 
     .. note::
         Intended to be used with sigmoid activation function, e.g. for the position tasks in RcsPySim.
@@ -71,13 +80,15 @@ def pd_capacity_21_abs(p: to.Tensor, s: to.Tensor, tau: to.Tensor, **kwargs) -> 
     """
     if not all(tau > 0):
         raise pyrado.ValueErr(given=tau, g_constraint='0')
-    return ((s + p)*(to.ones_like(p) - to.abs((s + p))/kwargs['capacity']))/tau
+    return (s + p*(to.ones_like(p) - to.abs(p)/kwargs['capacity']))/tau
 
 
 def pd_capacity_32(p: to.Tensor, s: to.Tensor, tau: to.Tensor, **kwargs) -> to.Tensor:
     r"""
     Capacity-based dynamics with 3 stable ($p=-C$, $p=0$, $p=C$) and 2 unstable fix points ($p=-C/2$, $p=C/2$) for $s=0$
 
+    $\tau \dot{p} =  s - p (1 - \frac{p^2}{C^2}) (1 - \frac{(2p)^2}{C^2})$
+
     .. note::
         Intended to be used with tanh activation function, e.g. for the velocity tasks in RcsPySim.
 
@@ -88,14 +99,16 @@ def pd_capacity_32(p: to.Tensor, s: to.Tensor, tau: to.Tensor, **kwargs) -> to.T
     """
     if not all(tau > 0):
         raise pyrado.ValueErr(given=tau, g_constraint='0')
-    return ((s + p)*(to.ones_like(p) - (s + p) ** 2/kwargs['capacity'] ** 2)*
-            (to.ones_like(p) - (2*(s + p)) ** 2/kwargs['capacity'] ** 2))/-tau
+    return (s - p*(to.ones_like(p) - p**2/kwargs['capacity']**2) * (to.ones_like(p) - ((2*p)**2/kwargs['capacity']**2)))/tau
 
 
 def pd_capacity_32_abs(p: to.Tensor, s: to.Tensor, tau: to.Tensor, **kwargs) -> to.Tensor:
     r"""
     Capacity-based dynamics with 3 stable ($p=-C$, $p=0$, $p=C$) and 2 unstable fix points ($p=-C/2$, $p=C/2$) for $s=0$
-    The "absolute version" is less skewed and symmetric due to a lower oder of the resulting polynomial.
+
+    $\tau \dot{p} =  -\left( s + p(1 - \frac{\left| p \right|}{C}) (1 - \frac{2 \left|p \right|}{C}) \right)$
+
+    The "absolute version" of `pd_capacity_32` is less skewed due to a lower oder of the resulting polynomial.
 
     .. note::
         Intended to be used with tanh activation function, e.g. for the velocity tasks in RcsPySim.
@@ -107,8 +120,7 @@ def pd_capacity_32_abs(p: to.Tensor, s: to.Tensor, tau: to.Tensor, **kwargs) -> 
     """
     if not all(tau > 0):
         raise pyrado.ValueErr(given=tau, g_constraint='0')
-    return ((s + p)*(to.ones_like(p) - to.abs((s + p))/kwargs['capacity'])*
-            (to.ones_like(p) - 2*to.abs((s + p))/kwargs['capacity']))/-tau
+    return (s - p*(to.ones_like(p) - to.abs(p)/kwargs['capacity']) * (to.ones_like(p) - 2*to.abs(p)/kwargs['capacity']))/tau
 
 
 class ADNPolicy(RecurrentPolicy):
@@ -204,6 +216,7 @@ class ADNPolicy(RecurrentPolicy):
                 self._log_capacity_init = to.log(to.tensor([7.], dtype=to.get_default_dtype()))
                 self._log_capacity = nn.Parameter(self._log_capacity_init, requires_grad=True) \
                     if self._capacity_learnable else self._log_capacity_init
+                self._init_potentials = -7.*to.ones_like(self._potentials)
             elif self._output_nonlin is to.tanh:
                 # tanh(3.8) approx 0.999
                 self._log_capacity_init = to.log(to.tensor([3.8], dtype=to.get_default_dtype()))
@@ -305,6 +318,7 @@ class ADNPolicy(RecurrentPolicy):
         """
         Compute the goal distance, prediction error, and predicted cost.
         Then pass it to the wrapped RNN.
+
         :param obs: observations coming from the environment i.e. noisy
         :param hidden: current hidden states, in this case the linearly combined actions of the last step
         :return: action and new hidden states i.e. linearly combined actions
@@ -325,10 +339,12 @@ class ADNPolicy(RecurrentPolicy):
             prev_act, potentials = self._unpack_hidden(hidden, batch_size)
         else:
             prev_act, potentials = self._init_hidden_unpacked(batch_size)
-        # Don't track gradient through potentials
+
+        # Don't track the gradient through the potentials
         potentials = potentials.detach()
 
-        # Save potentials for later use in self.potentials_dot()
+        # Clip the potentials, and save them for later use
+        potentials = potentials.clamp(min=-self._potentials_max, max=self._potentials_max)
         self._potentials = potentials
 
         # ----------------
@@ -360,12 +376,6 @@ class ADNPolicy(RecurrentPolicy):
         # we clip the actions right here
         if self._output_nonlin is not to.sigmoid or self._output_nonlin is not to.tanh:
             act = act.clamp(min=-1., max=1.)
-
-        # Clip the potentials too
-        potentials = potentials.clamp(min=-self._potentials_max, max=self._potentials_max)
-
-        # Save potentials for later use
-        self._potentials = potentials
 
         # Pack hidden state
         prev_act = act.clone()
