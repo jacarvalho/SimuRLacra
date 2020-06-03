@@ -2,7 +2,7 @@ import numpy as np
 
 
 def never_succeeded(err: np.ndarray = None) -> bool:
-    """ The task is never marked successful, i.e. runs until failure or end of the episode. """
+    """ The task is never marked successful, i.e. runs until the environments state or time is out of bounds. """
     return False
 
 
@@ -20,5 +20,5 @@ def proximity_succeeded(err: np.ndarray, thold_dist: float, dims: int = -1) -> b
         l2_dist = np.linalg.norm(err, ord=2)
     else:
         # Select a subset of dimensions for computing the distance
-        l2_dist = np.linalg.norm(err[dims], ord=2)
+        l2_dist = np.linalg.norm(err[np.newaxis, dims], ord=2)  # use newaxis to keep the result an array
     return l2_dist < thold_dist
