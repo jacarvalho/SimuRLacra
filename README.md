@@ -1,23 +1,33 @@
-## About
+<img alt="logo" align="left" height="110px" src="logo.png" style="padding-right: 20px">
+
+**[Overview](#overview)**  
+**[Citing](#citing)**  
+**[Installation](#installation)**  
+**[Checking](#checking)**   
+**[Troubleshooting](#troubleshooting)**
+
+
+## Overview
 
 SimuRLacra (composed of the two modules Pyrado and RcsPySim) is a Python/C++ framework for reinforcement learning from randomized physics simulations.
 The focus is on robotics tasks with mostly continuous control.
 It features __randomizable simulations__ written __in standalone Python__ (no license required) as well as simulations driven by the physics engines __Bullet__ (no license required), __Vortex__ (license required), __or MuJoCo__ (license required).
 
+
 __Pros__
-* _Exceptionally modular treatment of environments via wrappers._ The key idea behind this was to be able to quickly modify and randomize all available simulation environments. Moreover, SimuRLacra contains unique environments that either run completely in Python or allow you to switch between the Bullet or Vortex (requires license) physics engine.
-* _C++ export of policies based on PyTorch Modules._ You can port your neural-network policies, learned with Python, to you C++ applications. This also holds for stateful recurrent networks and linear policies. 
-* _CPU-based parallelization for sampling the environments._ Similar to the OpenAI Gym, SimuRLacra offers parallelized environments for sampling. This is done by employing [Serializable](https://github.com/Xfel/init-args-serializer), making the simulation environments fully pickleable.
-* _Separation of the exploration strategies and the policy._ Instead of having a GaussianFNN and a GaussianRNN ect. policy, you can wrap your policy architectures with (almost) any exploration scheme. At test time, you simple strip the exploration wrapper.
-* _Tested integration of real-world Quanser platforms_. This feature is extremely valuable if you want to conduct sim-to-real research, since you can simply replace the simulated environment with the physical one by changing one line of code.
-* _Tested integration of [BoTorch](https://botorch.org/), and [Optuna](https://optuna.org/)_.
-* _Detailed documentation (especially in-line)_.
+* __Exceptionally modular treatment of environments via wrappers.__ The key idea behind this was to be able to quickly modify and randomize all available simulation environments. Moreover, SimuRLacra contains unique environments that either run completely in Python or allow you to switch between the Bullet or Vortex (requires license) physics engine.
+* __C++ export of policies based on PyTorch Modules.__ You can port your neural-network policies, learned with Python, to you C++ applications. This also holds for stateful recurrent networks and linear policies. 
+* __CPU-based parallelization for sampling the environments.__ Similar to the OpenAI Gym, SimuRLacra offers parallelized environments for sampling. This is done by employing [Serializable](https://github.com/Xfel/init-args-serializer), making the simulation environments fully pickleable.
+* __Separation of the exploration strategies and the policy.__ Instead of having a GaussianFNN and a GaussianRNN ect. policy, you can wrap your policy architectures with (almost) any exploration scheme. At test time, you simple strip the exploration wrapper.
+* __Tested integration of real-world Quanser platforms__. This feature is extremely valuable if you want to conduct sim-to-real research, since you can simply replace the simulated environment with the physical one by changing one line of code.
+* __Tested integration of [BoTorch](https://botorch.org/), and [Optuna](https://optuna.org/)__.
+* __Detailed documentation__.
 
 __Cons__
-* _No vision-based environments/tasks._ In principle there is nothing stopping you from integrating computer vision into SimuRLacra. However, I assume there are better suited frameworks out there.
-* _Without bells and whistles._ Most implementations (especially the algorithms) do not focus on performance. After all, this framework was created to understand and prototype things. 
-* _Hyper-parameters are not fully tuned._ Sometimes the most important part of reinforcement learning is the time-consuming search for the right hyper-parameters. I only did this for the environment-algorithm combinations reported in my papers. But, for all the other cases there is [Optuna](https://optuna.org/) and some optuna-based example scripts that you can start from.
-* _Unfinished GPU-support._ At the moment the porting of the policies is implemented but not fully tests. The GPU-enabled re-implementation of the simulation environments in the pysim folder (simple Python simulations) is at question. The environments based on [Rcs](https://github.com/HRI-EU/Rcs) which require the Bullet or Vortex physics engine will only be able to run on CPU.
+* __No vision-based environments/tasks.__ In principle there is nothing stopping you from integrating computer vision into SimuRLacra. However, I assume there are better suited frameworks out there.
+* __Without bells and whistles.__ Most implementations (especially the algorithms) do not focus on performance. After all, this framework was created to understand and prototype things. 
+* __Hyper-parameters are not fully tuned.__ Sometimes the most important part of reinforcement learning is the time-consuming search for the right hyper-parameters. I only did this for the environment-algorithm combinations reported in my papers. But, for all the other cases there is [Optuna](https://optuna.org/) and some optuna-based example scripts that you can start from.
+* __Unfinished GPU-support.__ At the moment the porting of the policies is implemented but not fully tests. The GPU-enabled re-implementation of the simulation environments in the pysim folder (simple Python simulations) is at question. The environments based on [Rcs](https://github.com/HRI-EU/Rcs) which require the Bullet or Vortex physics engine will only be able to run on CPU.
 
 SimuRLacra was tested on Ubuntu 16.04, 18.04 (recommended), 19.10, and 20.04, with PyTorch 1.3.
 The part without C++ dependencies (Pyrado) also works under Windows 10, but is not supported.
@@ -26,6 +36,7 @@ __Not the right framework for you?__
 * If you are looking for even more modular code or simply want to see how much you can do with Python decorators, check out [vel](https://github.com/MillionIntegrals/vel/tree/master/vel). It is a really beautiful framework.
 * If you need code optimized for performance, check out [stable baselines](https://github.com/hill-a/stable-baselines). I know, that was captain obvious.
 * If you are missing value-based algorithms will bells and whistles, check out [MushroomRL](https://github.com/MushroomRL/mushroom-rl). The main contributor is good at every sport. Sorry Carlo, but the world has to know it.
+
 
 ## Citing
 
@@ -41,15 +52,16 @@ If you use code or ideas from this project for your research, please cite SimuRL
 }
 ```
 
+
 ## Installation
 
 Follow the instructions on the [anaconda homepage](https://www.anaconda.com/download/#download) to download the anaconda (or miniconda) version for your machine (andaconda 3 is recommended).
 
 Clone the repository and go to the project's directory (defaults to SimuRLacra)
 ```
-git clone git@github.com:famura/SimuRLacra.git  # ssh
-# or
-# git clone https://github.com/famura/SimuRLacra.git  # https
+git clone https://github.com/famura/SimuRLacra.git
+# or via ssg
+# git clone git@github.com:famura/SimuRLacra.git
 cd SimuRLacra
 ```
 
@@ -126,8 +138,7 @@ In the end (given you chose a full install), OpenSceneGraph, eigen3, pybind11, W
 >source activate_pyrado.sh
 >```
 
-
-## Docker Container (experimental)
+### Docker Container (experimental)
 There is also a Dockerfile which can be used to spin up a docker container.
 Please note that the container is still experimental and not all features have been tested.
 Make sure you have Docker installed. If you have not there is a [guide](https://docs.docker.com/engine/install/) on how to install it.
@@ -151,14 +162,15 @@ The command in `run_docker.sh` uses cuda supprort. If you do not want to use cud
 It will build the pyrado image. And configure a script to run the docker container with GUI support.
 You can also connect the image with IDEs such as PyCharm to develop directly in the docker container.
 
-## Check
+
+## Checking
 
 If not already activated, execute
 ```
 conda activate pyrado
 cd PATH_TO/SimuRLacra/Pyrado/scripts
 ```
-To quickly check basic Pyrado environments (implemented in Python without dependencies to RcsPySim)
+To exemplarily check basic Pyrado environments (implemented in Python without dependencies to RcsPySim)
 ```
 python sandbox/sb_qcp.py --env_name qcp-su
 ```
@@ -168,7 +180,7 @@ python sandbox/sb_qq_rcspysim.py
 ```
 If this does not work it may be because Vortex or Bullet is not installed.
 
-Run Pyrado's unit tests
+For deeper testing, run Pyrado's unit tests
 ```
 cd PATH_TO/SimuRLacra/Pyrado/tests
 pytest -v -m "not longtime"
@@ -311,4 +323,3 @@ During executing `setup_deps.py`, mujoco-py is set up as a git submodule and ins
 If this fails, have a look at the mujoco-py's [canonical dependencies](https://github.com/openai/mujoco-py/blob/master/Dockerfile). Try again. If you get an error mentioning `patchelf`, run ` conda install -c anaconda patchelf`
 
 If you get visualization errors related to `GLEW` (render causes a frozen window and crashes) add `export LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libGLEW.so` to your `~/.bashrc` or `~/.zshrc`.
-
