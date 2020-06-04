@@ -1,6 +1,8 @@
 """
 Train an agent to solve the WAM Ball-in-cup environment using Policy learning by Weighting Exploration with the Returns.
 """
+import numpy as np
+
 from pyrado.algorithms.power import PoWER
 from pyrado.domain_randomization.default_randomizers import get_default_randomizer_wambic
 from pyrado.environment_wrappers.domain_randomization import DomainRandWrapperLive
@@ -15,13 +17,13 @@ if __name__ == '__main__':
 
     # Environment
     env_hparams = dict(
-        max_steps=1500,
-        task_args=dict(factor=0.2)
+        max_steps=1750,
+        task_args=dict(factor=0.05)
     )
     env = WAMBallInCupSim(**env_hparams)
 
     # Randomizer
-    env = DomainRandWrapperLive(env, get_default_randomizer_wambic())
+    # env = DomainRandWrapperLive(env, get_default_randomizer_wambic())
 
     # Policy
     policy_hparam = dict(
@@ -32,13 +34,13 @@ if __name__ == '__main__':
 
     # Algorithm
     algo_hparam = dict(
-        max_iter=25,
+        max_iter=50,
         pop_size=100,
-        num_rollouts=10,
-        num_is_samples=20,
-        expl_std_init=0.5,
+        num_rollouts=1,
+        num_is_samples=5,
+        expl_std_init=np.pi/4,
         expl_std_min=0.02,
-        num_sampler_envs=12,
+        num_sampler_envs=8,
     )
     algo = PoWER(ex_dir, env, policy, **algo_hparam)
 
@@ -51,4 +53,4 @@ if __name__ == '__main__':
     )
 
     # Jeeeha
-    algo.train(seed=ex_dir.seed)
+    algo.train(seed=ex_dir.seed, snapshot_mode='best')

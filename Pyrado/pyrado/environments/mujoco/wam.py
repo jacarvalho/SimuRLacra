@@ -93,7 +93,7 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         When using the `reset()` function, always pass a meaningful `init_state`
 
     .. seealso::
-        https://github.com/psclklnk/self-paced-rl/tree/master/sprl/envs
+        [1] https://github.com/psclklnk/self-paced-rl/tree/master/sprl/envs/ball_in_a_cup.py
     """
 
     name: str = 'wam-bic'
@@ -181,18 +181,14 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
             self.spec.act_space,
             self.spec.state_space.subspace(self.spec.state_space.create_mask(idcs))
         )
-        # Original idea
-        # self.sim.forward()  # need to call forward to get a non-zero body position
-        # state_des = self.sim.data.get_body_xpos('B0').copy()
-        # But
-        # If we do not use copy(), state_des is a reference and updates automatically at each step
-        # sim.forward() + get_body_xpos() results in wrong output for state_des, as sim has not been updated to
+
+        # If we do not use copy(), state_des coming from MuJoCo is a reference and updates automatically at each step
+        # Note: sim.forward() + get_body_xpos() results in wrong output for state_des, as sim has not been updated to
         # init_space.sample(), which is first called in reset()
-        # Now
         state_des = np.array([0., -0.8566, 1.164])
         rew_fcn = ExpQuadrErrRewFcn(
-            Q=task_args.get('Q', 20.*np.eye(3)),  # distance ball - cup
-            R=task_args.get('R', np.diag([1e-1, 1e-1, 1e-1, 1e-2, 1e-2, 1e-2]))  # joint angles and velocities
+            Q=task_args.get('Q', 2e1*np.eye(3)),  # distance ball - cup
+            R=task_args.get('R', np.diag([1e0, 1e0, 1e0, 1e0, 1e0, 1e0]))  # desired joint angles and velocities
         )
         dst = DesStateTask(spec, state_des, rew_fcn)
 
@@ -208,11 +204,11 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         rope_length = domain_param.pop('rope_length', None)
 
         if cup_scale is not None:
-            # See https://github.com/psclklnk/self-paced-rl/blob/master/sprl/envs/ball_in_a_cup.py l.93-96
-            xml_model = xml_model.replace('[scale_mesh]', str(cup_scale*0.001))
-            xml_model = xml_model.replace('[pos_mesh]', str(0.055 - (cup_scale - 1.)*0.023))
-            xml_model = xml_model.replace('[pos_goal]', str(0.1165 + (cup_scale - 1.)*0.0385))
-            xml_model = xml_model.replace('[size_cup]', str(cup_scale*0.038))
+            # See [1, l.93-96]
+            xml_model = xml_model.replace('[scale_mesh]', str(cup_scale * 0.001))
+            xml_model = xml_model.replace('[pos_mesh]', str(0.055 - (cup_scale - 1.) * 0.023))
+            xml_model = xml_model.replace('[pos_goal]', str(0.1165 + (cup_scale - 1.) * 0.0385))
+            xml_model = xml_model.replace('[size_cup]', str(cup_scale * 0.038))
 
         if rope_length is not None:
             # The rope consists of 29 capsules
