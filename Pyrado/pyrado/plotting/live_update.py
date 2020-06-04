@@ -6,17 +6,24 @@ from typing import Callable, Any
 class _LFMEntry:
     """ One plot managed by the LiveFigureManager """
 
-    def __init__(self, update_function, title):
-        self.update_function = update_function
+    def __init__(self, update_fcn, title):
+        """
+        Constructor
+
+        :param update_fcn: function used to update the figures, this actually defines what is to be plotted
+        :param title: figure title
+        """
+        self.update_fcn = update_fcn
         self.title = title
         self._fignum = None
 
-    def update(self, data, args):
+    def update(self, data, args) -> bool:
         """
-        Update plot.
+        Update an individual plot.
 
         :param data: data to plot
         :param args: parsed command line arguments
+        :return
         """
         if self._fignum is None:
             fig = plt.figure(num=self.title)
@@ -26,10 +33,10 @@ class _LFMEntry:
             return False
         else:
             fig = plt.figure(self._fignum)
-
         fig.clf()
-        # call drawer
-        res = self.update_function(fig, data, args)
+
+        # Call drawer
+        res = self.update_fcn(fig, data, args)
 
         # Signal that we're still alive
         if res is False:
@@ -78,7 +85,6 @@ class LiveFigureManager:
         :param title: figure title
         :return: decorator for the plotting function
         """
-
         def wrapper(func):
             entry = _LFMEntry(func, title)
             self._figure_list.append(entry)
@@ -87,13 +93,14 @@ class LiveFigureManager:
         return wrapper
 
     def _plot_all(self):
+        """ Load the data and plot all registered figures. """
         data = self._data_loader(self._file_path)
         self._figure_list[:] = [pl for pl in self._figure_list if pl.update(data, self._args)]
 
     def spin(self):
         """ Run the plot update loop.  """
+        # Create all plots
         plt.ion()
-        # Create all plot
         self._plot_all()
 
         # Watch modification time
