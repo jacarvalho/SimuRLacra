@@ -3,6 +3,7 @@ import numpy as np
 import joblib
 import os.path as osp
 from abc import abstractmethod
+from copy import deepcopy
 
 import pyrado
 from pyrado.algorithms.base import Algorithm
@@ -74,6 +75,9 @@ class ParameterExploring(Algorithm):
         self.ret_avg_stack = 1e3*np.random.randn(20)  # stack size = 20
         self.thold_ret_std = 1e-1  # algorithm terminates if below for multiple iterations
 
+        # Saving the best policy, not the mean for policy parameter exploration
+        self.best_policy_param = policy.param_values.clone()
+
         # Set this in subclasses!
         self._expl_strat = None
 
@@ -90,6 +94,13 @@ class ParameterExploring(Algorithm):
             return True
         else:
             return False
+
+    def reset(self, seed: int = None):
+        # Reset the exploration strategy, internal variables and the random seeds
+        super().reset(seed)
+
+        # Reset the best policy parameters
+        self.best_policy_param = self._policy.param_values.clone()
 
     def step(self, snapshot_mode: str, meta_info: dict = None):
         # Sample new policy parameters
@@ -112,9 +123,7 @@ class ParameterExploring(Algorithm):
         self.ret_avg_stack = np.append(self.ret_avg_stack, ret_avg_curr)
 
         all_rets = param_results.mean_returns
-        all_lengths = np.array([len(ro)
-                                for pg in param_results
-                                for ro in pg.rollouts])
+        all_lengths = np.array([len(ro) for pg in param_results for ro in pg.rollouts])
 
         # Log metrics computed from the old policy (before the update)
         self.logger.add_value('curr policy return', ret_avg_curr)
@@ -128,8 +137,11 @@ class ParameterExploring(Algorithm):
         self.logger.add_value('max mag policy param',
                               self._policy.param_values[to.argmax(abs(self._policy.param_values))])
 
+        # Extract the best policy parameter sample for saving it later
+        self.best_policy_param = param_results.parameters[np.argmax(param_results.mean_returns)].clone()
+
         # Save snapshot data
-        self.make_snapshot(snapshot_mode, float(np.mean(all_rets)), meta_info)
+        self.make_snapshot(snapshot_mode, float(np.max(param_results.mean_returns)), meta_info)
 
         # Update the policy
         self.update(param_results, ret_avg_curr)
@@ -145,14 +157,27 @@ class ParameterExploring(Algorithm):
         raise NotImplementedError
 
     def save_snapshot(self, meta_info: dict = None):
+        # Algorithm.save_snapshot() saves the policy used for exploring, we override it here with the best policy
         super().save_snapshot(meta_info)
+
+        best_policy = deepcopy(self._policy)
+        best_policy.param_values = self.best_policy_param
 
         if meta_info is None:
             # This algorithm instance is not a subroutine of a meta-algorithm
             joblib.dump(self._env, osp.join(self._save_dir, 'env.pkl'))
+            to.save(best_policy, osp.join(self._save_dir, 'policy.pt'))
         else:
             # This algorithm instance is a subroutine of a meta-algorithm
-            pass
+            if 'prefix' in meta_info and 'suffix' in meta_info:
+                to.save(best_policy, osp.join(self._save_dir,
+                                                 f"{meta_info['prefix']}_policy_{meta_info['suffix']}.pt"))
+            elif 'prefix' in meta_info and 'suffix' not in meta_info:
+                to.save(best_policy, osp.join(self._save_dir, f"{meta_info['prefix']}_policy.pt"))
+            elif 'prefix' not in meta_info and 'suffix' in meta_info:
+                to.save(best_policy, osp.join(self._save_dir, f"policy_{meta_info['suffix']}.pt"))
+            else:
+                raise NotImplementedError
 
     def load_snapshot(self, load_dir: str = None, meta_info: dict = None):
         # Get the directory to load from

@@ -2,16 +2,18 @@ import pytest
 from pytest_lazyfixture import lazy_fixture
 
 from pyrado.algorithms.a2c import A2C
+from pyrado.algorithms.actor_critic import ActorCritic
 from pyrado.algorithms.adr import ADR
+from pyrado.algorithms.advantage import GAE
 from pyrado.algorithms.cem import CEM
 from pyrado.algorithms.hc import HCNormal, HCHyper
-from pyrado.algorithms.advantage import GAE
-from pyrado.algorithms.reps import REPS
-from pyrado.algorithms.sac import SAC
 from pyrado.algorithms.nes import NES
+from pyrado.algorithms.parameter_exploring import ParameterExploring
 from pyrado.algorithms.pepg import PEPG
 from pyrado.algorithms.power import PoWER
 from pyrado.algorithms.ppo import PPO, PPO2
+from pyrado.algorithms.reps import REPS
+from pyrado.algorithms.sac import SAC
 from pyrado.algorithms.spota import SPOTA
 from pyrado.algorithms.svpg import SVPG
 from pyrado.domain_randomization.default_randomizers import get_default_randomizer
@@ -75,32 +77,35 @@ def test_snapshots_notmeta(ex_dir, env, policy, algo_class, algo_hparam):
     common_hparam = dict(max_iter=1, num_sampler_envs=1)
     common_hparam.update(algo_hparam)
 
-    if algo_class in [A2C, PPO, PPO2]:
+    if issubclass(algo_class, ActorCritic):
         common_hparam.update(min_rollouts=3,
                              critic=GAE(value_fcn=FNNPolicy(spec=EnvSpec(env.obs_space, ValueFunctionSpace),
                                                             hidden_sizes=[16, 16],
                                                             hidden_nonlin=to.tanh)))
-    elif algo_class in [HCNormal, HCHyper, NES, PEPG, PoWER, REPS]:
+    elif issubclass(algo_class, ParameterExploring):
         common_hparam.update(num_rollouts=1)
     else:
         raise NotImplementedError
 
+    # Train
     algo = algo_class(ex_dir, env, policy, **common_hparam)
     algo.train()
-    policy_posttrn = deepcopy(algo.policy)  # policy is saved for every algorithm
-    if algo_class in [A2C, PPO, PPO2]:
-        critic_posttrn = deepcopy(algo.critic)
+    if isinstance(algo, ActorCritic):
+        policy_posttrn_param_values = algo.policy.param_values
+        critic_posttrn_value_fcn_param_values = algo.critic.value_fcn.param_values
+    elif isinstance(algo, ParameterExploring):
+        policy_posttrn_param_values = algo.best_policy_param
 
     # Save and load
     algo.save_snapshot(meta_info=None)
     algo.load_snapshot(load_dir=ex_dir, meta_info=None)
     policy_loaded = deepcopy(algo.policy)
+
+    # Check
+    assert all(policy_posttrn_param_values == policy_loaded.param_values)
     if algo_class in [A2C, PPO, PPO2]:
         critic_loaded = deepcopy(algo.critic)
-
-    assert all(policy_posttrn.param_values == policy_loaded.param_values)
-    if algo_class in [A2C, PPO, PPO2]:
-        all(critic_posttrn.value_fcn.param_values == critic_loaded.value_fcn.param_values)
+        assert all(critic_posttrn_value_fcn_param_values == critic_loaded.value_fcn.param_values)
 
 
 @pytest.mark.parametrize(
