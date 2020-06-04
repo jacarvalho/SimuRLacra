@@ -20,6 +20,7 @@ from pyrado.algorithms.utils import until_thold_exceeded
 from pyrado.environment_wrappers.base import EnvWrapper
 from pyrado.environment_wrappers.domain_randomization import MetaDomainRandWrapper
 from pyrado.environments.quanser.base import RealEnv
+from pyrado.environments.sim_base import SimEnv
 from pyrado.policies.base import Policy
 from pyrado.sampling.bootstrapping import bootstrap_ci
 from pyrado.sampling.parallel_sampler import ParallelSampler
@@ -149,6 +150,7 @@ class BayRn(Algorithm, ABC):
 
         :param cand: hyper-parameters for the domain parameter distribution coming from the domain randomizer
         :param prefix: set a prefix to the saved file name by passing it to `meta_info`
+        :return: estimated return of the trained policy in the target domain
         """
         # Save the individual candidate
         to.save(cand.view(-1), osp.join(self._save_dir, f'{prefix}_candidate.pt'))
@@ -183,11 +185,10 @@ class BayRn(Algorithm, ABC):
         # Train a policy in simulation using the subroutine
         self._subroutine.train(snapshot_mode='best', meta_info=dict(prefix=prefix))
 
-        # Return the average return of the trained policy in simulation
-        sampler = ParallelSampler(self._env_sim, self._subroutine.policy, num_envs=4,
-                                  min_rollouts=self.num_eval_rollouts_sim)
-        ros = sampler.sample()
-        avg_ret_sim = np.mean([ro.undiscounted_return() for ro in ros])
+        # Return the estimated return of the trained policy in simulation
+        avg_ret_sim = self.eval_policy(
+            None, self._env_sim, self._subroutine.policy, self.montecarlo_estimator, prefix, self.num_eval_rollouts_sim
+        )
         return float(avg_ret_sim)
 
     def train_init_policies(self):
@@ -248,8 +249,8 @@ class BayRn(Algorithm, ABC):
             input('Evaluated in the target domain. Hit any key to continue.')
 
     @staticmethod
-    def eval_policy(save_dir: str,
-                    env_real: RealEnv,
+    def eval_policy(save_dir: [str, None],
+                    env_real: [RealEnv, SimEnv, MetaDomainRandWrapper],
                     policy: Policy,
                     montecarlo_estimator: bool,
                     prefix: str,
@@ -258,8 +259,8 @@ class BayRn(Algorithm, ABC):
         Evaluate a policy on the target system (real-world platform).
         This method is static to facilitate evaluation of specific policies in hindsight.
 
-        :param save_dir: directory to save the snapshots i.e. the results in
-        :param env_real: target environment for evaluation
+        :param save_dir: directory to save the snapshots i.e. the results in, if `None` nothing is saved
+        :param env_real: target environment for evaluation, in the sim-2-sim case this is another simulation instance
         :param policy: policy to evaluate
         :param montecarlo_estimator: estimate the return with a sample average (`True`) or a lower confidence
                                      bound (`False`) obtained from bootrapping
@@ -269,53 +270,38 @@ class BayRn(Algorithm, ABC):
         """
         if isinstance(env_real, RealEnv):
             input('Evaluating in the target domain. Hit any key to continue.')
-        print_cbt(f'Evaluating {prefix}_policy on the target system ...', 'c', bright=True)
+        if save_dir is not None:
+            print_cbt(f'Evaluating {prefix}_policy on the target system ...', 'c', bright=True)
 
         rets_real = to.zeros(num_rollouts)
         if isinstance(env_real, RealEnv):
             # Evaluate sequentially when conducting a sim-to-real experiment
             for i in range(num_rollouts):
                 rets_real[i] = rollout(env_real, policy, eval=True, no_close=False).undiscounted_return()
-        else:
+        elif isinstance(env_real, (SimEnv, MetaDomainRandWrapper)):
             # Create a parallel sampler when conducting a sim-to-sim experiment
-            sampler = ParallelSampler(env_real, policy, num_envs=8, min_rollouts=num_rollouts)
+            sampler = ParallelSampler(env_real, policy, num_envs=1, min_rollouts=num_rollouts)
             ros = sampler.sample()
             for i in range(num_rollouts):
                 rets_real[i] = ros[i].undiscounted_return()
+        else:
+            raise pyrado.TypeErr(given=env_real, expected_type=[RealEnv, SimEnv, MetaDomainRandWrapper])
 
-        # Save the evaluation results
-        to.save(rets_real, osp.join(save_dir, f'{prefix}_returns_real.pt'))
+        if save_dir is not None:
+            # Save the evaluation results
+            to.save(rets_real, osp.join(save_dir, f'{prefix}_returns_real.pt'))
 
-        print_cbt('target domain performance', bright=True)
-        print(tabulate([['mean return', to.mean(rets_real).item()],
-                        ['std return', to.std(rets_real)],
-                        ['min return', to.min(rets_real)],
-                        ['max return', to.max(rets_real)]]))
+            print_cbt('target domain performance', bright=True)
+            print(tabulate([['mean return', to.mean(rets_real).item()],
+                            ['std return', to.std(rets_real)],
+                            ['min return', to.min(rets_real)],
+                            ['max return', to.max(rets_real)]]))
 
         if montecarlo_estimator:
             return to.mean(rets_real)
         else:
             return to.from_numpy(bootstrap_ci(rets_real.numpy(), np.mean,
                                               num_reps=1000, alpha=0.05, ci_sides=1, studentized=False)[1])
-
-    def train_and_eval_cand(self, cand: to.Tensor, prefix: str) -> to.Tensor:
-        """
-        Train a policy given a candidate, a.k.a domain distribution parameter set, and evaluate it on the target domain.
-
-        :param cand: candidate to evaluate
-        :param prefix: set a prefix to the saved file name by passing it to `meta_info`
-        :return: estimated return of the trained policy in the target domain
-        """
-        # Train a policy using the subroutine (saves to iter_{self._curr_iter}_policy.pt)
-        wrapped_trn_fcn = until_thold_exceeded(
-            self.thold_succ_subroutine.item(), max_iter=self.max_subroutine_rep
-        )(self.train_policy_sim)
-        wrapped_trn_fcn(cand, prefix)
-
-        # Evaluate the current policy on the target domain
-        policy = to.load(osp.join(self._save_dir, f'{prefix}_policy.pt'))
-        return self.eval_policy(self._save_dir, self._env_real, policy, self.montecarlo_estimator, prefix,
-                                self.num_eval_rollouts_real)
 
     def step(self, snapshot_mode: str, meta_info: dict = None):
         if not self.initialized:
@@ -358,8 +344,19 @@ class BayRn(Algorithm, ABC):
         self.cands = to.cat([self.cands, next_cand], dim=0)
         to.save(self.cands, osp.join(self._save_dir, 'candidates.pt'))
 
-        # Evaluate the new candidate
-        self.curr_cand_value = self.train_and_eval_cand(next_cand, prefix=f'iter_{self._curr_iter}')
+        # Train and valuate the new candidate (saves to iter_{self._curr_iter}_policy.pt)
+        prefix = f'iter_{self._curr_iter}'
+        wrapped_trn_fcn = until_thold_exceeded(
+            self.thold_succ_subroutine.item(), max_iter=self.max_subroutine_rep
+        )(self.train_policy_sim)
+        wrapped_trn_fcn(cand, prefix)
+
+        # Evaluate the current policy on the target domain
+        policy = to.load(osp.join(self._save_dir, f'{prefix}_policy.pt'))
+        self.curr_cand_value = self.eval_policy(
+            self._save_dir, self._env_real, policy, self.montecarlo_estimator, prefix, self.num_eval_rollouts_real
+        )
+
         self.cands_values = to.cat([self.cands_values, self.curr_cand_value.view(1)], dim=0)
         to.save(self.cands_values, osp.join(self._save_dir, 'candidates_values.pt'))
 
@@ -396,11 +393,12 @@ class BayRn(Algorithm, ABC):
             self._env_real = joblib.load(osp.join(ld, 'env_real.pkl'))
 
             # Crawl through the given directory and check how many policies and candidates there are
+            found_policies, found_cands = None, None
             for root, dirs, files in os.walk(ld):
                 found_policies = [p for p in files if p.endswith('_policy.pt')]
                 found_cands = [c for c in files if c.endswith('_candidate.pt')]
             if not len(found_policies) == len(found_cands):  # the 'policy.pt' file should not be found
-                raise pyrado.ValueErr(msg='The number of policies does not match the number of candidates!')
+                raise pyrado.ShapeErr(msg='The number of policies does not match the number of candidates!')
             # Copy to the current experiment's directory. Not necessary if we are continuing in that directory.
             if ld != self._save_dir:
                 for p in found_policies:
@@ -414,8 +412,12 @@ class BayRn(Algorithm, ABC):
                 self.cands = to.stack([to.load(osp.join(ld, c)) for c in found_cands])
                 to.save(self.cands, osp.join(self._save_dir, 'candidates.pt'))
             else:
-                # Assuming training of the initial policies has not been finished
+                # Assuming not even the training of the initial policies has not been finished. Redo it all.
+                print_cbt('No policies have been found. Basically starting from scratch.', 'c')
                 self.train_init_policies()
+                self.eval_init_policies()
+                self.initialized = True
+
             try:
                 # Crawl through the load_dir and copy all done evaluations.
                 # Not necessary if we are continuing in that directory.
@@ -423,35 +425,59 @@ class BayRn(Algorithm, ABC):
                     for root, dirs, files in os.walk(load_dir):
                         [copyfile(osp.join(load_dir, c), osp.join(self._save_dir, c)) for c in files
                          if c.endswith('_returns_real.pt')]
-            except FileNotFoundError:
-                pass
-            try:
-                # Copy and load the previously done evaluation. Not necessary if we are continuing in that directory.
-                if ld != self._save_dir:
-                    copyfile(osp.join(ld, 'candidates_values.pt'), osp.join(self._save_dir, 'candidates_values.pt'))
-                self.cands_values = to.load(osp.join(self._save_dir, 'candidates_values.pt'))
-                self.initialized = True
-            except FileNotFoundError:
-                try:
-                    for root, dirs, files in os.walk(ld):
-                        found_values = [v for v in files if v.endswith('_returns_real.pt')]
-                    found_values.sort()  # the order is important since it determines the rows of the tensor
-                    # Stack and save at new experiment's directory
-                    self.cands_values = to.stack([to.load(osp.join(ld, v)) for v in found_values])
-                    to.save(self.cands_values, osp.join(self._save_dir, 'candidates_values.pt'))
-                except (FileNotFoundError, RuntimeError):
-                    # Assuming evaluation of the initial policies has not been done yet
-                    self.eval_init_policies()
+
+                # Get all previously done evaluations. If we don't find any, the exception is caught.
+                found_evals = None
+                for root, dirs, files in os.walk(ld):
+                    found_evals = [v for v in files if v.endswith('_returns_real.pt')]
+                found_evals.sort()  # the order is important since it determines the rows of the tensor
+
+                # Reconstruct candidates_values.pt
+                self.cands_values = to.empty(self.cands.shape[0])
+                for i, fe in enumerate(found_evals):
+                    # Get the return estimate from the raw evaluations as in eval_policy()
+                    if self.montecarlo_estimator:
+                        self.cands_values[i] = to.mean(to.load(osp.join(ld, fe)))
+                    else:
+                        self.cands_values[i] = to.from_numpy(bootstrap_ci(
+                            to.load(osp.join(ld, fe)).numpy(), np.mean,
+                            num_reps=1000, alpha=0.05, ci_sides=1, studentized=False)[1])
+
+                if len(found_evals) < len(found_cands):
+                    print_cbt(f'Found {len(found_evals)} real-world evaluation files but {len(found_cands)} candidates.'
+                              f' Now evaluation the remaining ones.', 'c', bright=True)
+                for i in range(len(found_cands) - len(found_evals)):
+                    # Evaluate the current policy on the target domain
+                    if len(found_evals) < self.num_init_cand:
+                        prefix = f'init_{i + len(found_evals)}'
+                    else:
+                        prefix = f'iter_{i + len(found_evals) - self.num_init_cand}'
+                    policy = to.load(osp.join(self._save_dir, f'{prefix}_policy.pt'))
+                    self.cands_values[i + len(found_evals)] = self.eval_policy(
+                        self._save_dir, self._env_real, policy, self.montecarlo_estimator, prefix,
+                        self.num_eval_rollouts_real
+                    )
+                to.save(self.cands_values, osp.join(self._save_dir, 'candidates_values.pt'))
+
+                if len(found_cands) < self.num_init_cand:
+                    print_cbt('Found less candidates than the number of initial candidates.', 'y')
+                else:
                     self.initialized = True
 
+            except (FileNotFoundError, RuntimeError):
+                # If there are returns_real.pt files but len(found_policies) > 0 (was checked earlier),
+                # then the initial policies have not been evaluated yet
+                self.eval_init_policies()
+                self.initialized = True
+
             # Get current iteration count
+            found_iter_policies = None
             for root, dirs, files in os.walk(ld):
                 found_iter_policies = [p for p in files if p.startswith('iter_') and p.endswith('_policy.pt')]
 
             if not found_iter_policies:
                 self._curr_iter = 0
                 # We don't need to init the subroutine since it will be reset for iteration 0 anyway
-
             else:
                 self._curr_iter = len(found_iter_policies)  # continue with next
 
