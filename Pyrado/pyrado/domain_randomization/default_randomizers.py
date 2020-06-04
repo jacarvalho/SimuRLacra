@@ -372,7 +372,7 @@ def get_default_randomizer_bl() -> DomainRandomizer:
 @default_randomizer('pyrado.environments.mujoco.wam', 'WAMBallInCupSim')
 def get_default_randomizer_wambic() -> DomainRandomizer:
     return DomainRandomizer(
-        UniformDomainParam(name='cup_scale', mean=1.3, halfspan=0.5)
+        UniformDomainParam(name='cup_scale', mean=1.3, halfspan=0.5, clip_lo=0.6)  # ball needs to fit into the cup
     )
 
 
