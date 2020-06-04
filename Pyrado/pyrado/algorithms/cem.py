@@ -1,6 +1,4 @@
-import os.path as osp
 import torch as to
-from copy import deepcopy
 
 import pyrado
 from pyrado.algorithms.parameter_exploring import ParameterExploring
@@ -102,7 +100,6 @@ class CEM(ParameterExploring):
             self._expl_strat = SymmParamExplStrat(self._expl_strat)
 
         self.num_is_samples = min(pop_size, num_is_samples)
-        self.best_policy_param_values = policy.param_values.clone()
         if isinstance(self._expl_strat.noise, DiagNormalNoise):
             self.extra_expl_std_init = to.ones_like(self._policy.param_values)*extra_expl_std_init
         elif isinstance(self._expl_strat.noise, FullNormalNoise):
@@ -120,9 +117,6 @@ class CEM(ParameterExploring):
         idcs_dcs = idcs_dcs[:self.num_is_samples]
         rets_avg_is = rets_avg_ros[idcs_dcs]
         params_is = param_results.parameters[idcs_dcs, :]
-
-        # Store the very best policy parameter values for saving it later
-        self.best_policy_param_values = params_is[0, :].clone()
 
         # Update the policy parameters from the mean importance samples
         self._policy.param_values = to.mean(params_is, dim=0)
@@ -148,32 +142,3 @@ class CEM(ParameterExploring):
         self.logger.add_value('avg expl strat std', to.mean(self._expl_strat.std.data).detach().numpy())
         self.logger.add_value('max expl strat std', to.max(self._expl_strat.std))
         self.logger.add_value('expl strat entropy', self._expl_strat.get_entropy().item())
-
-    def reset(self, seed: int = None):
-        # Reset the exploration strategy, internal variables and the random seeds
-        super().reset(seed)
-
-        # Reset memory for importance sampling
-        self.best_policy_param_values = self._policy.param_values.clone()
-
-    def save_snapshot(self, meta_info: dict = None):
-        # Algorithm.save_snapshot() saves the policy used for exploring, we override it here with the best policy
-        super().save_snapshot(meta_info)
-
-        max_ret_policy = deepcopy(self._policy)
-        max_ret_policy.param_values = self.best_policy_param_values
-
-        if meta_info is None:
-            # This algorithm instance is not a subroutine of a meta-algorithm
-            to.save(max_ret_policy, osp.join(self._save_dir, 'policy.pt'))
-        else:
-            # This algorithm instance is a subroutine of a meta-algorithm
-            if 'prefix' in meta_info and 'suffix' in meta_info:
-                to.save(max_ret_policy, osp.join(self._save_dir,
-                                                 f"{meta_info['prefix']}_policy_{meta_info['suffix']}.pt"))
-            elif 'prefix' in meta_info and 'suffix' not in meta_info:
-                to.save(max_ret_policy, osp.join(self._save_dir, f"{meta_info['prefix']}_policy.pt"))
-            elif 'prefix' not in meta_info and 'suffix' in meta_info:
-                to.save(max_ret_policy, osp.join(self._save_dir, f"policy_{meta_info['suffix']}.pt"))
-            else:
-                raise NotImplementedError
