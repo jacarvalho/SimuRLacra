@@ -73,8 +73,6 @@ class SequentialTasks(Task):
         """ Set the desired state the current task. """
         if not isinstance(state_des, np.ndarray):
             raise pyrado.TypeErr(given=state_des, expected_type=np.ndarray)
-        if not state_des.shape == self.state_des.shape:
-            raise pyrado.ShapeErr(given=state_des, expected_match=self.state_des)
         self._tasks[self._idx_curr].state_des = state_des
 
     @property
@@ -83,12 +81,10 @@ class SequentialTasks(Task):
         return self._tasks[self._idx_curr].space_des
 
     @space_des.setter
-    def space_des(self, space_des: np.ndarray):
+    def space_des(self, space_des: Space):
         """ Set the desired space the current task. """
-        if not space_des.shape == self.space_des.shape:
-            raise pyrado.ShapeErr(given=space_des, expected_match=self.space_des)
-        if not isinstance(space_des, np.ndarray):
-            raise pyrado.TypeErr(given=space_des, expected_type=np.ndarray)
+        if not isinstance(space_des, Space):
+            raise pyrado.TypeErr(given=space_des, expected_type=Space)
         self._tasks[self._idx_curr].space_des = space_des
 
     @property

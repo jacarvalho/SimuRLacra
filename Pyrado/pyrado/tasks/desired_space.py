@@ -50,6 +50,8 @@ class DesSpaceTask(Task):
     def space_des(self, space_des: Space):
         if not isinstance(space_des, Space):
             raise pyrado.TypeErr(given=space_des, expected_type=Space)
+        if not space_des.shape == self.space_des.shape:
+            raise pyrado.ShapeErr(given=space_des, expected_match=self.space_des)
         self._space_des = space_des
 
     @property

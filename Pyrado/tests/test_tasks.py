@@ -3,6 +3,7 @@ import numpy as np
 import pytest
 
 import pyrado
+from pyrado.tasks.desired_space import DesSpaceTask
 from pyrado.utils.data_types import EnvSpec
 from pyrado.spaces.box import BoxSpace
 from pyrado.tasks.final_reward import FinalRewTask, FinalRewMode, BestStateFinalRewTask
@@ -313,3 +314,26 @@ def test_tracking_task(envspec_432, rew_fcn):
         if i > 0:
             assert all(task.state_des >= old_state_des_task)  # desired state is moving away
             assert r[i] <= r[i - 1]  # reward goes down
+
+
+@pytest.mark.parametrize(
+    'sub_tasks', [
+        [DesStateTask(envspec_432(), np.array([0.05, 0.05, 0.05]), MinusOnePerStepRewFcn()),
+         DesSpaceTask(envspec_432(), BoxSpace(-1., 1., shape=3), MinusOnePerStepRewFcn())]
+    ], ids=['des_state_and_des_space']
+)
+def test_set_goals_fo_composite_tasks(sub_tasks):
+    # Check ParallelTasks
+    pt = ParallelTasks(sub_tasks)
+    pt.state_des = 1*[np.array([-0.2, 0.4, 0])]
+    assert np.all(pt.state_des == np.array([-0.2, 0.4, 0]))
+    pt.space_des = 1*[BoxSpace(-0.5, 2., shape=3)]
+    assert pt.space_des[0] == BoxSpace(-0.5, 2., shape=3)  # pt.space_des is a list
+
+    # Check SequentialTasks
+    st = SequentialTasks(sub_tasks)
+    st.state_des = np.array([-0.2, 0.4, 0])
+    assert np.all(st.state_des == np.array([-0.2, 0.4, 0]))
+    st.idx_curr = 1
+    st.space_des = BoxSpace(-0.5, 2., shape=3)
+    assert st.space_des == BoxSpace(-0.5, 2., shape=3)

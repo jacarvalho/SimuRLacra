@@ -48,6 +48,8 @@ class DesStateTask(Task):
     def state_des(self, state_des: np.ndarray):
         if not isinstance(state_des, np.ndarray):
             raise pyrado.TypeErr(given=state_des, expected_type=np.ndarray)
+        if not state_des.shape == self.state_des.shape:
+            raise pyrado.ShapeErr(given=state_des, expected_match=self.state_des)
         self._state_des = state_des
 
     @property
