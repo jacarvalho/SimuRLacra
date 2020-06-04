@@ -2,9 +2,8 @@ from abc import ABC, abstractmethod
 import numpy as np
 from typing import Any
 
-from init_args_serializer import Serializable
-
 import pyrado
+from pyrado.spaces.base import Space
 from pyrado.utils import get_class_name
 from pyrado.utils.data_types import EnvSpec
 from pyrado.tasks.reward_functions import RewFcn
@@ -39,7 +38,7 @@ class Task(ABC):
         raise AttributeError(f'{get_class_name(self)} has no desired state.')
 
     @property
-    def space_des(self) -> np.ndarray:
+    def space_des(self) -> Space:
         """
         Get the desired state (same dimensions as the environment's state).
         Only override this if the task has a desired state.
@@ -110,7 +109,7 @@ class Task(ABC):
         Compute the final reward, e.g. bonus for success or a malus for failure, for a single task.
 
         .. note::
-            This function is highly connected to the `FinalRewTask` class.
+            This function should only be overwritten by tasks that manipulate the final reward.
 
         :param state: current state
         :param remaining_steps: number of time steps left in the episode
@@ -165,7 +164,7 @@ def all_tasks(task):
         yield task
 
 
-class TaskWrapper(Task, Serializable):
+class TaskWrapper(Task):
     """ Base for all task wrappers. Delegates all environment methods to the wrapped environment. """
 
     def __init__(self, wrapped_task: Task):
@@ -176,8 +175,6 @@ class TaskWrapper(Task, Serializable):
         """
         if not isinstance(wrapped_task, Task):
             raise pyrado.TypeErr(given=wrapped_task, expected_type=Task)
-
-        Serializable._init(self, locals())
 
         self._wrapped_task = wrapped_task
 
@@ -193,9 +190,17 @@ class TaskWrapper(Task, Serializable):
     def state_des(self) -> np.ndarray:
         return self._wrapped_task.state_des
 
+    @state_des.setter
+    def state_des(self, state_des: np.ndarray):
+        self._wrapped_task.state_des = state_des
+
     @property
-    def space_des(self) -> np.ndarray:
+    def space_des(self) -> Space:
         return self._wrapped_task.space_des
+
+    @space_des.setter
+    def space_des(self, space_des: Space):
+        self._wrapped_task.space_des = space_des
 
     @property
     def rew_fcn(self) -> RewFcn:

@@ -3,6 +3,7 @@ from copy import deepcopy
 from typing import Sequence
 
 import pyrado
+from pyrado.spaces.base import Space
 from pyrado.utils.data_types import EnvSpec
 from pyrado.tasks.base import Task
 from pyrado.tasks.reward_functions import RewFcn
@@ -77,7 +78,7 @@ class SequentialTasks(Task):
         self._tasks[self._idx_curr].state_des = state_des
 
     @property
-    def space_des(self) -> np.ndarray:
+    def space_des(self) -> Space:
         """ Get the desired space the current task. """
         return self._tasks[self._idx_curr].space_des
 

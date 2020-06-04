@@ -27,7 +27,7 @@ class DesStateTask(Task):
         if not isinstance(env_spec, EnvSpec):
             raise pyrado.TypeErr(given=env_spec, expected_type=EnvSpec)
         if not isinstance(state_des, np.ndarray):
-            raise pyrado.TypeErr(given=state_des, expected_type=Space)
+            raise pyrado.TypeErr(given=state_des, expected_type=np.ndarray)
         if not isinstance(rew_fcn, RewFcn):
             raise pyrado.TypeErr(given=rew_fcn, expected_type=RewFcn)
 

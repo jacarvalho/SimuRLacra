@@ -1,6 +1,5 @@
 import numpy as np
 from colorama import Style
-from init_args_serializer import Serializable
 from tabulate import tabulate
 from typing import NamedTuple
 
@@ -25,7 +24,7 @@ class FinalRewMode(NamedTuple):
                )
 
 
-class FinalRewTask(TaskWrapper, Serializable):
+class FinalRewTask(TaskWrapper):
     """
     Wrapper for tasks which yields a reward / cost on success / failure
     
@@ -43,8 +42,6 @@ class FinalRewTask(TaskWrapper, Serializable):
         :param mode: mode for calculating the final reward
         :param factor: value to scale the final reward, does not matter if `mode.time_dependent is True`
         """
-        Serializable._init(self, locals())
-
         # Call TaskWrapper's constructor
         super().__init__(wrapped_task)
 
@@ -161,7 +158,7 @@ class FinalRewTask(TaskWrapper, Serializable):
                 raise NotImplementedError(f'No matching configuration found for the given FinalRewMode:\n{self.mode}')
 
 
-class BestStateFinalRewTask(TaskWrapper, Serializable):
+class BestStateFinalRewTask(TaskWrapper):
     """
     Wrapper for tasks which yields a reward / cost on success / failure based on the best reward / cost observed in the
     current trajectory that is scaled by the number of taken / remaining time steps.
@@ -175,8 +172,6 @@ class BestStateFinalRewTask(TaskWrapper, Serializable):
         :param max_steps: maximum number of time steps in the environment to infer the number of steps when done
         :param factor: value to scale the final reward
         """
-        Serializable._init(self, locals())
-
         # Call TaskWrapper's constructor
         super().__init__(wrapped_task)
 
