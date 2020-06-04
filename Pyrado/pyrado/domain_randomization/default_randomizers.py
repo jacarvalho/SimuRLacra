@@ -369,6 +369,13 @@ def get_default_randomizer_bl() -> DomainRandomizer:
     )
 
 
+@default_randomizer('pyrado.environments.mujoco.wam', 'WAMBallInCupSim')
+def get_default_randomizer_wambic() -> DomainRandomizer:
+    return DomainRandomizer(
+        UniformDomainParam(name='cup_scale', mean=1.3, halfspan=0.5)
+    )
+
+
 def get_default_domain_param_map_omo() -> Dict[int, Tuple[str, str]]:
     """
     Get the default mapping from indices to domain parameters as used in the `BayRn` algorithm.
@@ -416,4 +423,17 @@ def get_default_domain_param_map_qq() -> Dict[int, Tuple[str, str]]:
         5: ('Lp', 'std'),
         6: ('Lr', 'mean'),
         7: ('Lr', 'std'),
+    }
+
+
+def get_default_domain_param_map_wambic() -> Dict[int, Tuple[str, str]]:
+    """
+    Get the default mapping from indices to domain parameters as used in the `BayRn` algorithm.
+
+    :return: `dict` where the key is the index and the value is a tuple of domain parameter and the associated domain
+             distribution parameter
+    """
+    return {
+        0: ('cup_scale', 'mean'),
+        1: ('cup_scale', 'halfspan'),
     }
