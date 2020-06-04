@@ -78,8 +78,11 @@ def load_experiment(ex_dir: str, args: Any = None) -> ([SimEnv, EnvWrapper], Pol
         elif BayRn.name in hparams.get('algo_name', ''):
             # Environment
             env = joblib.load(osp.join(ex_dir, 'env_sim.pkl'))
-            env.randomizer = get_zero_var_randomizer(env)
-            print_cbt(f"Loaded {osp.join(ex_dir, 'env_sim.pkl')} (randomized by default randomizer).", 'g')
+            print_cbt(f"Loaded {osp.join(ex_dir, 'env_sim.pkl')}.", 'g')
+            if hasattr(env, 'randomizer'):
+                last_cand = to.load(osp.join(ex_dir, 'candidates.pt'))[-1, :]
+                env.adapt_randomizer(last_cand.numpy())
+                print_cbt(f'Using the domain randomizer\n{env.randomizer}', 'w')
             # Policy
             if args.iter == -1:
                 try:
