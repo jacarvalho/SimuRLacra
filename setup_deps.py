@@ -56,17 +56,17 @@ cmake_prefix_path = [
 # Required packages
 required_packages = [
     "g++-4.8",
-    "qt5-default",
-    "libqwt-qt5-dev",
-    "libbullet-dev",
-    "libfreetype6-dev",
-    "libxml2-dev",
-    "libglu1-mesa-dev",
-    "freeglut3-dev",
-    "mesa-common-dev",
-    "libopenscenegraph-dev",
-    "openscenegraph",
-    "liblapack-dev"
+    "qt5-default",  # conda install -c dsdale24 qt5 _OR_ conda install -c anaconda qt  __OR__ HEADLESS BUILD
+    "libqwt-qt5-dev",  # conda install -c dsdale24 qt5 _OR_ conda install -c anaconda qt  __OR__ HEADLESS BUILD
+    "libbullet-dev",  # conda install -c conda-forge bullet
+    "libfreetype6-dev",  # conda install -c anaconda freetype 
+    "libxml2-dev",  #  conda install -c anaconda libxml2 
+    "libglu1-mesa-dev",  # conda install -c anaconda libglu 
+    "freeglut3-dev",  #  conda install -c anaconda freeglut 
+    "mesa-common-dev",  #  conda install -c conda-forge mesalib
+    "libopenscenegraph-dev",  # conda install -c conda-forge openscenegraph __OR__ HEADLESS BUILD
+    "openscenegraph",  #  conda install -c conda-forge openscenegraph 
+    "liblapack-dev"  #  conda install -c conda-forge lapack 
 ]
 
 # Environment for build processes
