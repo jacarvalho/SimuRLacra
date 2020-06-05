@@ -60,8 +60,8 @@ conda env create -f Pyrado/environment.yml
 (the warnings from VPython can be safely ignored).
 > Alternatively, you could do
 >```
->conda create -n test python=3.8 cmake colorama coverage cython joblib libgcc-ng mkl matplotlib numpy pandas pip pytest pytest-xdist pyyaml scipy seaborn setuptools sphinx tabulate tqdm vpython -c vpython
->
+>conda create -n pyrado python=3.8 cmake colorama coverage cython joblib libgcc-ng mkl matplotlib numpy pandas pip pytest pytest-xdist pyyaml scipy seaborn setuptools sphinx tabulate tqdm vpython -c vpython
+>conda activate pyrado
 >pip install git+https://github.com/Xfel/init-args-serializer.git@master argparse box2d glfw gym pprint pytest-lazy-fixture
 >```
 
