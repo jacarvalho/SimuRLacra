@@ -14,6 +14,7 @@ from pyrado.tasks.final_reward import BestStateFinalRewTask
 from pyrado.tasks.masked import MaskedTask
 from pyrado.tasks.reward_functions import ZeroPerStepRewFcn, ExpQuadrErrRewFcn
 from pyrado.utils.data_types import EnvSpec
+from pyrado.utils.input_output import print_cbt
 
 
 class WAMSim(MujocoSimEnv, Serializable):
@@ -101,13 +102,21 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
     def __init__(self,
                  frame_skip: int = 4,
                  max_steps: int = pyrado.inf,
+                 stop_on_collision: bool = True,
                  task_args: [dict, None] = None):
         """
         Constructor
 
         :param max_steps: max number of simulation time steps
+        :param max_steps: max number of simulation time steps
+        :param stop_on_collision: set the `failed` flag in the `dict` returned by `_mujoco_step()` to true, if the ball
+                                  collides with something else than the desired parts of the cup. This causes the
+                                  episode to end. Keep in mind that in case of a negative step reward and no final
+                                  cost on failing, this might result in undesired behavior.
         :param task_args: arguments for the task construction
         """
+        Serializable._init(self, locals())
+
         model_path = osp.join(pyrado.MUJOCO_ASSETS_DIR, 'wam_7dof_bic.xml')
         super().__init__(model_path, frame_skip, max_steps, task_args)
 
@@ -118,17 +127,18 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         self.p_gains = np.array([200.0, 300.0, 100.0, 100.0, 10.0, 10.0, 2.5])
         self.d_gains = np.array([7.0, 15.0, 5.0, 2.5, 0.3, 0.3, 0.05])
 
-        self.camera_config = dict(
-            trackbodyid=0,  # id of the body to track
-            elevation=-30,  # camera rotation around the axis in the plane
-            azimuth=-90  # camera rotation around the camera's vertical axis
-        )
-
         # We access a private attribute since a method like 'model.geom_names[geom_id]' cannot be used because
         # not every geom has a name
         self._collision_geom_ids = [self.model._geom_name2id[name] for name in ['cup_geom1', 'cup_geom2']]
         self._collision_bodies = ['wam/wrist_pitch_link', 'wam/wrist_yaw_link', 'wam/forearm_link',
                                   'wam/upper_arm_link', 'wam/shoulder_pitch_link', 'wam/shoulder_yaw_link']
+        self.stop_on_collision = stop_on_collision
+
+        self.camera_config = dict(
+            trackbodyid=0,  # id of the body to track
+            elevation=-30,  # camera rotation around the axis in the plane
+            azimuth=-90  # camera rotation around the camera's vertical axis
+        )
 
     @property
     def torque_space(self) -> Space:
@@ -148,8 +158,8 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         self._torque_space = BoxSpace(-max_torque, max_torque)
 
         # Initial state space
-        # Set the actual stable initial position. This position would be reached after some time using the internal ...
-        # ... PD controller to stabilize at self.init_pose_des
+        # Set the actual stable initial position. This position would be reached after some time using the internal
+        # PD controller to stabilize at self.init_pose_des
         np.put(self.init_qpos, [1, 3, 5, 6, 7], [0.6519, 1.409, -0.2827, -1.57, -0.2115])
         init_ball_pos = np.array([0., -0.8566, 0.85391])
         init_state = np.concatenate([self.init_qpos, self.init_qvel, init_ball_pos])
@@ -205,10 +215,10 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
 
         if cup_scale is not None:
             # See [1, l.93-96]
-            xml_model = xml_model.replace('[scale_mesh]', str(cup_scale * 0.001))
-            xml_model = xml_model.replace('[pos_mesh]', str(0.055 - (cup_scale - 1.) * 0.023))
-            xml_model = xml_model.replace('[pos_goal]', str(0.1165 + (cup_scale - 1.) * 0.0385))
-            xml_model = xml_model.replace('[size_cup]', str(cup_scale * 0.038))
+            xml_model = xml_model.replace('[scale_mesh]', str(cup_scale*0.001))
+            xml_model = xml_model.replace('[pos_mesh]', str(0.055 - (cup_scale - 1.)*0.023))
+            xml_model = xml_model.replace('[pos_goal]', str(0.1165 + (cup_scale - 1.)*0.0385))
+            xml_model = xml_model.replace('[size_cup]', str(cup_scale*0.038))
 
         if rope_length is not None:
             # The rope consists of 29 capsules
@@ -254,20 +264,21 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         # Update task's desired state
         state_des = np.zeros_like(self.state)  # needs to be of same dimension as self.state since it is masked later
         state_des[-3:] = self.sim.data.get_body_xpos('B0').copy()
-        self._task.wrapped_task.state_des = state_des
+        self._task.state_des = state_des
 
-        # Add possibility to check for collisions/contacts
-        # is_colliding = self._check_contacts()
+        # If desired, check for collisions of the ball with the robot
+        ball_collided = self.check_ball_collisions() if self.stop_on_collision else False
 
         return dict(
             des_qpos=des_qpos, des_qvel=des_qvel, qpos=qpos[:7], qvel=qvel[:7], ball_pos=ball_pos,
-            state_des=state_des[-3:], failed=mjsim_crashed
+            state_des=state_des[-3:], failed=mjsim_crashed or ball_collided
         )
 
-    def _check_contacts(self) -> bool:
+    def check_ball_collisions(self, verbose: bool = False) -> bool:
         """
         Check if an undesired collision with the ball occurs.
 
+        :param verbose: print messages on collision
         :return: `True` if the ball collides with something else than the central parts of the cup
         """
         for i in range(self.sim.data.ncon):
@@ -282,11 +293,13 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
 
             # Evaluate if the ball collides with part of the WAM (collision bodies)
             # or the connection of WAM and cup (geom_ids)
-            c1 = body1_name == 'ball' and (
-                    body2_name in self._collision_bodies or contact.geom2 in self._collision_geom_ids)
-            c2 = body2_name == 'ball' and (
-                    body1_name in self._collision_bodies or contact.geom1 in self._collision_geom_ids)
+            c1 = body1_name == 'ball' and (body2_name in self._collision_bodies or
+                                           contact.geom2 in self._collision_geom_ids)
+            c2 = body2_name == 'ball' and (body1_name in self._collision_bodies or
+                                           contact.geom1 in self._collision_geom_ids)
             if c1 or c2:
+                if verbose:
+                    print_cbt(f'Undesired collision of {body1_name} and {body2_name} detected!', 'y')
                 return True
 
         return False
