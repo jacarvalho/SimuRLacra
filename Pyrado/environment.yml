@@ -109,6 +109,7 @@ dependencies:
   - pytest=5.4.2=py38_0
   - pytest-forked=1.1.3=py_0
   - pytest-xdist=1.32.0=py_0
+  - pytest-cov
   - python=3.8.3=hcff3b4d_0
   - python-dateutil=2.8.1=py_0
   - pytz=2020.1=py_0
@@ -155,9 +156,8 @@ dependencies:
     - glfw==1.11.2
     - gym==0.17.2
     - imageio==2.8.0
-    - init-args-serializer==1.0
+    - git+https://github.com/Xfel/init-args-serializer.git@master
     - monotonic==1.5
-    - mujoco-py==2.0.2.9
     - pillow==7.1.2
     - pprint==0.1
     - pyglet==1.5.0
