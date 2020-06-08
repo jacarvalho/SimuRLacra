@@ -14,7 +14,7 @@ The focus is on robotics tasks with mostly continuous control.
 It features __randomizable simulations__ written __in standalone Python__ (no license required) as well as simulations driven by the physics engines __Bullet__ (no license required), __Vortex__ (license required), __or MuJoCo__ (license required).
 
 
-__Pros__
+__Pros__  
 * __Exceptionally modular treatment of environments via wrappers.__ The key idea behind this was to be able to quickly modify and randomize all available simulation environments. Moreover, SimuRLacra contains unique environments that either run completely in Python or allow you to switch between the Bullet or Vortex (requires license) physics engine.
 * __C++ export of policies based on PyTorch Modules.__ You can port your neural-network policies, learned with Python, to you C++ applications. This also holds for stateful recurrent networks and linear policies. 
 * __CPU-based parallelization for sampling the environments.__ Similar to the OpenAI Gym, SimuRLacra offers parallelized environments for sampling. This is done by employing [Serializable](https://github.com/Xfel/init-args-serializer), making the simulation environments fully pickleable.
@@ -23,7 +23,7 @@ __Pros__
 * __Tested integration of [BoTorch](https://botorch.org/), and [Optuna](https://optuna.org/)__.
 * __Detailed documentation__.
 
-__Cons__
+__Cons__  
 * __No vision-based environments/tasks.__ In principle there is nothing stopping you from integrating computer vision into SimuRLacra. However, I assume there are better suited frameworks out there.
 * __Without bells and whistles.__ Most implementations (especially the algorithms) do not focus on performance. After all, this framework was created to understand and prototype things. 
 * __Hyper-parameters are not fully tuned.__ Sometimes the most important part of reinforcement learning is the time-consuming search for the right hyper-parameters. I only did this for the environment-algorithm combinations reported in my papers. But, for all the other cases there is [Optuna](https://optuna.org/) and some optuna-based example scripts that you can start from.
@@ -60,30 +60,34 @@ Follow the instructions on the [anaconda homepage](https://www.anaconda.com/down
 Clone the repository and go to the project's directory (defaults to SimuRLacra)
 ```
 git clone https://github.com/famura/SimuRLacra.git
-# or via ssg
+# or via ssh
 # git clone git@github.com:famura/SimuRLacra.git
 cd SimuRLacra
 ```
 
-Create an anaconda environment (without PyTorch) using the provided yml-file. This takes about 3 min.
+Create an anaconda environment (without PyTorch)
 ```
-conda env create -f Pyrado/environment.yml
+conda create -n pyrado python=3.7 cmake colorama coverage cython joblib libgcc-ng mkl matplotlib numpy pandas patchelf pip pytest pytest-xdist pyyaml scipy seaborn setuptools sphinx sphinx-math-dollar sphinx_rtd_theme tabulate tqdm vpython -c vpython -c conda-forge
+
+conda activate pyrado
+
+pip install git+https://github.com/Xfel/init-args-serializer.git@master argparse box2d glfw gym pprint pytest-lazy-fixture
 ```
-(the warnings from VPython can be safely ignored).
-> Alternatively, you could do
+Any warnings from VPython can be safely ignored.
+
+> Alternatively, you could use the provided yml-file
 >```
->conda create -n pyrado python=3.8 cmake colorama coverage cython joblib libgcc-ng mkl matplotlib numpy pandas patchelf pip pytest pytest-xdist pyyaml scipy seaborn setuptools sphinx sphinx-math-dollar sphinx_rtd_theme tabulate tqdm vpython -c vpython -c conda-forge
->conda activate pyrado
->pip install git+https://github.com/Xfel/init-args-serializer.git@master argparse box2d glfw gym pprint pytest-lazy-fixture
+>conda env create -f Pyrado/environment.yml
 >```
 
-> _Infrastructure dependent_: install libraries system-wide  
->Parts of this framework create Python bindings of [Rcs](https://github.com/HRI-EU/Rcs) called RcsPySim. Running Rcs requires several libraries which can be installed (__requires sudo rights__) via
->```
->python setup_deps.py dep_libraries
->```
->This command will install `g++-4.8`, `libqwt-qt5-dev`, `libbullet-dev`, `libfreetype6-dev`, `libxml2-dev`, `libglu1-mesa-dev`, `freeglut3-dev`, `mesa-common-dev`, `libopenscenegraph-dev`, `openscenegraph`, and `liblapack-dev`.
-If you can't install the libraries, you can still use the part of this framework which is purely in Python, but no environments in the `sim_rcs` folder.
+ _Infrastructure dependent_: install libraries system-wide  
+Parts of this framework create Python bindings of [Rcs](https://github.com/HRI-EU/Rcs) called RcsPySim. Running Rcs requires several libraries which can be installed (__requires sudo rights__) via
+```
+python setup_deps.py dep_libraries
+```
+This command will install `g++-4.8`, `libqwt-qt5-dev`, `libbullet-dev`, `libfreetype6-dev`, `libxml2-dev`, `libglu1-mesa-dev`, `freeglut3-dev`, `mesa-common-dev`, `libopenscenegraph-dev`, `openscenegraph`, and `liblapack-dev`.
+If you can't install the libraries, you can still use the part of this framework which is purely in Python, but no environments in the `rcspysim` folder.
+In case you have no sudo rights, but want to use all the Rcs-dependent environments, you can try installing the libraries via anaconda. For references, see the comments behind `required_packages` in `setup_deps.py`.
 
 Now you have __two options__:
 
@@ -98,7 +102,7 @@ Next, we will download eigen3, pybind11, catch2, WM5, ect. into the `thirdParty`
 Make sure the `pyrado` anaconda environment is activated and run
 ```
 conda activate pyrado
-python setup_deps.py all -j12
+python setup_deps.py all -j8
 ```
 This setup script calls `git submodule init` and `git submodule update`. During the installation of Rcs, the Vortex physics engine as well as the WM5 collision library are searched via a cmake find scripts.
 In case this process crashes, please first check the [Troubleshooting](#troubleshooting) section below.
@@ -110,7 +114,7 @@ Next, we will download eigen3, pybind11, catch2, WM5, ect. into the `thirdParty`
 Make sure the `pyrado` anaconda environment is activated and run
 ```
 conda activate pyrado
-python setup_deps.py separate_pytorch -j12
+python setup_deps.py separate_pytorch -j8
 ```
 This setup script calls `git submodule init` and `git submodule update`. During the installation of Rcs, the Vortex physics engine as well as the WM5 collision library are searched via a cmake find scripts.
 In case this process crashes, please first check the [Troubleshooting](#troubleshooting) section below.
@@ -120,7 +124,7 @@ In case this process crashes, please first check the [Troubleshooting](#troubles
 conda activate pyrado
 conda env list
 conda list | grep torch  # check if the desired version of PyTorch is installed
-python --version  # should return Python 3.6.5 :: Anaconda, Inc._
+python --version  # should return Python 3.7.X :: Anaconda, Inc._
 ```
 
 ### Final notes
