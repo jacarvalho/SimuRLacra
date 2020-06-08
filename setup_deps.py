@@ -145,7 +145,7 @@ rcspysim_src_dir = osp.join(project_dir, "RcsPySim")
 rcspysim_build_dir = osp.join(rcspysim_src_dir, "build")
 uselibtorch = "ON" if args.uselibtorch else "OFF"
 rcspysim_cmake_vars = {
-    "PYBIND11_PYTHON_VERSION": "3.8",
+    "PYBIND11_PYTHON_VERSION": "3.7",
     "SETUP_PYTHON_DEVEL": "ON",
     "Rcs_DIR": rcs_build_dir,
     "USE_LIBTORCH": uselibtorch,  # use the manually build PyTorch from thirdParty/pytorch 
