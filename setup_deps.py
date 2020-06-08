@@ -56,17 +56,17 @@ cmake_prefix_path = [
 # Required packages
 required_packages = [
     "g++-4.8",
-    "qt5-default",
-    "libqwt-qt5-dev",
-    "libbullet-dev",
-    "libfreetype6-dev",
-    "libxml2-dev",
-    "libglu1-mesa-dev",
-    "freeglut3-dev",
-    "mesa-common-dev",
-    "libopenscenegraph-dev",
-    "openscenegraph",
-    "liblapack-dev"
+    "qt5-default",  # conda install -c dsdale24 qt5 _OR_ conda install -c anaconda qt  __OR__ HEADLESS BUILD
+    "libqwt-qt5-dev",  # conda install -c dsdale24 qt5 _OR_ conda install -c anaconda qt  __OR__ HEADLESS BUILD
+    "libbullet-dev",  # conda install -c conda-forge bullet
+    "libfreetype6-dev",  # conda install -c anaconda freetype 
+    "libxml2-dev",  #  conda install -c anaconda libxml2 
+    "libglu1-mesa-dev",  # conda install -c anaconda libglu 
+    "freeglut3-dev",  #  conda install -c anaconda freeglut 
+    "mesa-common-dev",  #  conda install -c conda-forge mesalib
+    "libopenscenegraph-dev",  # conda install -c conda-forge openscenegraph __OR__ HEADLESS BUILD
+    "openscenegraph",  #  conda install -c conda-forge openscenegraph 
+    "liblapack-dev"  #  conda install -c conda-forge lapack 
 ]
 
 # Environment for build processes
@@ -136,7 +136,7 @@ wam_url = f"https://github.com/psclklnk/self-paced-rl/archive/{wam_repo_version}
 
 # PyTorch
 # NOTE: Assumes that the current environment does NOT already contain PyTorch!
-pytorch_version = "1.3.1"
+pytorch_version = "1.4.0"
 pytorch_git_repo = "https://github.com/pytorch/pytorch.git"
 pytorch_src_dir = osp.join(dependency_dir, "pytorch")
 
@@ -145,7 +145,7 @@ rcspysim_src_dir = osp.join(project_dir, "RcsPySim")
 rcspysim_build_dir = osp.join(rcspysim_src_dir, "build")
 uselibtorch = "ON" if args.uselibtorch else "OFF"
 rcspysim_cmake_vars = {
-    "PYBIND11_PYTHON_VERSION": "3.6",
+    "PYBIND11_PYTHON_VERSION": "3.7",
     "SETUP_PYTHON_DEVEL": "ON",
     "Rcs_DIR": rcs_build_dir,
     "USE_LIBTORCH": uselibtorch,  # use the manually build PyTorch from thirdParty/pytorch 
@@ -307,9 +307,10 @@ def setup_pytorch():
     # Let it's setup do the magic
     env = os.environ.copy()
     env.update(env_vars)
-    env["USE_CUDA"]="1" if args.usecuda else "0"  # CUDA is disabled by default
-    env["USE_MKLDNN"]="0" # disable MKLDNN; mkl/blas deprecated error https://github.com/pytorch/pytorch/issues/17874
-    env["_GLIBCXX_USE_CXX11_ABI"]="1"
+    env["USE_CUDA"] = "1" if args.usecuda else "0"  # CUDA is disabled by default
+    env["USE_CUDNN"] = "1" if args.usecuda else "0"  # CUDA is disabled by default
+    env["USE_MKLDNN"] = "0"  # disable MKLDNN; mkl/blas deprecated error https://github.com/pytorch/pytorch/issues/17874
+    env["_GLIBCXX_USE_CXX11_ABI"] = "1"
     sp.check_call([sys.executable, "setup.py", "install"], cwd=pytorch_src_dir, env=env)
 
 

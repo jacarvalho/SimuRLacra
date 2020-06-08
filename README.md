@@ -70,6 +70,12 @@ Create an anaconda environment (without PyTorch) using the provided yml-file. Th
 conda env create -f Pyrado/environment.yml
 ```
 (the warnings from VPython can be safely ignored).
+> Alternatively, you could do
+>```
+>conda create -n pyrado python=3.8 cmake colorama coverage cython joblib libgcc-ng mkl matplotlib numpy pandas patchelf pip pytest pytest-xdist pyyaml scipy seaborn setuptools sphinx sphinx-math-dollar sphinx_rtd_theme tabulate tqdm vpython -c vpython -c conda-forge
+>conda activate pyrado
+>pip install git+https://github.com/Xfel/init-args-serializer.git@master argparse box2d glfw gym pprint pytest-lazy-fixture
+>```
 
 > _Infrastructure dependent_: install libraries system-wide  
 >Parts of this framework create Python bindings of [Rcs](https://github.com/HRI-EU/Rcs) called RcsPySim. Running Rcs requires several libraries which can be installed (__requires sudo rights__) via
@@ -81,7 +87,7 @@ If you can't install the libraries, you can still use the part of this framework
 
 Now you have __two options__:
 
-1. Create the anaconda environment without PyTorch and build it together with all the other dependencies right after. This is necessary if you want to export PyTorch Modules to C++. The Pyrado `Policy` class is a subclass of PyTorch's `nn.Module`. Finally, the setup script (using the `all` ) will install GPyTorch, BoTorch, and Pyro without touching the previously installed PyTroch version.
+1. Create the anaconda environment without PyTorch and build it together with all the other dependencies right after. This is necessary if you want to export PyTorch Modules to C++. The Pyrado `Policy` class is a subclass of PyTorch's `nn.Module`. Finally, the setup script (using the `all`) will install GPyTorch, BoTorch, and Pyro without touching the previously installed PyTroch version.
 
 2. Create the anaconda environment and install PyTorch GPyTorch, BoTorch, and Pyro right after via pip. This version is perfectly fine if you never want to export you learned policies. This variant is faster and we can be sure that PyTorch, BoTorch, ect. are compatible versions.
 

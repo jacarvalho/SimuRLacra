@@ -2,9 +2,9 @@ name: Docker Image CI
 
 on:
   push:
-    branches: [ master ]
+    branches: [ python38 ]
   pull_request:
-    branches: [ master ]
+    branches: [ python38 ]
 
 jobs:
 
@@ -25,3 +25,4 @@ jobs:
           file: ./coverage.xml # optional
           flags: unittests # optional
           name: codecov-umbrella # optional
+          fail_ci_if_error: true # optional (default = false)
