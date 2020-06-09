@@ -17,7 +17,7 @@ from pyrado.policies.environment_specific import DualRBFLinearPolicy
 
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
-    ex_dir = setup_experiment(WAMBallInCupSim.name, CEM.name, 'dr-cs-rl', seed=101)
+    ex_dir = setup_experiment(WAMBallInCupSim.name, CEM.name, 'dr_cs_rl', seed=101)
 
     # Environment
     env_hparams = dict(

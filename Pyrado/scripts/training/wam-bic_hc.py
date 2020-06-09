@@ -16,8 +16,8 @@ if __name__ == '__main__':
 
     # Environment
     env_hparams = dict(
-        max_steps=1000,
-        task_args=dict(factor=0.1)
+        max_steps=1500,
+        task_args=dict(factor=0.05)
     )
     env = WAMBallInCupSim(**env_hparams)
 

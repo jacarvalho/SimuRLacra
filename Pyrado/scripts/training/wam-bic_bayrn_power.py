@@ -15,10 +15,13 @@ from pyrado.policies.environment_specific import DualRBFLinearPolicy
 
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
-    ex_dir = setup_experiment(WAMBallInCupSim.name, f'{BayRn.name}_{PoWER.name}-sim2sim', 'dr-cs', seed=111)
+    ex_dir = setup_experiment(WAMBallInCupSim.name, f'{BayRn.name}_{PoWER.name}-sim2sim', 'dr_cs', seed=111)
 
     # Environments
-    env_hparams = dict(max_steps=1000, task_args=dict(factor=0.2))
+    env_hparams = dict(
+        max_steps=1500,
+        task_args=dict(factor=0.05)
+    )
     env_sim = WAMBallInCupSim(**env_hparams)
     env_sim = DomainRandWrapperLive(env_sim, get_zero_var_randomizer(env_sim))
     dp_map = get_default_domain_param_map_wambic()

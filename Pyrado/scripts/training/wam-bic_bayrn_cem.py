@@ -17,10 +17,13 @@ from pyrado.policies.environment_specific import DualRBFLinearPolicy
 
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
-    ex_dir = setup_experiment(WAMBallInCupSim.name, f'{BayRn.name}_{CEM.name}-sim2sim', 'dr-cs-rl', seed=111)
+    ex_dir = setup_experiment(WAMBallInCupSim.name, f'{BayRn.name}_{CEM.name}-sim2sim', 'dr_cs_rl', seed=111)
 
     # Environments
-    env_hparams = dict(max_steps=1000, task_args=dict(factor=0.2))
+    env_hparams = dict(
+        max_steps=1500,
+        task_args=dict(factor=0.05)
+    )
     env_sim = WAMBallInCupSim(**env_hparams)
     env_sim = DomainRandWrapperLive(env_sim, get_zero_var_randomizer(env_sim))
     dp_map = get_default_domain_param_map_wambic()
@@ -36,21 +39,23 @@ if __name__ == '__main__':
     # policy = DualRBFLinearPolicy(env_sim.spec, **policy_hparam)
     policy_hparam = dict()
     policy = to.load(osp.join(pyrado.PERMA_DIR, 'experiments', 'wam-bic', 'cem',
-                              '2020-06-08_13-04-04--dr-cs-rl--swingfrombelow', 'policy.pt'))
+                              # '2020-06-08_13-04-04--dr_cs_rl--swingfrombelow',
+                              '2020-06-08_13-04-04--dr-cs-rl_firstupthendown',
+                              'policy.pt'))
 
     # Subroutine
     subroutine_hparam = dict(
-        max_iter=20,
-        pop_size=100,
-        num_rollouts=20,
-        num_is_samples=10,
+        max_iter=15,
+        pop_size=50,
+        num_rollouts=40,
+        num_is_samples=5,
         expl_std_init=0.5,
         expl_std_min=0.02,
         extra_expl_std_init=0.5,
         extra_expl_decay_iter=5,
         full_cov=False,
         symm_sampling=False,
-        num_sampler_envs=8,
+        num_sampler_envs=6,
     )
     cem = CEM(ex_dir, env_sim, policy, **subroutine_hparam)
 
