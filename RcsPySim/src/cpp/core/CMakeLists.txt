@@ -5,6 +5,7 @@ set(CORE_SRCS
     RcsSimEnv.cpp
     
     ExperimentConfig.cpp
+    ECBallInTube.cpp
     ECBallOnPlate.cpp
     ECBoxFlipping.cpp
     ECBoxLifting.cpp
@@ -25,6 +26,7 @@ set(CORE_SRCS
     control/ControlPolicy.cpp
 
     initState/InitStateSetter.cpp
+    initState/ISSBallInTube.cpp
     initState/ISSBallOnPlate.cpp
     initState/ISSBoxFlipping.cpp
     initState/ISSBoxLifting.cpp

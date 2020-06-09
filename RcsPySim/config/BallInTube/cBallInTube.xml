@@ -1,0 +1,13 @@
+<Controller graph="gBallInTube_trqCtrl.xml" >
+
+  <Task name="Distance L Ball"   controlVariable="Distance" effector="Effector_L" refBdy="Ball"   gainDX="0.5" active="true"/>
+  <Task name="Distance R Slider" controlVariable="Distance" effector="Effector_R" refBdy="Slider" gainDX="0.5" active="true"/>
+
+  <Task name="Hook L XYZ" effector="Effector_L" controlVariable="XYZ" active="true"/>
+  <Task name="Hook L ABC" effector="Effector_L" controlVariable="ABC" active="true"/>
+  <Task name="Hook R XYZ" effector="Effector_R" controlVariable="XYZ" active="true"/>
+  <Task name="Hook R ABC" effector="Effector_R" controlVariable="ABC" active="true"/>
+
+  <Task name="Base XYZ" effector="ImetronPlatform" controlVariable="XYZ" active="true"/>
+
+</Controller>

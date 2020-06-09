@@ -1,0 +1,44 @@
+<CollisionModel DistanceThreshold="0.2">
+
+    <CollisionPair body1="Base" body2="lbr_link_2_L" DistanceThreshold="0.08"/>
+    <CollisionPair body1="Base" body2="lbr_link_3_L" DistanceThreshold="0.08"/>
+    <CollisionPair body1="Base" body2="lbr_link_4_L"/>
+    <CollisionPair body1="Base" body2="lbr_link_5_L"/>
+    <CollisionPair body1="Base" body2="lbr_link_6_L"/>
+    <CollisionPair body1="Base" body2="lbr_link_7_L"/>
+
+    <CollisionPair body1="Base" body2="lbr_link_2_R" DistanceThreshold="0.08"/>
+    <CollisionPair body1="Base" body2="lbr_link_3_R" DistanceThreshold="0.08"/>
+    <CollisionPair body1="Base" body2="lbr_link_4_R"/>
+    <CollisionPair body1="Base" body2="lbr_link_5_R"/>
+    <CollisionPair body1="Base" body2="lbr_link_6_R"/>
+    <CollisionPair body1="Base" body2="lbr_link_7_R"/>
+
+    <CollisionPair body1="lbr_link_2_L" body2="lbr_link_6_L"/>
+    <CollisionPair body1="lbr_link_2_L" body2="lbr_link_7_L"/>
+    <CollisionPair body1="lbr_link_3_L" body2="lbr_link_7_L"/>
+    <CollisionPair body1="lbr_link_2_R" body2="lbr_link_6_R"/>
+    <CollisionPair body1="lbr_link_2_R" body2="lbr_link_7_R"/>
+    <CollisionPair body1="lbr_link_3_R" body2="lbr_link_7_R"/>
+    <CollisionPair body1="lbr_link_3_L" body2="lbr_link_3_R"/>
+    <CollisionPair body1="lbr_link_4_L" body2="lbr_link_4_R"/>
+    <CollisionPair body1="lbr_link_5_L" body2="lbr_link_5_R"/>
+    <CollisionPair body1="lbr_link_6_L" body2="lbr_link_6_R"/>
+    <CollisionPair body1="lbr_link_7_L" body2="lbr_link_7_R"/>
+    <CollisionPair body1="lbr_link_3_L" body2="Table" DistanceThreshold="0.15"/>
+    <CollisionPair body1="lbr_link_4_L" body2="Table" DistanceThreshold="0.15"/>
+    <CollisionPair body1="lbr_link_5_L" body2="Table" DistanceThreshold="0.15"/>
+    <CollisionPair body1="lbr_link_6_L" body2="Table" DistanceThreshold="0.15"/>
+    <CollisionPair body1="lbr_link_7_L" body2="Table" DistanceThreshold="0.15"/>
+    <CollisionPair body1="lbr_link_3_R" body2="Table" DistanceThreshold="0.15"/>
+    <CollisionPair body1="lbr_link_4_R" body2="Table" DistanceThreshold="0.15"/>
+    <CollisionPair body1="lbr_link_5_R" body2="Table" DistanceThreshold="0.15"/>
+    <CollisionPair body1="lbr_link_6_R" body2="Table" DistanceThreshold="0.15"/>
+    <CollisionPair body1="lbr_link_7_R" body2="Table" DistanceThreshold="0.15"/>
+
+    <CollisionPair body1="Hook_L" body2="Table" DistanceThreshold="0.03"/>
+    <CollisionPair body1="Hook_R" body2="Table" DistanceThreshold="0.03"/>
+
+    <CollisionPair body1="ImetronPlatform" body2="Table" DistanceThreshold="0.2"/>
+
+</CollisionModel>
