@@ -2,8 +2,10 @@
 Learn the domain parameter distribution of masses and lengths of the Quanser Qube while using a handcrafted
 randomization for the remaining domain parameters
 """
+import os.path as osp
 import torch as to
 
+import pyrado
 from pyrado.algorithms.cem import CEM
 from pyrado.domain_randomization.default_randomizers import get_zero_var_randomizer, get_default_domain_param_map_wambic
 from pyrado.environment_wrappers.domain_randomization import DomainRandWrapperLive, MetaDomainRandWrapper
@@ -15,7 +17,7 @@ from pyrado.policies.environment_specific import DualRBFLinearPolicy
 
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
-    ex_dir = setup_experiment(WAMBallInCupSim.name, f'{BayRn.name}_{CEM.name}-sim2sim', 'cup_scale', seed=111)
+    ex_dir = setup_experiment(WAMBallInCupSim.name, f'{BayRn.name}_{CEM.name}-sim2sim', 'dr-cs-rl', seed=111)
 
     # Environments
     env_hparams = dict(max_steps=1000, task_args=dict(factor=0.2))
@@ -27,11 +29,14 @@ if __name__ == '__main__':
     env_real = WAMBallInCupSim(**env_hparams)
 
     # Policy
-    policy_hparam = dict(
-        rbf_hparam=dict(num_feat_per_dim=7, bounds=(0., 1.), scale=None),
-        dim_mask=2
-    )
-    policy = DualRBFLinearPolicy(env_sim.spec, **policy_hparam)
+    # policy_hparam = dict(
+    #     rbf_hparam=dict(num_feat_per_dim=7, bounds=(0., 1.), scale=None),
+    #     dim_mask=2
+    # )
+    # policy = DualRBFLinearPolicy(env_sim.spec, **policy_hparam)
+    policy_hparam = dict()
+    policy = to.load(osp.join(pyrado.PERMA_DIR, 'experiments', 'wam-bic', 'cem',
+                              '2020-06-08_13-04-04--dr-cs-rl--swingfrombelow', 'policy.pt'))
 
     # Subroutine
     subroutine_hparam = dict(
@@ -50,9 +55,10 @@ if __name__ == '__main__':
     cem = CEM(ex_dir, env_sim, policy, **subroutine_hparam)
 
     # Set the boundaries for the GP
+    dp_nom = WAMBallInCupSim.get_nominal_domain_param()
     bounds = to.tensor(
-        [[0.7, 0.05],  # mean cup_scale, halfspan cup_scale
-         [1.6, 0.3]]  # mean cup_scale, halfspan cup_scale
+        [[0.8*dp_nom['cup_scale'], dp_nom['cup_scale']/50, 0.9*dp_nom['rope_length'], dp_nom['rope_length']/50],
+         [1.2*dp_nom['cup_scale'], dp_nom['cup_scale']/10, 1.1*dp_nom['rope_length'], dp_nom['rope_length']/5]]
     )
 
     # Algorithm
