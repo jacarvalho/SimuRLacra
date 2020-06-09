@@ -10,8 +10,7 @@
   <bullet_parameters use_ground_plane="false"
                      use_mclp_solver="true"
                      body_linear_damping="0.0"
-                     body_angular_damping="0.0"
-  />
+                     body_angular_damping="0.0"/>
 
 
   <!-- Definition of available materials (in addition to "default") -->

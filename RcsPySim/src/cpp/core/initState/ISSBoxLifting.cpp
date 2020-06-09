@@ -63,8 +63,8 @@ void ISSBoxLifting::applyInitialState(const MatNd* initialState)
     {
         throw std::invalid_argument("Setting graph failed for at least one of the joints!");
     }
+
     // Update the forward kinematics
-    
     RcsGraph_setState(graph, graph->q, graph->q_dot);
 }
 
