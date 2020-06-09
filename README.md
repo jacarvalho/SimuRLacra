@@ -67,7 +67,7 @@ cd SimuRLacra
 
 Create an anaconda environment (without PyTorch)
 ```
-conda create -n pyrado python=3.7 cmake colorama coverage cython joblib libgcc-ng mkl matplotlib-base numpy pandas patchelf pip pytest pytest-xdist pyyaml scipy seaborn setuptools sphinx sphinx-math-dollar sphinx_rtd_theme tabulate tqdm -c conda-forge
+conda create -n pyrado python=3.7 cmake colorama coverage cython joblib libgcc-ng mkl matplotlib-base numpy pandas patchelf pip pytest pytest-cov pytest-xdist pyyaml scipy seaborn setuptools sphinx sphinx-math-dollar sphinx_rtd_theme tabulate tqdm -c conda-forge
 
 conda activate pyrado
 

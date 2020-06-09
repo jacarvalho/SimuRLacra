@@ -69,6 +69,7 @@ dependencies:
   - pyparsing=2.4.7=pyh9f0ad1d_0
   - pysocks=1.7.1=py37hc8dfbb8_1
   - pytest=5.4.3=py37hc8dfbb8_0
+  - pytest-cov=2.8.1=py_0
   - pytest-forked=1.1.2=py_0
   - pytest-xdist=1.32.0=pyh9f0ad1d_0
   - python=3.7.6=cpython_h8356626_6
