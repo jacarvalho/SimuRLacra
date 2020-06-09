@@ -12,16 +12,17 @@ from pyrado.utils.input_output import print_cbt
 
 class WAMBallInCupReal(Env):
     """
-    Class for the real Barret WAM.
+    Class for the real Barrett WAM
 
     Uses robcom 2.0 and specifically robcom's GoTo process to execute a trajectory given by desired joint positions.
-    The process is only executed on the real system after `max_steps` has been reached to avoid possible latency.
+    The process is only executed on the real system after `max_steps` has been reached to avoid possible latency,
+    but at the same time mimic the usual step-based environment behavior.
     """
 
     name: str = 'wam-real'
 
     def __init__(self,
-                 dt: float = 1 / 500.,
+                 dt: float = 1/500.,
                  max_steps: int = pyrado.inf,
                  ip: str = '192.168.2.2',
                  poses_des: [np.ndarray, None] = None):
@@ -30,7 +31,7 @@ class WAMBallInCupReal(Env):
 
         :param dt: sampling time interval
         :param max_steps: maximum number of time steps
-        :param ip: IP address of the Qube platform
+        :param ip: IP address of the PC controlling the Barrett WAM
         :param poses_des: desired joint poses as ndarray of shape (., 3)
         """
         # Call the base class constructor to initialize fundamental members
@@ -41,7 +42,7 @@ class WAMBallInCupReal(Env):
 
         # Connect to client
         self._client = robcom.Client()
-        self._client.start(ip, 2013)  # ip adress and port
+        self._client.start(ip, 2013)  # IP address and port
         print_cbt('Connected to the Barret WAM client.', 'c', bright=True)
         self._gt = None  # Goto command
 
@@ -99,9 +100,9 @@ class WAMBallInCupReal(Env):
         # Create robcom GoTo process
         gt = self._client.create(robcom.Goto, 'RIGHT_ARM', '')
 
-        # Move to initial state in 5 seconds
+        # Move to initial state within 5 seconds
         gt.add_step(5., self.init_pose_des)
-        print_cbt('Moving the Barret WAM to the initial position.', 'c')
+        print_cbt('Moving the Barret WAM to the initial position.', 'c', bright=True)
 
         # Start process and wait for completion
         gt.start()
@@ -114,23 +115,29 @@ class WAMBallInCupReal(Env):
         return self.observe(self.state)
 
     def step(self, act: np.ndarray) -> tuple:
+        info = dict(t=self._curr_step*self._dt, act_raw=act)
+
+        # Current reward depending on the (measurable) state and the current (unlimited) action
+        # remaining_steps = self._max_steps - (self._curr_step + 1) if self._max_steps is not pyrado.inf else 0
+        # self._curr_rew = self._task.step_rew(self.state, act, remaining_steps)
+
         # zero step reward
         self._curr_rew = 0.
         done = False
-        info = dict()
+        # Check if the task is done
+        # done = self._task.is_done(self.state)  # the ball in cup task is never done since nothing is measured
 
         act = self._limit_act(act)
 
-        # Use given desired trajectory if any given and time step does no exceed its length
-        if self.poses_des is not None and self.curr_step < self.poses_des.shape[0]:
-            des_qpos = self.poses_des[self.curr_step]
-
-        # Otherwise use the action given by a policy
+        if self.poses_des is not None and self._curr_step < self.poses_des.shape[0]:
+            # Use given desired trajectory if given and time step does no exceed its length
+            des_qpos = self.poses_des[self._curr_step]
         else:
-            des_qpos = self.init_pose_des.copy()
+            # Otherwise use the action given by a policy
+            des_qpos = self.init_pose_des.copy()  # keep the initial joint angles deselected joints
             np.add.at(des_qpos, [1, 3, 5], act[:3])  # the policy operates on joint 1, 3 and 5
 
-        # Create robcom GoTo process at the first time step
+        # Create robcom GoTo process at the first time step TODO @Christian: possible move to the end of reset()?
         if self._curr_step == 0:
             self._gt = self._client.create(robcom.Goto, 'RIGHT_ARM', '')
 
@@ -139,24 +146,31 @@ class WAMBallInCupReal(Env):
         self._curr_step += 1
 
         # Only start execution of process when all desired poses have been added to process
-        # i.e. `max_steps` has been reached.
+        # i.e. `max_steps` has been reached
         if self._curr_step >= self._max_steps:
             done = True
             print_cbt('Executing trajectory on Barret WAM.', 'c')
             self._gt.start()
             self._gt.wait_for_completion()
             print_cbt('Finished execution.', 'c')
+
+            # TODO: we will to this in the task
             # Get episode reward as user input (commented out for the moment)
             # self._curr_rew = float(input('Enter episode reward: '))
+
+        # Add final reward if done TODO
+        # if done:
+        #     self._curr_rew += self._task.final_rew(self.state, remaining_steps)
 
         return self.observe(self.state), self._curr_rew, done, info
 
     def render(self, mode: RenderMode, render_step: int = 1):
+        # Skip all rendering
         pass
 
     def close(self):
         self._client.close()
-        print_cbt('Connection to WAM client closed.', 'c')
+        print_cbt('Closed the connection to the Barrett WAM.', 'c', bright=True)
 
     def observe(self, state: np.ndarray) -> np.ndarray:
         # Only observe the normalized time
