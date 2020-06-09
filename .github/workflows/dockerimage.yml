@@ -15,13 +15,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Build the Docker image
-        run: docker build . --file Dockerfile --tag simurlacra
-      - name: Execute tests
-        run: |
-          mkdir cov
-          docker run --rm -i -v $(pwd):/cov simurlacra conda run -n pyrado bash -c "pytest Pyrado/tests --cov=./Pyrado --cov-report=xml --verbose -m 'not visualization and not longtime' && mv coverage.xml /cov"
-      - uses: codecov/codecov-action@v1
+        run: docker build . --file Dockerfile --tag simurlacr
+      - uses: paambaati/codeclimate-action@v2.2.4
+        env:
+          CC_TEST_REPORTER_ID: ${{secrets.CC_TEST_REPORTER_ID}}
         with:
-          file: ./coverage.xml # optional
-          flags: unittests # optional
-          name: codecov-umbrella # optional
+          coverageCommand: docker run --rm -i -v $(pwd):/cov simurlacra conda run -n pyrado bash -c "pytest Pyrado/tests --cov=./Pyrado --cov-report=xml --verbose -m 'not visualization and not longtime' || mv coverage.xml /cov"
