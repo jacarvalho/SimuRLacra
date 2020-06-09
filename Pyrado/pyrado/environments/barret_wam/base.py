@@ -18,7 +18,7 @@ class WAMBallInCupReal(Env):
     def __init__(self,
                  dt: float = 1 / 500.,
                  max_steps: int = pyrado.inf,
-                 ip: str = '127.0.0.1',
+                 ip: str = '192.168.2.2',
                  poses_des: [np.ndarray, None] = None):
         """
         Constructor

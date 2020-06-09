@@ -30,9 +30,8 @@ if __name__ == '__main__':
     dt = 0.002  # step size
 
     # Connect to client
-    ip = input('Enter Client IP address: ')
     c = r.Client()
-    c.start(ip, 2013)  # ip adress and port
+    c.start('192.168.2.2', 2013)  # ip adress and port
     print("Connected to client.")
 
     # Reset the robot to the initial position
