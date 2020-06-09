@@ -1,5 +1,5 @@
 """
-Run a policy (trained in simulation) on the associated real-world environment.
+Load and run a policy on the associated real-world Quanser environment.
 """
 import pyrado
 from pyrado.environments.quanser.quanser_ball_balancer import QBallBalancerReal
@@ -36,7 +36,7 @@ if __name__ == '__main__':
         env_real = QQubeReal(dt=args.dt, max_steps=args.max_steps)
     else:
         raise pyrado.TypeErr(given=env_sim, expected_type=[QBallBalancerSim, QCartPoleSim, QQubeSim])
-    print_cbt(f'Set up env {env_real.__class__}.', 'c')
+    print_cbt(f'Set up env {env_real.name}.', 'c')
 
     # Finally wrap the env in the same as done during training
     env_real = wrap_like_other_env(env_real, env_sim)
@@ -47,4 +47,4 @@ if __name__ == '__main__':
     while not done:
         ro = rollout(env_real, policy, eval=True, render_mode=RenderMode(text=False, video=args.animation))
         print_cbt(f'Return: {ro.undiscounted_return()}', 'g', bright=True)
-        done, _, _ = after_rollout_query(env_real, ro)
+        done, _, _ = after_rollout_query(env_real, policy, ro)
