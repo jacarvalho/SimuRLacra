@@ -11,7 +11,12 @@ from pyrado.utils.input_output import print_cbt
 
 
 class WAMBallInCupReal(Env):
-    """ Class for the real Barret WAM """
+    """
+    Class for the real Barret WAM.
+
+    Uses robcom 2.0 and specifically robcom's GoTo process to execute a trajectory given by desired joint positions.
+    The process is only executed on the real system after `max_steps` has been reached to avoid possible latency.
+    """
 
     name: str = 'wam-real'
 
@@ -26,16 +31,13 @@ class WAMBallInCupReal(Env):
         :param dt: sampling time interval
         :param max_steps: maximum number of time steps
         :param ip: IP address of the Qube platform
-        :param poses_des: desired joint poses as ndarray of shape (max_steps, 3)
+        :param poses_des: desired joint poses as ndarray of shape (., 3)
         """
         # Call the base class constructor to initialize fundamental members
         super().__init__(dt, max_steps)
 
         # Desired joint position for the initial state
         self.init_pose_des = np.array([0.0, 0.5876, 0.0, 1.36, 0.0, -0.321, -1.57])
-
-        # Desired trajectory (has to be shorter than or equal to max_steps)
-        self.poses_des = poses_des
 
         # Connect to client
         self._client = robcom.Client()
@@ -51,6 +53,11 @@ class WAMBallInCupReal(Env):
 
         # Initialize task
         self._task = self._create_task(dict())
+
+        # Desired trajectory
+        if not poses_des.shape[1] == 7:
+            raise pyrado.ShapeErr(given=poses_des.shape[1], expected_match=self.init_pose_des)
+        self.poses_des = poses_des
 
     @property
     def state_space(self) -> Space:
@@ -114,12 +121,14 @@ class WAMBallInCupReal(Env):
 
         act = self._limit_act(act)
 
-        # Only use `act` if no desired trajectory is given
-        if self.poses_des is None:
-            des_qpos = self.init_pose_des.copy()
-            np.add.at(des_qpos, [1, 3, 5], act[:3])
-        else:
+        # Use given desired trajectory if any given and time step does no exceed its length
+        if self.poses_des is not None and self.curr_step < self.poses_des.shape[0]:
             des_qpos = self.poses_des[self.curr_step]
+
+        # Otherwise use the action given by a policy
+        else:
+            des_qpos = self.init_pose_des.copy()
+            np.add.at(des_qpos, [1, 3, 5], act[:3])  # the policy operates on joint 1, 3 and 5
 
         # Create robcom GoTo process at the first time step
         if self._curr_step == 0:
@@ -129,11 +138,10 @@ class WAMBallInCupReal(Env):
         self._gt.add_step(self.dt, des_qpos)
         self._curr_step += 1
 
-        # Only start execution of process when all desired poses have been added to process i.e. `max_steps` has been reached.
+        # Only start execution of process when all desired poses have been added to process
+        # i.e. `max_steps` has been reached.
         if self._curr_step >= self._max_steps:
             done = True
-
-        if done:
             print_cbt('Executing trajectory on Barret WAM.', 'c')
             self._gt.start()
             self._gt.wait_for_completion()
