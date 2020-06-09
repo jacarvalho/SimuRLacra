@@ -23,5 +23,5 @@ jobs:
           wget https://codeclimate.com/downloads/test-reporter/test-reporter-latest-linux-amd64
           chmod +x test-reporter-latest-linux-amd64
           ./test-reporter-latest-linux-amd64 before-build
-          docker run --rm -i -v $(pwd):/cov simurlacra conda run -n pyrado bash -c "pytest Pyrado/tests --cov=./Pyrado --cov-report=xml --verbose -m 'not visualization and not longtime' || mv coverage.xml /cov"
+          docker run --rm -i -v $(pwd):/cov simurlacra conda run -n pyrado bash -c "pytest Pyrado/tests --cov=./Pyrado --cov-report=xml --verbose -m 'not visualization and not longtime' || cp coverage.xml /cov"
           ./test-reporter-latest-linux-amd64 after-build -t coverage.py
