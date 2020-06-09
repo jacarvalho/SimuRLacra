@@ -25,6 +25,7 @@ jobs:
           chmod +x test-reporter-latest-linux-amd64
           ./test-reporter-latest-linux-amd64 before-build
           docker run --rm -i -v $COVPATH:/cov simurlacra conda run -n pyrado bash -c "pytest Pyrado/tests --cov=./Pyrado --cov-report=xml --verbose -m 'not visualization and not longtime'; cp coverage.xml /cov"
+          echo $COVPATH
           ls
           pwd
           ./test-reporter-latest-linux-amd64 after-build -t coverage.py
