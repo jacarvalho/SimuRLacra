@@ -104,26 +104,4 @@
     <Shape type="FRAME" scale="0.2"/>
   </Body>
 
-
-  <model_state model="DexterousManipulation" time_stamp="0">
-    <!--<joint_state joint="lbr_joint_1_L" position="120"/>-->
-    <!--<joint_state joint="lbr_joint_2_L" position="60"/>-->
-    <!--<joint_state joint="lbr_joint_3_L" position="0"/>-->
-    <!--<joint_state joint="lbr_joint_4_L" position="60"/>-->
-    <!--<joint_state joint="lbr_joint_5_L" position="-90"/>-->
-    <!--<joint_state joint="lbr_joint_6_L" position="-0"/>-->
-    <!--<joint_state joint="lbr_joint_7_L" position="90"/>-->
-
-    <!--<joint_state joint="lbr_joint_1_R" position="90"/>-->
-    <!--<joint_state joint="lbr_joint_2_R" position="-90"/>-->
-    <!--<joint_state joint="lbr_joint_3_R" position="-90"/>-->
-    <!--<joint_state joint="lbr_joint_4_R" position="-90"/>-->
-    <!--<joint_state joint="lbr_joint_5_R" position="0"/>-->
-    <!--<joint_state joint="lbr_joint_6_R" position="0"/>-->
-    <!--<joint_state joint="lbr_joint_7_R" position="15"/>-->
-
-    <joint_state joint="knuck1-base_L" position="0"/>
-    <joint_state joint="knuck1-base_R" position="0"/>
-  </model_state>
-
 </Graph>

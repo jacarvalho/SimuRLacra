@@ -83,48 +83,4 @@
     <Shape type="FRAME" scale="0.2"/>
   </Body>
 
-
-  <model_state model="DefaultPose" time_stamp="0">
-    <joint_state joint="DofBaseX" position="0,365"/>
-    <joint_state joint="DofBaseY" position="-0,360"/>
-    <joint_state joint="DofBaseThZ" position="2,444"/>
-    <joint_state joint="DofChestZ" position="0,879"/>
-    <joint_state joint="lbr_joint_1_L" position="-17,100"/>
-    <joint_state joint="lbr_joint_2_L" position="-14,963"/>
-    <joint_state joint="lbr_joint_3_L" position="-3,220"/>
-    <joint_state joint="lbr_joint_4_L" position="36,361"/>
-    <joint_state joint="lbr_joint_5_L" position="11,856"/>
-    <joint_state joint="lbr_joint_6_L" position="96,294"/>
-    <joint_state joint="lbr_joint_7_L" position="-196,767"/>
-    <joint_state joint="knuck3-base_L" position="1,000"/>
-    <joint_state joint="fing3-knuck3_L" position="-10,000"/>
-    <joint_state joint="tip3-fing3_L" position="0,000"/>
-    <joint_state joint="knuck1-base_L" position="1,000"/>
-    <joint_state joint="fing1-knuck1_L" position="-10,000"/>
-    <joint_state joint="tip1-fing1_L" position="0,000"/>
-    <joint_state joint="fing2-knuck2_L" position="-80,000"/>
-    <joint_state joint="tip2-fing2_L" position="0,000"/>
-    <joint_state joint="lbr_joint_1_R" position="131,479"/>
-    <joint_state joint="lbr_joint_2_R" position="-68,302"/>
-    <joint_state joint="lbr_joint_3_R" position="-5,260"/>
-    <joint_state joint="lbr_joint_4_R" position="-65,546"/>
-    <joint_state joint="lbr_joint_5_R" position="75,749"/>
-    <joint_state joint="lbr_joint_6_R" position="81,846"/>
-    <joint_state joint="lbr_joint_7_R" position="9,172"/>
-    <joint_state joint="knuck3-base_R" position="1,000"/>
-    <joint_state joint="fing3-knuck3_R" position="-10,000"/>
-    <joint_state joint="tip3-fing3_R" position="0,000"/>
-    <joint_state joint="knuck1-base_R" position="1,000"/>
-    <joint_state joint="fing1-knuck1_R" position="-10,000"/>
-    <joint_state joint="tip1-fing1_R" position="0,000"/>
-    <joint_state joint="fing2-knuck2_R" position="-80,000"/>
-    <joint_state joint="tip2-fing2_R" position="0,000"/>
-    <joint_state joint="Box_rigidBodyJnt0" position="1,300"/>
-    <joint_state joint="Box_rigidBodyJnt1" position="0,000"/>
-    <joint_state joint="Box_rigidBodyJnt2" position="0,830"/>
-    <joint_state joint="Box_rigidBodyJnt3" position="0,000"/>
-    <joint_state joint="Box_rigidBodyJnt4" position="0,000"/>
-    <joint_state joint="Box_rigidBodyJnt5" position="0,000"/>
-  </model_state>
-
 </Graph>
