@@ -254,8 +254,6 @@ public:
 
         if (physicsManager != NULL)
         {
-            // Include physics parameters
-
             // Get the parameters that are not stored in the Rcs graph
             BodyParamInfo* ball_bpi = physicsManager->getBodyInfo("Ball");
             double* com = ball_bpi->body->Inertia->org;

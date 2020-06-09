@@ -86,7 +86,7 @@ class BoxFlippingSim(RcsSim, Serializable):
             This constructor should only be called via the subclasses.
 
         :param task_args: arguments for the task construction
-        :param ref_frame: reference frame for the position and orientation MPs, e.g. 'world', 'table', or 'box'
+        :param ref_frame: reference frame for the MPs, e.g. 'world', 'table', or 'box'
         :param position_mps: `True` if the MPs are defined on position level, `False` if defined on velocity level
         :param mps_left: left arm's movement primitives holding the dynamical systems and the goal states
         :param mps_right: right arm's movement primitives holding the dynamical systems and the goal states
@@ -160,7 +160,7 @@ class BoxFlippingPosMPsSim(BoxFlippingSim, Serializable):
         """
         Constructor
 
-        :param ref_frame: reference frame for the position and orientation MPs, e.g. 'world', 'table', or 'box'
+        :param ref_frame: reference frame for the MPs, e.g. 'world', 'table', or 'box'
         :param mps_left: left arm's movement primitives holding the dynamical systems and the goal states
         :param mps_right: right arm's movement primitives holding the dynamical systems and the goal states
         :param continuous_rew_fcn: specify if the continuous or an uninformative reward function should be used
@@ -235,7 +235,7 @@ class BoxFlippingVelMPsSim(BoxFlippingSim, Serializable):
         """
         Constructor
 
-        :param ref_frame: reference frame for the position and orientation MPs, e.g. 'world', 'table', or 'box'
+        :param ref_frame: reference frame for the MPs, e.g. 'world', 'table', or 'box'
         :param mps_left: left arm's movement primitives holding the dynamical systems and the goal states
         :param mps_right: right arm's movement primitives holding the dynamical systems and the goal states
         :param continuous_rew_fcn: specify if the continuous or an uninformative reward function should be used

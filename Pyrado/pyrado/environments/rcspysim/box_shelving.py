@@ -101,12 +101,12 @@ class BoxShelvingSim(RcsSim, Serializable):
         if fixed_init_state:
             dafault_init_state = np.array([0., 0., 0., 0.8, 30.*np.pi/180, 90.*np.pi/180])  # [m, m, rad, m, rad, rad]
             self._init_space = SingularStateSpace(dafault_init_state,
-                                                  labels=['$x$', '$y$', '$th$', '$z$', '$q_2$', '$q_4$'])
+                                                  labels=['$x$', '$y$', '$\theta$', '$z$', '$q_2$', '$q_4$'])
         else:
             min_init_state = np.array([-0.02, -0.02, -3.*np.pi/180., 0.78, 27.*np.pi/180, 77.*np.pi/180])
             max_init_state = np.array([0.02, 0.02, 3.*np.pi/180., 0.82, 33.*np.pi/180, 83.*np.pi/180])
             self._init_space = BoxSpace(min_init_state, max_init_state,  # [m, m, rad, m, rad, rad]
-                                        labels=['$x$', '$y$', '$th$', '$z$', '$q_2$', '$q_4$'])
+                                        labels=['$x$', '$y$', '$\theta$', '$z$', '$q_2$', '$q_4$'])
 
     def _create_task(self, task_args: dict) -> Task:
         # Create the tasks

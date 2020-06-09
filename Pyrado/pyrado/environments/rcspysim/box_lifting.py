@@ -96,7 +96,7 @@ class BoxLiftingSim(RcsSim, Serializable):
             This constructor should only be called via the subclasses.
 
         :param task_args: arguments for the task construction
-        :param ref_frame: reference frame for the position and orientation MPs, e.g. 'world', 'basket', or 'box'
+        :param ref_frame: reference frame for the MPs, e.g. 'world', 'basket', or 'box'
         :param position_mps: `True` if the MPs are defined on position level, `False` if defined on velocity level
         :param mps_left: left arm's movement primitives holding the dynamical systems and the goal states
         :param mps_right: right arm's movement primitives holding the dynamical systems and the goal states
@@ -136,12 +136,12 @@ class BoxLiftingSim(RcsSim, Serializable):
             dafault_init_state = np.array(
                 [0.2, 0., 0., 0.85, 65.*np.pi/180, -65.*np.pi/180])  # [m, m, rad, m, rad, rad]
             self._init_space = SingularStateSpace(dafault_init_state,
-                                                  labels=['$x$', '$y$', '$th$', '$z$', '$q_2_L$', '$q_2_R$'])
+                                                  labels=['$x$', '$y$', '$\theta$', '$z$', '$q_2_L$', '$q_2_R$'])
         else:
             min_init_state = np.array([0.05, -0.05, -5*np.pi/180, 0.8, 60*np.pi/180, -70*np.pi/180])
             max_init_state = np.array([0.25, 0.05, 5*np.pi/180, 0.9, 70*np.pi/180, -60*np.pi/180])
             self._init_space = BoxSpace(min_init_state, max_init_state,  # [m, m, rad, m, rad, rad]
-                                        labels=['$x$', '$y$', '$th$', '$z$', '$q_2$', '$q_4$'])
+                                        labels=['$x$', '$y$', '$\theta$', '$z$', '$q_2$', '$q_4$'])
 
     def _create_task(self, task_args: dict) -> Task:
         # Create the tasks
@@ -185,7 +185,7 @@ class BoxLiftingPosMPsSim(BoxLiftingSim, Serializable):
         """
         Constructor
 
-        :param ref_frame: reference frame for the position and orientation MPs, e.g. 'world', 'basket', or 'box'
+        :param ref_frame: reference frame for the MPs, e.g. 'world', 'basket', or 'box'
         :param mps_left: left arm's movement primitives holding the dynamical systems and the goal states
         :param mps_right: right arm's movement primitives holding the dynamical systems and the goal states
         :param continuous_rew_fcn: specify if the continuous or an uninformative reward function should be used
@@ -254,6 +254,7 @@ class BoxLiftingPosMPsSim(BoxLiftingSim, Serializable):
             position_mps=True,
             mps_left=mps_left,
             mps_right=mps_right,
+            fixed_init_state=fixed_init_state,
             **kwargs
         )
 
@@ -273,7 +274,7 @@ class BoxLiftingVelMPsSim(BoxLiftingSim, Serializable):
         """
         Constructor
 
-        :param ref_frame: reference frame for the position and orientation MPs, e.g. 'world', 'basket', or 'box'
+        :param ref_frame: reference frame for the MPs, e.g. 'world', 'basket', or 'box'
         :param mps_left: left arm's movement primitives holding the dynamical systems and the goal states
         :param mps_right: right arm's movement primitives holding the dynamical systems and the goal states
         :param continuous_rew_fcn: specify if the continuous or an uninformative reward function should be used
@@ -340,6 +341,7 @@ class BoxLiftingVelMPsSim(BoxLiftingSim, Serializable):
             position_mps=False,
             mps_left=mps_left,
             mps_right=mps_right,
+            fixed_init_state=fixed_init_state,
             **kwargs
         )
 
@@ -360,7 +362,7 @@ class BoxLiftingSimpleSim(RcsSim, Serializable):
             This constructor should only be called via the subclasses.
 
         :param task_args: arguments for the task construction
-        :param ref_frame: reference frame for the position and orientation MPs, e.g. 'world', 'basket', or 'box'
+        :param ref_frame: reference frame for the MPs, e.g. 'world', 'basket', or 'box'
         :param position_mps: `True` if the MPs are defined on position level, `False` if defined on velocity level
         :param mps_left: left arm's movement primitives holding the dynamical systems and the goal states
         :param kwargs: keyword arguments which are available for all task-based `RcsSim`
@@ -441,7 +443,7 @@ class BoxLiftingSimplePosMPsSim(BoxLiftingSimpleSim, Serializable):
         """
         Constructor
 
-        :param ref_frame: reference frame for the position and orientation MPs, e.g. 'world', 'basket', or 'box'
+        :param ref_frame: reference frame for the MPs, e.g. 'world', 'basket', or 'box'
         :param mps_left: left arm's movement primitives holding the dynamical systems and the goal states
         :param continuous_rew_fcn: specify if the continuous or an uninformative reward function should be used
         :param kwargs: keyword arguments which are available for all task-based `RcsSim`
@@ -497,7 +499,7 @@ class BoxLiftingSimpleVelMPsSim(BoxLiftingSimpleSim, Serializable):
         """
         Constructor
 
-        :param ref_frame: reference frame for the position and orientation MPs, e.g. 'world', 'basket', or 'box'
+        :param ref_frame: reference frame for the MPs, e.g. 'world', 'basket', or 'box'
         :param mps_left: left arm's movement primitives holding the dynamical systems and the goal states
         :param continuous_rew_fcn: specify if the continuous or an uninformative reward function should be used
         :param kwargs: keyword arguments which are available for all task-based `RcsSim`
