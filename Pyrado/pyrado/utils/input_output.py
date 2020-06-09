@@ -31,7 +31,7 @@ def print_cbt(msg: str, color: str = '', bright: bool = False, tag: str = ''):
     if not isinstance(tag, str):
         raise pyrado.TypeErr(given=tag, expected_type=str)
     else:
-        if tag is not '':
+        if tag != '':
             tag = f'[{tag}] '
 
     color = color.lower()
