@@ -3,7 +3,7 @@ Run a policy (trained in simulation) on real Barret WAM.
 """
 import pyrado
 from pyrado.environment_wrappers.utils import inner_env
-from pyrado.environments.barret_wam.base import WAMBallInCupReal
+from pyrado.environments.barrett_wam.wam import WAMBallInCupReal
 from pyrado.environments.mujoco.wam import WAMBallInCupSim
 from pyrado.logger.experiment import ask_for_experiment
 from pyrado.sampling.rollout import rollout, after_rollout_query
