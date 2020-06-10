@@ -1,9 +1,10 @@
 """
-Learn the domain parameter distribution of masses and lengths of the Quanser Qube while using a handcrafted
-randomization for the remaining domain parameters
+Train an agent to solve the WAM Ball-in-cup environment using Bayesian Domain Randomization.
 """
+import os.path as osp
 import torch as to
 
+import pyrado
 from pyrado.algorithms.power import PoWER
 from pyrado.domain_randomization.default_randomizers import get_zero_var_randomizer, get_default_domain_param_map_wambic
 from pyrado.environment_wrappers.domain_randomization import DomainRandWrapperLive, MetaDomainRandWrapper
@@ -55,6 +56,10 @@ if __name__ == '__main__':
          [1.2*dp_nom['cup_scale'], dp_nom['cup_scale']/10]]
     )
 
+    policy_init = to.load(osp.join(pyrado.EXP_DIR, WAMBallInCupSim.name, power.name,
+                                   '2020-05-28_13-04-33--randomized',
+                                   'policy.pt'))
+
     # Algorithm
     bayrn_hparam = dict(
         max_iter=15,
@@ -64,7 +69,8 @@ if __name__ == '__main__':
         num_init_cand=3,
         warmstart=False,
         num_eval_rollouts_real=500 if isinstance(env_real, WAMBallInCupSim) else 5,
-        num_eval_rollouts_sim=500
+        num_eval_rollouts_sim=500,
+        policy_param_init=policy_init.param_values.data,
     )
 
     # Save the environments and the hyper-parameters (do it before the init routine of BDR)

@@ -1,6 +1,5 @@
 """
-Learn the domain parameter distribution of masses and lengths of the Quanser Qube while using a handcrafted
-randomization for the remaining domain parameters
+Train an agent to solve the WAM Ball-in-cup environment using Bayesian Domain Randomization.
 """
 import os.path as osp
 import torch as to
@@ -32,16 +31,11 @@ if __name__ == '__main__':
     env_real = WAMBallInCupSim(**env_hparams)
 
     # Policy
-    # policy_hparam = dict(
-    #     rbf_hparam=dict(num_feat_per_dim=7, bounds=(0., 1.), scale=None),
-    #     dim_mask=2
-    # )
-    # policy = DualRBFLinearPolicy(env_sim.spec, **policy_hparam)
-    policy_hparam = dict()
-    policy = to.load(osp.join(pyrado.PERMA_DIR, 'experiments', 'wam-bic', 'cem',
-                              # '2020-06-08_13-04-04--dr_cs_rl--swingfrombelow',
-                              '2020-06-08_13-04-04--dr-cs-rl_firstupthendown',
-                              'policy.pt'))
+    policy_hparam = dict(
+        rbf_hparam=dict(num_feat_per_dim=8, bounds=(0., 1.), scale=None),
+        dim_mask=2
+    )
+    policy = DualRBFLinearPolicy(env_sim.spec, **policy_hparam)
 
     # Subroutine
     subroutine_hparam = dict(
@@ -66,6 +60,11 @@ if __name__ == '__main__':
          [1.2*dp_nom['cup_scale'], dp_nom['cup_scale']/10, 1.1*dp_nom['rope_length'], dp_nom['rope_length']/5]]
     )
 
+    policy_init = to.load(osp.join(pyrado.EXP_DIR, WAMBallInCupSim.name, cem.name,
+                                   # '2020-06-08_13-04-04--dr_cs_rl--swingfrombelow',
+                                   '2020-06-08_13-04-04--dr-cs-rl_firstupthendown',
+                                   'policy.pt'))
+
     # Algorithm
     bayrn_hparam = dict(
         max_iter=15,
@@ -75,7 +74,8 @@ if __name__ == '__main__':
         num_init_cand=3,
         warmstart=False,
         num_eval_rollouts_real=50 if isinstance(env_real, WAMBallInCupSim) else 5,
-        num_eval_rollouts_sim=50
+        num_eval_rollouts_sim=50,
+        policy_param_init=policy_init.param_values.data,
     )
 
     # Save the environments and the hyper-parameters (do it before the init routine of BDR)
