@@ -53,28 +53,40 @@ class ParallelTasks(Task):
     @property
     def state_des(self) -> list:
         """ Get a list of all desired states. """
-        return [task.state_des for task in self._tasks]
+        return [task.state_des for task in self._tasks if hasattr(task, 'state_des')]
 
     @state_des.setter
-    def state_des(self, states_des: Sequence):
+    def state_des(self, states_des: [list, tuple]):
         """ Set all desired states from a list of desired states. """
-        if not len(states_des) == len(self.space_des):
-            raise pyrado.ShapeErr(given=states_des, expected_match=self.space_des)
+        if not isinstance(states_des, (list, tuple)):
+            # Explicitly require to use a list or tuple to avoid setting just one desired state
+            raise pyrado.TypeErr(given=states_des, expected_type=[list, tuple])
+        if not len(states_des) == len(self.state_des):
+            raise pyrado.ShapeErr(given=states_des, expected_match=self.state_des)
+        i = 0
         for task in self._tasks:
-            task.state_des = states_des[i]
+            if hasattr(task, 'state_des'):
+                task.state_des = states_des[i]
+                i += 1
 
     @property
     def space_des(self) -> list:
         """ Get a list of all desired spaces. """
-        return [task.space_des for task in self._tasks]
+        return [task.space_des for task in self._tasks if hasattr(task, 'space_des')]
 
     @space_des.setter
     def space_des(self, spaces_des: Sequence):
         """ Set all desired spaces from a list of desired spaces. """
+        if not isinstance(spaces_des, (list, tuple)):
+            # Explicitly require to use a list or tuple to avoid setting just one desired space
+            raise pyrado.TypeErr(given=spaces_des, expected_type=[list, tuple])
         if not len(spaces_des) == len(self.space_des):
             raise pyrado.ShapeErr(given=spaces_des, expected_match=self.space_des)
+        i = 0
         for task in self._tasks:
-            task.space_des = spaces_des[i]
+            if hasattr(task, 'space_des'):
+                task.space_des = spaces_des[i]
+                i += 1
 
     @property
     def rew_fcn(self) -> list:

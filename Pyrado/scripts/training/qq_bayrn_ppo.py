@@ -126,5 +126,5 @@ if __name__ == '__main__':
     BayRn.train_argmax_policy(
         ex_dir, env_sim, ppo, num_restarts=500, num_samples=1000,
         # policy_param_init=policy.param_values.data,
-        # critic_param_init=critic.value_fcn.param_values.data
+        # valuefcn_param_init=critic.value_fcn.param_values.data
     )

@@ -18,7 +18,6 @@ from pyrado.algorithms.ppo import PPO, PPO2
 from pyrado.algorithms.reps import REPS
 from pyrado.algorithms.sac import SAC
 from pyrado.algorithms.spota import SPOTA
-from pyrado.domain_randomization.default_randomizers import get_zero_var_randomizer
 from pyrado.environment_wrappers.action_normalization import ActNormWrapper
 from pyrado.environment_wrappers.base import EnvWrapper
 from pyrado.environment_wrappers.domain_randomization import DomainRandWrapperBuffer
@@ -26,7 +25,7 @@ from pyrado.environment_wrappers.downsampling import DownsamplingWrapper
 from pyrado.environment_wrappers.observation_normalization import ObsNormWrapper, ObsRunningNormWrapper
 from pyrado.environment_wrappers.observation_partial import ObsPartialWrapper
 from pyrado.environment_wrappers.utils import typed_env
-from pyrado.environments.quanser.base import RealEnv
+from pyrado.environments.base import Env
 from pyrado.environments.sim_base import SimEnv
 from pyrado.logger.experiment import load_dict_from_yaml
 from pyrado.policies.adn import pd_linear, pd_cubic, pd_capacity_21_abs, pd_capacity_21, pd_capacity_32, \
@@ -187,7 +186,7 @@ def load_experiment(ex_dir: str, args: Any = None) -> ([SimEnv, EnvWrapper], Pol
     return env, policy, kwout
 
 
-def wrap_like_other_env(env_targ: RealEnv, env_src: [SimEnv, EnvWrapper]) -> RealEnv:
+def wrap_like_other_env(env_targ: Env, env_src: [SimEnv, EnvWrapper]) -> Env:
     """
     Wrap a given real environment like it's simulated counterpart (except the domain randomization of course).
 

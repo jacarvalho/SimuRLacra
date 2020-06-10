@@ -395,10 +395,9 @@ class BayRn(Algorithm, ABC):
             # Crawl through the given directory and check how many policies and candidates there are
             found_policies, found_cands = None, None
             for root, dirs, files in os.walk(ld):
-                found_policies = [p for p in files if p.endswith('_policy.pt')]
+                found_policies = [p for p in files if p.endswith('_policy.pt')]  # 'policy.pt' file should not be found
                 found_cands = [c for c in files if c.endswith('_candidate.pt')]
-            if not len(found_policies) == len(found_cands):  # the 'policy.pt' file should not be found
-                raise pyrado.ShapeErr(msg='The number of policies does not match the number of candidates!')
+
             # Copy to the current experiment's directory. Not necessary if we are continuing in that directory.
             if ld != self._save_dir:
                 for p in found_policies:
@@ -411,6 +410,23 @@ class BayRn(Algorithm, ABC):
                 found_cands.sort()  # the order is important since it determines the rows of the tensor
                 self.cands = to.stack([to.load(osp.join(ld, c)) for c in found_cands])
                 to.save(self.cands, osp.join(self._save_dir, 'candidates.pt'))
+
+                # Catch the case that the algorithm stopped before evaluating a sampled candidate
+                if not len(found_policies) == len(found_cands):
+                    print_cbt(f'Found {len(found_policies)} policies, but {len(found_cands)} candidates!', 'r')
+                    n = len(found_cands) - len(found_policies)
+                    delete = input('Delete the superfluous candidates? [y / any other]').lower() == 'y'
+                    if n > 0 and delete:
+                        # Delete the superfluous candidates
+                        print_cbt(f'Candidates before:\n{self.cands.numpy()}', 'w')
+                        self.cands = self.cands[:-n, :]
+                        found_cands = found_cands[:-n]
+                        to.save(self.cands, osp.join(self._save_dir, 'candidates.pt'))
+                        print_cbt(f'Candidates after:\n{self.cands.numpy()}', 'c')
+                    else:
+                        raise pyrado.ShapeErr(msg=f'Found {len(found_policies)} policies,'
+                                                  f'but {len(found_cands)} candidates!')
+
             else:
                 # Assuming not even the training of the initial policies has not been finished. Redo it all.
                 print_cbt('No policies have been found. Basically starting from scratch.', 'c')

@@ -14,6 +14,7 @@ from pyrado.tasks.final_reward import BestStateFinalRewTask
 from pyrado.tasks.masked import MaskedTask
 from pyrado.tasks.reward_functions import ZeroPerStepRewFcn, ExpQuadrErrRewFcn
 from pyrado.utils.data_types import EnvSpec
+from pyrado.utils.input_output import print_cbt
 
 
 class WAMSim(MujocoSimEnv, Serializable):
@@ -93,7 +94,7 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         When using the `reset()` function, always pass a meaningful `init_state`
 
     .. seealso::
-        https://github.com/psclklnk/self-paced-rl/tree/master/sprl/envs
+        [1] https://github.com/psclklnk/self-paced-rl/tree/master/sprl/envs/ball_in_a_cup.py
     """
 
     name: str = 'wam-bic'
@@ -101,13 +102,21 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
     def __init__(self,
                  frame_skip: int = 4,
                  max_steps: int = pyrado.inf,
+                 stop_on_collision: bool = True,
                  task_args: [dict, None] = None):
         """
         Constructor
 
         :param max_steps: max number of simulation time steps
+        :param max_steps: max number of simulation time steps
+        :param stop_on_collision: set the `failed` flag in the `dict` returned by `_mujoco_step()` to true, if the ball
+                                  collides with something else than the desired parts of the cup. This causes the
+                                  episode to end. Keep in mind that in case of a negative step reward and no final
+                                  cost on failing, this might result in undesired behavior.
         :param task_args: arguments for the task construction
         """
+        Serializable._init(self, locals())
+
         model_path = osp.join(pyrado.MUJOCO_ASSETS_DIR, 'wam_7dof_bic.xml')
         super().__init__(model_path, frame_skip, max_steps, task_args)
 
@@ -117,6 +126,13 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         # Controller gains
         self.p_gains = np.array([200.0, 300.0, 100.0, 100.0, 10.0, 10.0, 2.5])
         self.d_gains = np.array([7.0, 15.0, 5.0, 2.5, 0.3, 0.3, 0.05])
+
+        # We access a private attribute since a method like 'model.geom_names[geom_id]' cannot be used because
+        # not every geom has a name
+        self._collision_geom_ids = [self.model._geom_name2id[name] for name in ['cup_geom1', 'cup_geom2']]
+        self._collision_bodies = ['wam/wrist_pitch_link', 'wam/wrist_yaw_link', 'wam/forearm_link',
+                                  'wam/upper_arm_link', 'wam/shoulder_pitch_link', 'wam/shoulder_yaw_link']
+        self.stop_on_collision = stop_on_collision
 
         self.camera_config = dict(
             trackbodyid=0,  # id of the body to track
@@ -142,8 +158,8 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         self._torque_space = BoxSpace(-max_torque, max_torque)
 
         # Initial state space
-        # Set the actual stable initial position. This position would be reached after some time using the internal ...
-        # ... PD controller to stabilize at self.init_pose_des
+        # Set the actual stable initial position. This position would be reached after some time using the internal
+        # PD controller to stabilize at self.init_pose_des
         np.put(self.init_qpos, [1, 3, 5, 6, 7], [0.6519, 1.409, -0.2827, -1.57, -0.2115])
         init_ball_pos = np.array([0., -0.8566, 0.85391])
         init_state = np.concatenate([self.init_qpos, self.init_qvel, init_ball_pos])
@@ -165,31 +181,28 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         self._obs_space = BoxSpace(np.array([0.]), np.array([1.]), labels=['$t$'])
 
     def _create_task(self, task_args: dict = None) -> Task:
+        if task_args is None:
+            task_args = dict()
+
         # Create a DesStateTask that masks everything but the ball position
-        idcs = list(range(self.state_space.flat_dim-3, self.state_space.flat_dim))  # Cartesian ball position
+        idcs = list(range(self.state_space.flat_dim - 3, self.state_space.flat_dim))  # Cartesian ball position
         spec = EnvSpec(
             self.spec.obs_space,
             self.spec.act_space,
             self.spec.state_space.subspace(self.spec.state_space.create_mask(idcs))
         )
-        # Original idea
-        # self.sim.forward()  # need to call forward to get a non-zero body position
-        # state_des = self.sim.data.get_body_xpos('B0').copy()
-        # But
-        # If we do not use copy(), state_des is a reference and updates automatically at each step
-        # sim.forward() + get_body_xpos() results in wrong output for state_des, as sim has not been updated to
+
+        # If we do not use copy(), state_des coming from MuJoCo is a reference and updates automatically at each step
+        # Note: sim.forward() + get_body_xpos() results in wrong output for state_des, as sim has not been updated to
         # init_space.sample(), which is first called in reset()
-        # Now
         state_des = np.array([0., -0.8566, 1.164])
         rew_fcn = ExpQuadrErrRewFcn(
-            Q=20.*np.eye(3),  # distance ball - cup
-            R=np.diag([1e-1, 1e-1, 1e-1, 1e-2, 1e-2, 1e-2])  # joint angles and velocities
+            Q=task_args.get('Q', 2e1*np.eye(3)),  # distance ball - cup
+            R=task_args.get('R', np.diag([1e0, 1e0, 1e0, 1e0, 1e0, 1e0]))  # desired joint angles and velocities
         )
         dst = DesStateTask(spec, state_des, rew_fcn)
 
         # Wrap the masked DesStateTask to add a bonus for the best state in the rollout
-        if task_args is None:
-            task_args = dict(factor=1.)
         return BestStateFinalRewTask(
             MaskedTask(self.spec, dst, idcs),
             max_steps=self.max_steps, factor=task_args.get('factor', 1.)
@@ -201,19 +214,19 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         rope_length = domain_param.pop('rope_length', None)
 
         if cup_scale is not None:
-            # See https://github.com/psclklnk/self-paced-rl/blob/master/sprl/envs/ball_in_a_cup.py l.93-96
-            xml_model = xml_model.replace('[scale_mesh]', str(cup_scale * 0.001))
-            xml_model = xml_model.replace('[pos_mesh]', str(0.055 - (cup_scale - 1.) * 0.023))
-            xml_model = xml_model.replace('[pos_goal]', str(0.1165 + (cup_scale - 1.) * 0.0385))
-            xml_model = xml_model.replace('[size_cup]', str(cup_scale * 0.038))
+            # See [1, l.93-96]
+            xml_model = xml_model.replace('[scale_mesh]', str(cup_scale*0.001))
+            xml_model = xml_model.replace('[pos_mesh]', str(0.055 - (cup_scale - 1.)*0.023))
+            xml_model = xml_model.replace('[pos_goal]', str(0.1165 + (cup_scale - 1.)*0.0385))
+            xml_model = xml_model.replace('[size_cup]', str(cup_scale*0.038))
 
         if rope_length is not None:
             # The rope consists of 29 capsules
-            xml_model = xml_model.replace('[pos_capsule]', str(rope_length / 29))
+            xml_model = xml_model.replace('[pos_capsule]', str(rope_length/29))
             # Each joint is at the top of each capsule (therefore negative direction from center)
-            xml_model = xml_model.replace('[pos_capsule_joint]', str(-rope_length / 58))
+            xml_model = xml_model.replace('[pos_capsule_joint]', str(-rope_length/58))
             # Pure visualization component
-            xml_model = xml_model.replace('[size_capsule_geom]', str(rope_length / 72))
+            xml_model = xml_model.replace('[size_capsule_geom]', str(rope_length/72))
 
         # Resolve mesh directory and replace the remaining domain parameters
         return super()._adapt_model_file(xml_model, domain_param)
@@ -251,20 +264,45 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         # Update task's desired state
         state_des = np.zeros_like(self.state)  # needs to be of same dimension as self.state since it is masked later
         state_des[-3:] = self.sim.data.get_body_xpos('B0').copy()
-        self._task.wrapped_task.state_des = state_des
+        self._task.state_des = state_des
 
-        """
-        # Extract contacts
-        for i in range(self.sim.data.ncon):
-            contact = self.sim.data.contact[i]
-            body1 = self.model.geom_bodyid[contact.geom1]
-            body1_name = self.model.body_names[body1]  # Console output: >> ball
-        """
-        
+        # If desired, check for collisions of the ball with the robot
+        ball_collided = self.check_ball_collisions() if self.stop_on_collision else False
+
         return dict(
             des_qpos=des_qpos, des_qvel=des_qvel, qpos=qpos[:7], qvel=qvel[:7], ball_pos=ball_pos,
-            state_des=state_des[-3:], failed=mjsim_crashed
+            state_des=state_des[-3:], failed=mjsim_crashed or ball_collided
         )
+
+    def check_ball_collisions(self, verbose: bool = False) -> bool:
+        """
+        Check if an undesired collision with the ball occurs.
+
+        :param verbose: print messages on collision
+        :return: `True` if the ball collides with something else than the central parts of the cup
+        """
+        for i in range(self.sim.data.ncon):
+            # Get current contact object
+            contact = self.sim.data.contact[i]
+
+            # Extract body-id and body-name of both contact geoms
+            body1 = self.model.geom_bodyid[contact.geom1]
+            body1_name = self.model.body_names[body1]
+            body2 = self.model.geom_bodyid[contact.geom2]
+            body2_name = self.model.body_names[body2]
+
+            # Evaluate if the ball collides with part of the WAM (collision bodies)
+            # or the connection of WAM and cup (geom_ids)
+            c1 = body1_name == 'ball' and (body2_name in self._collision_bodies or
+                                           contact.geom2 in self._collision_geom_ids)
+            c2 = body2_name == 'ball' and (body1_name in self._collision_bodies or
+                                           contact.geom1 in self._collision_geom_ids)
+            if c1 or c2:
+                if verbose:
+                    print_cbt(f'Undesired collision of {body1_name} and {body2_name} detected!', 'y')
+                return True
+
+        return False
 
     def observe(self, state: np.ndarray) -> np.ndarray:
         # Only observe the normalized time

@@ -18,7 +18,10 @@ def get_argparser() -> argparse.ArgumentParser:
                         help="environments time step size in seconds (no default)")
 
     parser.add_argument('--idcs', nargs='+', type=int, default=[0, 1],
-                        help="list of indices casted to integer (default: [0, 1])")
+                        help="list of indices (without commas) casted to integer (default: [0, 1])")
+
+    parser.add_argument('--init_state', nargs='+', type=float, default=None,
+                        help="list of init state values (e.g. '1.2 3 0.9' (without commas); default: None)")
 
     parser.add_argument('--iter', type=int, default=-1,
                         help="iteration to select for evaluation (default: -1 for last iteration)")

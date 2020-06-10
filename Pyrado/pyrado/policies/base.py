@@ -60,8 +60,10 @@ class Policy(nn.Module, ABC):
         return cp.parameters_to_vector(self.parameters())
 
     @param_values.setter
-    def param_values(self, param):
+    def param_values(self, param: to.Tensor):
         """ Set the policy parameters from an 1d array. """
+        if not self.param_values.shape == param.shape:
+            raise pyrado.ShapeErr(given=param, expected_match=self.param_values)
         cp.vector_to_parameters(param, self.parameters())
 
     @property

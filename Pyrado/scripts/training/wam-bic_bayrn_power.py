@@ -5,7 +5,7 @@ import os.path as osp
 import torch as to
 
 import pyrado
-from pyrado.algorithms.cem import CEM
+from pyrado.algorithms.power import PoWER
 from pyrado.domain_randomization.default_randomizers import get_zero_var_randomizer, get_default_domain_param_map_wambic
 from pyrado.environment_wrappers.domain_randomization import DomainRandWrapperLive, MetaDomainRandWrapper
 from pyrado.environments.mujoco.wam import WAMBallInCupSim
@@ -16,7 +16,7 @@ from pyrado.policies.environment_specific import DualRBFLinearPolicy
 
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
-    ex_dir = setup_experiment(WAMBallInCupSim.name, f'{BayRn.name}_{CEM.name}-sim2sim', 'dr_cs_rl', seed=111)
+    ex_dir = setup_experiment(WAMBallInCupSim.name, f'{BayRn.name}_{PoWER.name}-sim2sim', 'dr_cs', seed=111)
 
     # Environments
     env_hparams = dict(
@@ -32,37 +32,32 @@ if __name__ == '__main__':
 
     # Policy
     policy_hparam = dict(
-        rbf_hparam=dict(num_feat_per_dim=8, bounds=(0., 1.), scale=None),
+        rbf_hparam=dict(num_feat_per_dim=7, bounds=(0., 1.), scale=None),
         dim_mask=2
     )
     policy = DualRBFLinearPolicy(env_sim.spec, **policy_hparam)
 
     # Subroutine
     subroutine_hparam = dict(
-        max_iter=15,
-        pop_size=50,
-        num_rollouts=40,
-        num_is_samples=5,
+        max_iter=25,
+        pop_size=100,
+        num_rollouts=20,
+        num_is_samples=20,
         expl_std_init=0.5,
         expl_std_min=0.02,
-        extra_expl_std_init=0.5,
-        extra_expl_decay_iter=5,
-        full_cov=False,
-        symm_sampling=False,
-        num_sampler_envs=6,
+        num_sampler_envs=12,
     )
-    cem = CEM(ex_dir, env_sim, policy, **subroutine_hparam)
+    power = PoWER(ex_dir, env_sim, policy, **subroutine_hparam)
 
     # Set the boundaries for the GP
     dp_nom = WAMBallInCupSim.get_nominal_domain_param()
     bounds = to.tensor(
-        [[0.8*dp_nom['cup_scale'], dp_nom['cup_scale']/50, 0.9*dp_nom['rope_length'], dp_nom['rope_length']/50],
-         [1.2*dp_nom['cup_scale'], dp_nom['cup_scale']/10, 1.1*dp_nom['rope_length'], dp_nom['rope_length']/5]]
+        [[0.8*dp_nom['cup_scale'], dp_nom['cup_scale']/50],
+         [1.2*dp_nom['cup_scale'], dp_nom['cup_scale']/10]]
     )
 
-    policy_init = to.load(osp.join(pyrado.EXP_DIR, WAMBallInCupSim.name, cem.name,
-                                   # '2020-06-08_13-04-04--dr_cs_rl--swingfrombelow',
-                                   '2020-06-08_13-04-04--dr-cs-rl_firstupthendown',
+    policy_init = to.load(osp.join(pyrado.EXP_DIR, WAMBallInCupSim.name, power.name,
+                                   '2020-05-28_13-04-33--randomized',
                                    'policy.pt'))
 
     # Algorithm
@@ -73,8 +68,8 @@ if __name__ == '__main__':
         acq_samples=1000,
         num_init_cand=3,
         warmstart=False,
-        num_eval_rollouts_real=50 if isinstance(env_real, WAMBallInCupSim) else 5,
-        num_eval_rollouts_sim=50,
+        num_eval_rollouts_real=500 if isinstance(env_real, WAMBallInCupSim) else 5,
+        num_eval_rollouts_sim=500,
         policy_param_init=policy_init.param_values.data,
     )
 
@@ -82,12 +77,12 @@ if __name__ == '__main__':
     save_list_of_dicts_to_yaml([
         dict(env=env_hparams, seed=ex_dir.seed),
         dict(policy=policy_hparam),
-        dict(subroutine=subroutine_hparam, subroutine_name=CEM.name),
+        dict(subroutine=subroutine_hparam, subroutine_name=PoWER.name),
         dict(algo=bayrn_hparam, algo_name=BayRn.name, dp_map=dp_map)],
         ex_dir
     )
 
-    algo = BayRn(ex_dir, env_sim, env_real, subroutine=cem, bounds=bounds, **bayrn_hparam)
+    algo = BayRn(ex_dir, env_sim, env_real, subroutine=power, bounds=bounds, **bayrn_hparam)
 
     # Jeeeha
     algo.train(snapshot_mode='latest', seed=ex_dir.seed)

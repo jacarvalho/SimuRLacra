@@ -51,7 +51,6 @@ class BoxSpace(Space):
             self._labels = np.empty(self.shape, dtype=object)
             self._labels.fill(None)
 
-    # This nice idea comes from https://stackoverflow.com/questions/45164691/recommended-way-to-implement-eq-and-hash
     def _members(self):
         # Return members relevant for equals. Hash isn't supported by numpy arrays, so we don't support it too.
         return self.bound_lo, self.bound_up, self._labels

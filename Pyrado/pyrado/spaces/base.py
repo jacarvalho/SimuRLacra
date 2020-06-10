@@ -61,7 +61,7 @@ class Space(ABC):
 
     def __eq__(self, other):
         if type(other) is type(self):
-            return self._members() == other._members()
+            return np.all([s == o for s, o in zip(self._members(), other._members())])
         else:
             return False
 
