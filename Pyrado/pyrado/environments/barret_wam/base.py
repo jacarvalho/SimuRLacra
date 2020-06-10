@@ -6,6 +6,9 @@ from pyrado.environments.base import Env
 from pyrado.spaces import BoxSpace
 from pyrado.spaces.base import Space
 from pyrado.tasks.base import Task
+from pyrado.tasks.final_reward import FinalRewTask, FinalRewMode
+from pyrado.tasks.goalless import GoallessTask
+from pyrado.tasks.reward_functions import ZeroPerStepRewFcn
 from pyrado.utils.data_types import RenderMode
 from pyrado.utils.input_output import print_cbt
 
@@ -77,8 +80,8 @@ class WAMBallInCupReal(Env):
         return self._task
 
     def _create_task(self, task_args: dict) -> Task:
-        # No task used for the moment. TODO: Formulate proper task
-        return None
+        # The wrapped task acts as a dummy and carries the FinalRewTask s
+        return FinalRewTask(GoallessTask(self.spec, ZeroPerStepRewFcn()), mode=FinalRewMode.user_input)
 
     def _create_spaces(self):
         # State space
@@ -118,14 +121,8 @@ class WAMBallInCupReal(Env):
         info = dict(t=self._curr_step*self._dt, act_raw=act)
 
         # Current reward depending on the (measurable) state and the current (unlimited) action
-        # remaining_steps = self._max_steps - (self._curr_step + 1) if self._max_steps is not pyrado.inf else 0
-        # self._curr_rew = self._task.step_rew(self.state, act, remaining_steps)
-
-        # zero step reward
-        self._curr_rew = 0.
-        done = False
-        # Check if the task is done
-        # done = self._task.is_done(self.state)  # the ball in cup task is never done since nothing is measured
+        remaining_steps = self._max_steps - (self._curr_step + 1) if self._max_steps is not pyrado.inf else 0
+        self._curr_rew = self._task.step_rew(self.state, act, remaining_steps)  # always 0 for wam-bic-real
 
         act = self._limit_act(act)
 
@@ -145,6 +142,9 @@ class WAMBallInCupReal(Env):
         self._gt.add_step(self.dt, des_qpos)
         self._curr_step += 1
 
+        # A GoallessTask only signals done when has_failed() is true, i.e. the the state is out of bounds
+        done = self._task.is_done(self.state)  # always false for wam-bic-real
+
         # Only start execution of process when all desired poses have been added to process
         # i.e. `max_steps` has been reached
         if self._curr_step >= self._max_steps:
@@ -154,13 +154,10 @@ class WAMBallInCupReal(Env):
             self._gt.wait_for_completion()
             print_cbt('Finished execution.', 'c')
 
-            # TODO: we will to this in the task
-            # Get episode reward as user input (commented out for the moment)
-            # self._curr_rew = float(input('Enter episode reward: '))
-
-        # Add final reward if done TODO
-        # if done:
-        #     self._curr_rew += self._task.final_rew(self.state, remaining_steps)
+        # Add final reward if done
+        if done:
+            # Ask the user to enter the final reward
+            self._curr_rew += self._task.final_rew(self.state, remaining_steps)
 
         return self.observe(self.state), self._curr_rew, done, info
 
