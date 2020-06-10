@@ -22,7 +22,7 @@ class WAMBallInCupReal(Env):
     but at the same time mimic the usual step-based environment behavior.
     """
 
-    name: str = 'wam-real'
+    name: str = 'wam-bic'
 
     def __init__(self,
                  dt: float = 1/500.,
@@ -35,14 +35,15 @@ class WAMBallInCupReal(Env):
         :param dt: sampling time interval
         :param max_steps: maximum number of time steps
         :param ip: IP address of the PC controlling the Barrett WAM
-        :param poses_des: desired joint poses as ndarray of shape (., 3)
+        :param poses_des: desired joint poses as N x 3 ndarray, where N is the number of steps in the trajectory
         """
         # Call the base class constructor to initialize fundamental members
         super().__init__(dt, max_steps)
 
-        self._ip = ip
+        # Create the robcom client and connect to it
         self._client = robcom.Client()
-        self.is_connected = False
+        self._client.start(ip, 2013)  # IP address and port
+        print_cbt('Connected to the Barret WAM client.', 'c', bright=True)
         self._gt = None  # Goto command
 
         # Desired joint position for the initial state
@@ -98,12 +99,6 @@ class WAMBallInCupReal(Env):
         self._obs_space = BoxSpace(np.array([0.]), np.array([1.]), labels=['$t$'])
 
     def reset(self, init_state: np.ndarray = None, domain_param: dict = None) -> np.ndarray:
-        if not self.is_connected:
-            # Connect to client
-            self._client.start(self._ip, 2013)  # IP address and port
-            self.is_connected = True
-            print_cbt('Connected to the Barret WAM client.', 'c', bright=True)
-
         # Create robcom GoTo process
         gt = self._client.create(robcom.Goto, 'RIGHT_ARM', '')
 
@@ -177,7 +172,6 @@ class WAMBallInCupReal(Env):
         pass
 
     def close(self):
-        if self.is_connected:
-            self._client.stop()
-            self.is_connected = False
-            print_cbt('Closed the connection to the Barrett WAM.', 'c', bright=True)
+        # Don't close the connection to robcom manually, since this might cause SL to crash.
+        # Closing the connection is finally handled by robcom
+        pass
