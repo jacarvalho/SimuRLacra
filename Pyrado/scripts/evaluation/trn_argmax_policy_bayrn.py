@@ -6,7 +6,9 @@ import torch as to
 
 from pyrado.algorithms.advantage import GAE
 from pyrado.algorithms.bayrn import BayRn
-from pyrado.algorithms.a2c import A2C
+from pyrado.algorithms.cem import CEM
+from pyrado.algorithms.nes import NES
+from pyrado.algorithms.power import PoWER
 from pyrado.algorithms.ppo import PPO, PPO2
 from pyrado.logger.experiment import ask_for_experiment
 from pyrado.utils.argparser import get_argparser
@@ -31,19 +33,28 @@ if __name__ == '__main__':
     uc_normalizer = UnitCubeProjector(bounds[0, :], bounds[1, :])
 
     # Decide on which algorithm to use via the mode argument
-    if args.mode in [A2C.name, PPO.name, PPO2.name]:
+    if args.mode == PPO.name:
         critic = GAE(kwout['value_fcn'], **kwout['hparams']['critic'])
         subroutine = PPO(ex_dir, env_sim, policy, critic, **kwout['hparams']['subroutine'])
+    elif args.mode == PPO2.name:
+        critic = GAE(kwout['value_fcn'], **kwout['hparams']['critic'])
+        subroutine = PPO2(ex_dir, env_sim, policy, critic, **kwout['hparams']['subroutine'])
+    elif args.mode == CEM.name:
+        subroutine = CEM(ex_dir, env_sim, policy, **kwout['hparams']['subroutine'])
+    elif args.mode == NES.name:
+        subroutine = NES(ex_dir, env_sim, policy, **kwout['hparams']['subroutine'])
+    elif args.mode == PoWER.name:
+        subroutine = PoWER(ex_dir, env_sim, policy, **kwout['hparams']['subroutine'])
     else:
-        raise NotImplementedError
+        raise NotImplementedError('Only PPO, PPO2, CEM, NES, and PoWER are implemented so far.')
 
     if args.warmstart:
         ppi = policy.param_values.data
-        cpi = kwout['value_fcn'].param_values.data
+        vpi = kwout['value_fcn'].param_values.data
     else:
         ppi = None
-        cpi = None
+        vpi = None
 
     # Train the policy on the most lucrative domain
     BayRn.train_argmax_policy(ex_dir, env_sim, subroutine, num_restarts=500, num_samples=1000,
-                              policy_param_init=ppi, critic_param_init=cpi)
+                              policy_param_init=ppi, valuefcn_param_init=vpi)
