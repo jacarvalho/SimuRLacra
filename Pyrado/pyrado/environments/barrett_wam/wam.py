@@ -41,7 +41,8 @@ class WAMBallInCupReal(Env):
         super().__init__(dt, max_steps)
 
         self._ip = ip
-        self._client = None
+        self._client = robcom.Client()
+        self.is_connected = False
         self._gt = None  # Goto command
 
         # Desired joint position for the initial state
@@ -97,16 +98,14 @@ class WAMBallInCupReal(Env):
         self._obs_space = BoxSpace(np.array([0.]), np.array([1.]), labels=['$t$'])
 
     def reset(self, init_state: np.ndarray = None, domain_param: dict = None) -> np.ndarray:
-        # Connect to client
-        self._client = robcom.Client()
-        self._client.start(self._ip, 2013)  # IP address and port
-        print_cbt('Connected to the Barret WAM client.', 'c', bright=True)
+        if not self.is_connected:
+            # Connect to client
+            self._client.start(self._ip, 2013)  # IP address and port
+            self.is_connected = True
+            print_cbt('Connected to the Barret WAM client.', 'c', bright=True)
 
         # Create robcom GoTo process
         gt = self._client.create(robcom.Goto, 'RIGHT_ARM', '')
-
-        # Reset the task which also resets the reward function if necessary
-        self._task.reset(env_spec=self.spec)
 
         # Move to initial state within 5 seconds
         gt.add_step(5., self.init_pose_des)
@@ -116,6 +115,10 @@ class WAMBallInCupReal(Env):
         gt.start()
         gt.wait_for_completion()
         print_cbt('Reached the initial position.', 'c')
+
+        # Reset the task which also resets the reward function if necessary
+        self._task.reset(env_spec=self.spec)
+
         input('Hit enter to continue.')
 
         # Reset time steps
@@ -174,5 +177,7 @@ class WAMBallInCupReal(Env):
         pass
 
     def close(self):
-        self._client.stop()
-        print_cbt('Closed the connection to the Barrett WAM.', 'c', bright=True)
+        if self.is_connected:
+            self._client.stop()
+            self.is_connected = False
+            print_cbt('Closed the connection to the Barrett WAM.', 'c', bright=True)
