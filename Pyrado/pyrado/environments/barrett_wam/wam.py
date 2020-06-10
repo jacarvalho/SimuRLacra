@@ -59,8 +59,9 @@ class WAMBallInCupReal(Env):
         self._task = self._create_task(dict())
 
         # Desired trajectory
-        if not poses_des.shape[1] == 7:
-            raise pyrado.ShapeErr(given=poses_des.shape[1], expected_match=self.init_pose_des)
+        if poses_des is not None:
+            if not poses_des.shape[1] == 7:
+                raise pyrado.ShapeErr(given=poses_des.shape[1], expected_match=self.init_pose_des)
         self.poses_des = poses_des
 
     @property
@@ -81,13 +82,11 @@ class WAMBallInCupReal(Env):
 
     def _create_task(self, task_args: dict) -> Task:
         # The wrapped task acts as a dummy and carries the FinalRewTask s
-        return FinalRewTask(GoallessTask(self.spec, ZeroPerStepRewFcn()), mode=FinalRewMode.user_input)
+        return FinalRewTask(GoallessTask(self.spec, ZeroPerStepRewFcn()), mode=FinalRewMode(user_input=True))
 
     def _create_spaces(self):
-        # State space
-        state_shape = self.init_pose_des.shape
-        max_state = np.full(state_shape, pyrado.inf)
-        self._state_space = BoxSpace(-max_state, max_state)
+        # State space (normalized time, since we do not have a simulation)
+        self._state_space = BoxSpace(np.array([0.]), np.array([1.]))
 
         # Action space (PD controller on 3 joint positions and velocities)
         max_act = np.array([np.pi, np.pi, np.pi,  # [rad, rad, rad, ...
@@ -114,6 +113,7 @@ class WAMBallInCupReal(Env):
 
         # Reset time steps
         self._curr_step = 0
+        self.state = np.array([self._curr_step/self.max_steps])
 
         return self.observe(self.state)
 
@@ -141,6 +141,7 @@ class WAMBallInCupReal(Env):
         # Add desired joint position as step to the process
         self._gt.add_step(self.dt, des_qpos)
         self._curr_step += 1
+        self.state = np.array([self._curr_step/self.max_steps])
 
         # A GoallessTask only signals done when has_failed() is true, i.e. the the state is out of bounds
         done = self._task.is_done(self.state)  # always false for wam-bic-real
@@ -168,7 +169,3 @@ class WAMBallInCupReal(Env):
     def close(self):
         self._client.close()
         print_cbt('Closed the connection to the Barrett WAM.', 'c', bright=True)
-
-    def observe(self, state: np.ndarray) -> np.ndarray:
-        # Only observe the normalized time
-        return np.array([self._curr_step/self.max_steps])
