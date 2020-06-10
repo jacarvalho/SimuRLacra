@@ -40,14 +40,12 @@ class WAMBallInCupReal(Env):
         # Call the base class constructor to initialize fundamental members
         super().__init__(dt, max_steps)
 
+        self._ip = ip
+        self._client = None
+        self._gt = None  # Goto command
+
         # Desired joint position for the initial state
         self.init_pose_des = np.array([0.0, 0.5876, 0.0, 1.36, 0.0, -0.321, -1.57])
-
-        # Connect to client
-        self._client = robcom.Client()
-        self._client.start(ip, 2013)  # IP address and port
-        print_cbt('Connected to the Barret WAM client.', 'c', bright=True)
-        self._gt = None  # Goto command
 
         # Initialize spaces
         self._state_space = None
@@ -99,8 +97,16 @@ class WAMBallInCupReal(Env):
         self._obs_space = BoxSpace(np.array([0.]), np.array([1.]), labels=['$t$'])
 
     def reset(self, init_state: np.ndarray = None, domain_param: dict = None) -> np.ndarray:
+        # Connect to client
+        self._client = robcom.Client()
+        self._client.start(self._ip, 2013)  # IP address and port
+        print_cbt('Connected to the Barret WAM client.', 'c', bright=True)
+
         # Create robcom GoTo process
         gt = self._client.create(robcom.Goto, 'RIGHT_ARM', '')
+
+        # Reset the task which also resets the reward function if necessary
+        self._task.reset(env_spec=self.spec)
 
         # Move to initial state within 5 seconds
         gt.add_step(5., self.init_pose_des)
@@ -110,6 +116,7 @@ class WAMBallInCupReal(Env):
         gt.start()
         gt.wait_for_completion()
         print_cbt('Reached the initial position.', 'c')
+        input('Hit enter to continue.')
 
         # Reset time steps
         self._curr_step = 0
@@ -150,7 +157,7 @@ class WAMBallInCupReal(Env):
         # i.e. `max_steps` has been reached
         if self._curr_step >= self._max_steps:
             done = True
-            print_cbt('Executing trajectory on Barret WAM.', 'c')
+            print_cbt('Executing trajectory on Barret WAM.', 'c', bright=True)
             self._gt.start()
             self._gt.wait_for_completion()
             print_cbt('Finished execution.', 'c')
@@ -167,5 +174,5 @@ class WAMBallInCupReal(Env):
         pass
 
     def close(self):
-        self._client.close()
+        self._client.stop()
         print_cbt('Closed the connection to the Barrett WAM.', 'c', bright=True)
