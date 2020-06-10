@@ -198,7 +198,7 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         state_des = np.array([0., -0.8566, 1.164])
         rew_fcn = ExpQuadrErrRewFcn(
             Q=task_args.get('Q', 2e1*np.eye(3)),  # distance ball - cup
-            R=task_args.get('R', np.diag([1e0, 1e0, 1e0, 1e0, 1e0, 1e0]))  # desired joint angles and velocities
+            R=task_args.get('R', np.diag([1e0, 1e0, 1e0, 1e-1, 1e-1, 1e-1]))  # desired joint angles and velocities
         )
         dst = DesStateTask(spec, state_des, rew_fcn)
 
