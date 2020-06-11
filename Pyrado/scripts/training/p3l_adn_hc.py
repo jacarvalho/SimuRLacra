@@ -8,7 +8,7 @@ from pyrado.algorithms.hc import HCNormal, HCHyper
 from pyrado.environment_wrappers.observation_normalization import ObsNormWrapper
 from pyrado.environments.rcspysim.planar_3_link import Planar3LinkTASim
 from pyrado.logger.experiment import setup_experiment, save_list_of_dicts_to_yaml
-from pyrado.policies.adn import ADNPolicy, pd_capacity_21, pd_cubic
+from pyrado.policies.neural_fields import NFPolicy
 
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
@@ -46,9 +46,8 @@ if __name__ == '__main__':
         tau_init=1.,
         tau_learnable=True,
         output_nonlin=to.sigmoid,
-        potentials_dyn_fcn=pd_cubic,
     )
-    policy = ADNPolicy(spec=env.spec, dt=env.dt, **policy_hparam)
+    policy = NFPolicy(spec=env.spec, dt=env.dt, **policy_hparam)
 
     # Algorithm
     algo_hparam = dict(
