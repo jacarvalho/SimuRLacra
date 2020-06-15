@@ -24,7 +24,7 @@ jobs:
           export COVPATH=$(realpath .)
           chmod +x test-reporter-latest-linux-amd64
           ./test-reporter-latest-linux-amd64 before-build
-          docker run --rm -i -v $COVPATH:/cov simurlacra conda run -n pyrado bash -c "pytest Pyrado/tests --cov=./Pyrado --cov-report=xml --verbose -m 'not visualization and not longtime'; cp Pyrado/coverage.xml /cov; find .; ls /cov"
+          docker run --rm -i -v $COVPATH:/cov simurlacra conda run -n pyrado bash -c "pytest Pyrado/tests --cov=./Pyrado --cov-report=xml --verbose -m 'not visualization and not longtime'; cp ./coverage.xml /cov"
           echo $COVPATH
           ls
           pwd
