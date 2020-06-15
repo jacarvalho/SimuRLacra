@@ -26,3 +26,9 @@ jobs:
           ./test-reporter-latest-linux-amd64 before-build
           docker run --rm -i -v $COVPATH:/cov simurlacra conda run -n pyrado bash -c "pytest Pyrado/tests --cov=./Pyrado --cov-report=xml --verbose -m 'not visualization and not longtime'; sudo cp ./coverage.xml /cov"
           ./test-reporter-latest-linux-amd64 after-build -t coverage.py
+      - uses: codecov/codecov-action@v1
+        with:
+          file: coverage.xml # optional
+          flags: unittests # optional
+          name: codecov-umbrella # optional
+          fail_ci_if_error: true # optional (default = false)
