@@ -23,29 +23,28 @@ class QQubeReal(RealEnv, Serializable):
                  dt: float = 1/500.,
                  max_steps: int = pyrado.inf,
                  ip: str = '192.168.2.40',
-                 state_des: np.ndarray = None):
+                 task_args: [dict, None] = None):
         """
         Constructor
 
         :param dt: sampling frequency on the Quanser device [Hz]
         :param max_steps: maximum number of steps executed on the device [-]
         :param ip: IP address of the Qube platform
-        :param state_des: desired state for the task
+        :param task_args: arguments for the task construction
         """
         Serializable._init(self, locals())
 
         # Initialize spaces, dt, max_step, and communication
-        super().__init__(ip, rcv_dim=4, snd_dim=1, dt=dt, max_steps=max_steps, state_des=state_des)
+        super().__init__(ip, rcv_dim=4, snd_dim=1, dt=dt, max_steps=max_steps, task_args=task_args)
         self._curr_act = np.zeros(self.act_space.shape)  # just for usage in render function
         self._sens_offset = np.zeros(4)  # last two entries are never calibrated but useful for broadcasting
 
     def _create_task(self, task_args: dict) -> Task:
         # Define the task including the reward function
-        state_des = task_args.get('state_des', None)
-        if state_des is None:
-            state_des = np.array([0., np.pi, 0., 0.])
-        Q = np.diag([2e-1, 1., 2e-2, 5e-3])
-        R = np.diag([3e-3])
+        state_des = task_args.get('state_des', np.array([0., np.pi, 0., 0.]))
+        Q = task_args.get('Q', np.diag([3e-1, 1., 2e-2, 5e-3]))
+        R = task_args.get('R', np.diag([4e-3]))
+
         return RadiallySymmDesStateTask(self.spec, state_des, ExpQuadrErrRewFcn(Q, R), idcs=[1])
 
     def _create_spaces(self):

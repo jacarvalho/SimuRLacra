@@ -16,14 +16,14 @@ class QCartPoleSim(SimPyEnv, Serializable):
     def __init__(self,
                  dt: float,
                  max_steps: int = pyrado.inf,
-                 state_des: np.ndarray = None,
+                 task_args: [dict, None] = None,
                  long: bool = False):
         """
         Constructor
 
         :param dt: simulation step size [s]
         :param max_steps: maximum number of simulation steps
-        :param state_des: goal state
+        :param task_args: arguments for the task construction
         :param long: long (`True`) or short (`False`) pole
         """
         Serializable._init(self, locals())
@@ -33,7 +33,7 @@ class QCartPoleSim(SimPyEnv, Serializable):
         self.x_buffer = 0.05  # [m]
 
         # Call SimPyEnv's constructor
-        super().__init__(dt, max_steps, state_des)
+        super().__init__(dt, max_steps, task_args)
 
         # Update the class-specific domain parameters
         self.domain_param = self.get_nominal_domain_param(long=long)
@@ -232,14 +232,14 @@ class QCartPoleStabSim(QCartPoleSim, Serializable):
     def __init__(self,
                  dt: float,
                  max_steps: int = pyrado.inf,
-                 state_des: np.ndarray = None,
+                 task_args: [dict, None] = None,
                  long: bool = False):
         """
         Constructor
 
         :param dt: simulation step size [s]
         :param max_steps: maximum number of simulation steps
-        :param state_des: goal state
+        :param task_args: arguments for the task construction
         :param long: long (`True`) or short (`False`) pole
         """
         Serializable._init(self, locals())
@@ -247,7 +247,7 @@ class QCartPoleStabSim(QCartPoleSim, Serializable):
         self.stab_thold = 15/180.*np.pi  # threshold angle for the stabilization task to be a failure [rad]
         self.max_init_th_offset = 8/180.*np.pi  # [rad]
 
-        super().__init__(dt, max_steps, state_des, long)
+        super().__init__(dt, max_steps, task_args, long)
 
     def _create_spaces(self):
         super()._create_spaces()
@@ -270,14 +270,12 @@ class QCartPoleStabSim(QCartPoleSim, Serializable):
 
     def _create_task(self, task_args: dict) -> Task:
         # Define the task including the reward function
-        state_des = task_args.get('state_des', None)
-        if state_des is None:
-            state_des = np.array([0., np.pi, 0., 0.])
+        state_des = task_args.get('state_des', np.array([0., np.pi, 0., 0.]))
+        Q = task_args.get('Q', np.diag([5e-0, 1e+1, 1e-2, 1e-2]))
+        R = task_args.get('R', np.diag([1e-3]))
 
         return FinalRewTask(
-            RadiallySymmDesStateTask(
-                self.spec, state_des, QuadrErrRewFcn(Q=np.diag([5e-0, 1e+1, 1e-2, 1e-2]), R=np.diag([1e-3])), idcs=[1]
-            ),
+            RadiallySymmDesStateTask(self.spec, state_des, QuadrErrRewFcn(Q, R), idcs=[1]),
             mode=FinalRewMode(state_dependent=True, time_dependent=True)
         )
 
@@ -293,18 +291,18 @@ class QCartPoleSwingUpSim(QCartPoleSim, Serializable):
     def __init__(self,
                  dt: float,
                  max_steps: int = pyrado.inf,
-                 state_des: np.ndarray = None,
+                 task_args: [dict, None] = None,
                  long: bool = False):
         """
         Constructor
 
         :param dt: simulation step size [s]
         :param max_steps: maximum number of simulation steps
-        :param state_des: goal state
+        :param task_args: arguments for the task construction
         :param long: long (`True`) or short (`False`) pole
         """
         Serializable._init(self, locals())
-        super().__init__(dt, max_steps, state_des, long)
+        super().__init__(dt, max_steps, task_args, long)
 
     def _create_spaces(self):
         super()._create_spaces()
@@ -324,6 +322,7 @@ class QCartPoleSwingUpSim(QCartPoleSim, Serializable):
         state_des = task_args.get('state_des', None)
         if state_des is None:
             state_des = np.array([0., np.pi, 0., 0.])
+
         return FinalRewTask(
             RadiallySymmDesStateTask(self.spec, state_des, UnderActuatedSwingUpRewFcn(), idcs=[1]),
             mode=FinalRewMode(always_negative=True)

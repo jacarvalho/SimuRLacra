@@ -68,14 +68,13 @@ class BallOnBeamSim(SimPyEnv, Serializable):
 
     def _create_task(self, task_args: dict) -> Task:
         # Define the task including the reward function
-        state_des = task_args.get('state_des', None)
-        if state_des is None:
-            state_des = np.zeros(4)
-        # Define the task including the reward function
-        Q = np.diag([1e5, 1e3, 1e3, 1e2])
-        R = np.eye(1)
-        return DesStateTask(self.spec, state_des,
-                            ScaledExpQuadrErrRewFcn(Q, R, self.state_space, self.act_space, min_rew=1e-4))
+        state_des = task_args.get('state_des', np.zeros(4))
+        Q = task_args.get('Q', np.diag([1e5, 1e3, 1e3, 1e2]))
+        R = task_args.get('R', np.eye(1))
+
+        return DesStateTask(
+            self.spec, state_des, ScaledExpQuadrErrRewFcn(Q, R, self.state_space, self.act_space, min_rew=1e-4)
+        )
 
     def _step_dynamics(self, act: np.ndarray):
         g = self.domain_param['g']

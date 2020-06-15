@@ -9,7 +9,7 @@ from pyrado.spaces.box import BoxSpace
 from pyrado.tasks.base import Task
 from pyrado.tasks.final_reward import FinalRewTask, FinalRewMode
 from pyrado.tasks.desired_state import RadiallySymmDesStateTask
-from pyrado.tasks.reward_functions import UnderActuatedSwingUpRewFcn, ExpQuadrErrRewFcn
+from pyrado.tasks.reward_functions import UnderActuatedSwingUpRewFcn, QuadrErrRewFcn
 from pyrado.utils.input_output import print_cbt
 
 
@@ -20,19 +20,19 @@ class QCartPoleReal(RealEnv, Serializable):
                  dt: float = 1/500.,
                  max_steps: int = pyrado.inf,
                  ip: str = '10.0.0.3',
-                 state_des: np.ndarray = None):
+                 task_args: [dict, None] = None):
         """
         Constructor
 
         :param dt: time step size on the Quanser device [s]
         :param max_steps: maximum number of steps executed on the device
         :param ip: IP address of the Cart-Pole platform
-        :param state_des: desired state for the task
+        :param task_args: arguments for the task construction
         """
         Serializable._init(self, locals())
 
         # Initialize spaces, dt, max_step, and communication
-        super().__init__(ip, rcv_dim=4, snd_dim=2, dt=dt, max_steps=max_steps, state_des=state_des)
+        super().__init__(ip, rcv_dim=4, snd_dim=2, dt=dt, max_steps=max_steps, task_args=task_args)
         self._curr_act = np.zeros(self.act_space.shape)  # just for usage in render function
 
         # Calibration and limits
@@ -52,7 +52,7 @@ class QCartPoleReal(RealEnv, Serializable):
         self._act_space = BoxSpace(-max_act, max_act, labels=['$V$'])
 
     @abstractmethod
-    def _create_task(self, task_args: dict) -> Task:
+    def _create_task(self, task_args: dict):
         # Needs to implemented by subclasses
         return NotImplementedError
 
@@ -181,16 +181,16 @@ class QCartPoleStabReal(QCartPoleReal):
                  dt: float = 1/500.,
                  max_steps: int = pyrado.inf,
                  ip: str = '10.0.0.3',
-                 state_des: np.ndarray = None):
+                 task_args: [dict, None] = None):
         """
         Constructor
 
         :param dt: time step size on the Quanser device [s]
         :param max_steps: maximum number of steps executed on the device
-        :param ip: IP address of the Cartpole platform
-        :param state_des: desired state for the task
+        :param ip: IP address of the Cart-pole platform
+        :param task_args: arguments for the task construction
         """
-        super().__init__(dt, max_steps, ip, state_des)
+        super().__init__(dt, max_steps, ip, task_args)
 
         # Define the task-specific state space
         stab_thold = 15/180.*np.pi  # threshold angle for the stabilization task to be a failure [rad]
@@ -200,12 +200,14 @@ class QCartPoleStabReal(QCartPoleReal):
 
     def _create_task(self, task_args: dict) -> Task:
         # Define the task including the reward function
-        state_des = task_args.get('state_des', None)
-        if state_des is None:
-            state_des = np.array([0., np.pi, 0., 0.])
-        Q = np.diag([1e-0, 5e-0, 1e-2, 1e-2])
-        R = np.diag([1e-2])
-        return RadiallySymmDesStateTask(self.spec, state_des, ExpQuadrErrRewFcn(Q, R), idcs=[1])
+        state_des = task_args.get('state_des', np.array([0., np.pi, 0., 0.]))
+        Q = task_args.get('Q', np.diag([5e-0, 1e+1, 1e-2, 1e-2]))
+        R = task_args.get('R', np.diag([1e-3]))
+
+        return FinalRewTask(
+            RadiallySymmDesStateTask(self.spec, state_des, QuadrErrRewFcn(Q, R), idcs=[1]),
+            mode=FinalRewMode(state_dependent=True, time_dependent=True)
+        )
 
     def _wait_for_upright_pole(self, verbose=False):
         if verbose:
@@ -270,16 +272,16 @@ class QCartPoleSwingUpReal(QCartPoleReal):
                  dt: float = 1/500.,
                  max_steps: int = pyrado.inf,
                  ip: str = '10.0.0.3',
-                 state_des: np.ndarray = None):
+                 task_args: [dict, None] = None):
         """
         Constructor
 
         :param dt: time step size on the Quanser device [s]
         :param max_steps: maximum number of steps executed on the device
-        :param ip: IP address of the Cartpole platform
-        :param state_des: desired state for the task
+        :param ip: IP address of the Cart-pole platform
+        :param task_args: arguments for the task construction
         """
-        super().__init__(dt, max_steps, ip, state_des)
+        super().__init__(dt, max_steps, ip, task_args)
 
         # Define the task-specific state space
         max_state = np.array([self._l_rail/2. - self._x_buffer, +4*np.pi, np.inf, np.inf])  # [m, rad, m/s, rad/s]
@@ -291,9 +293,10 @@ class QCartPoleSwingUpReal(QCartPoleReal):
         state_des = task_args.get('state_des', None)
         if state_des is None:
             state_des = np.array([0., np.pi, 0., 0.])
+
         return FinalRewTask(
             RadiallySymmDesStateTask(self.spec, state_des, UnderActuatedSwingUpRewFcn(), idcs=[1]),
-            mode=FinalRewMode(state_dependent=True, always_negative=True)
+            mode=FinalRewMode(always_negative=True)
         )
 
     def reset(self, *args, **kwargs):

@@ -18,19 +18,19 @@ class QBallBalancerReal(RealEnv, Serializable):
                  dt: float = 1/500.,
                  max_steps: int = pyrado.inf,
                  ip: str = '192.168.2.5',
-                 state_des: np.ndarray = None):
+                 task_args: [dict, None] = None):
         """
         Constructor
 
         :param dt: sampling frequency on the [Hz]
         :param max_steps: maximum number of steps executed on the device [-]
         :param ip: IP address of the 2 DOF Ball-Balancer platform
-        :param state_des: desired state for the task
+        :param task_args: arguments for the task construction
         """
         Serializable._init(self, locals())
 
         # Initialize spaces, dt, max_step, and communication
-        super().__init__(ip, rcv_dim=8, snd_dim=2, dt=dt, max_steps=max_steps, state_des=state_des)
+        super().__init__(ip, rcv_dim=8, snd_dim=2, dt=dt, max_steps=max_steps, task_args=task_args)
         self._curr_act = np.zeros(self.act_space.shape)  # just for usage in render function
 
     def _create_spaces(self):
@@ -46,13 +46,14 @@ class QBallBalancerReal(RealEnv, Serializable):
 
     def _create_task(self, task_args: dict) -> Task:
         # Define the task including the reward function
-        state_des = task_args.get('state_des', None)
-        if state_des is None:
-            state_des = np.zeros(self.state_space.shape)
-        Q = np.diag([1e0, 1e0, 1e3, 1e3, 1e-2, 1e-2, 5e-1, 5e-1])
-        R = np.diag([1e-2, 1e-2])
+        state_des = task_args.get('state_des', np.zeros(8))
+        Q = task_args.get('Q', np.diag([1e0, 1e0, 5e3, 5e3, 1e-2, 1e-2, 5e-1, 5e-1]))
+        R = task_args.get('R', np.diag([1e-2, 1e-2]))
+        # Q = np.diag([1e2, 1e2, 5e2, 5e2, 1e-2, 1e-2, 1e+1, 1e+1])  # for LQR
+        # R = np.diag([1e-2, 1e-2])  # for LQR
+
         return DesStateTask(
-            self.spec, state_des, ScaledExpQuadrErrRewFcn(Q, R, self._state_space, self.act_space, min_rew=1e-4)
+            self.spec, state_des, ScaledExpQuadrErrRewFcn(Q, R, self.state_space, self.act_space, min_rew=1e-4)
         )
 
     def reset(self, *args, **kwargs) -> np.ndarray:

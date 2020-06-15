@@ -34,7 +34,7 @@ class QBallBalancerSim(SimPyEnv, Serializable):
     def __init__(self,
                  dt: float,
                  max_steps: int = pyrado.inf,
-                 state_des: np.ndarray = None,
+                 task_args: [dict, None] = None,
                  simplified_dyn: bool = False,
                  load_experimental_tholds: bool = True):
         """
@@ -42,7 +42,7 @@ class QBallBalancerSim(SimPyEnv, Serializable):
 
         :param dt: simulation step size [s]
         :param max_steps: maximum number of simulation steps
-        :param state_des: goal state
+        :param task_args: arguments for the task construction
         :param simplified_dyn: use a dynamics model without Coriolis forces and without friction
         :param load_experimental_tholds: use the voltage thresholds determined from experiments
         """
@@ -52,7 +52,7 @@ class QBallBalancerSim(SimPyEnv, Serializable):
         self.plate_angs = np.zeros(2)  # plate's angles alpha and beta [rad] (unused for simplified_dyn = True)
 
         # Call SimPyEnv's constructor
-        super().__init__(dt, max_steps, state_des)
+        super().__init__(dt, max_steps, task_args)
 
         if not simplified_dyn:
             self._kin = QBallBalancerKin(self)
@@ -79,15 +79,15 @@ class QBallBalancerSim(SimPyEnv, Serializable):
 
     def _create_task(self, task_args: dict) -> Task:
         # Define the task including the reward function
-        state_des = task_args.get('state_des', None)
-        if state_des is None:
-            state_des = np.zeros(8)
-        Q = np.diag([1e0, 1e0, 5e3, 5e3, 1e-2, 1e-2, 5e-1, 5e-1])  # default
-        R = np.diag([1e-2, 1e-2])  # default
-        # Q = np.diag([1e2, 1e2, 5e2, 5e2, 1e-2, 1e-2, 1e+1, 1e+1])  # work for LQR
-        # R = np.diag([1e-2, 1e-2])  # work for LQR
-        return DesStateTask(self.spec, state_des,
-                            ScaledExpQuadrErrRewFcn(Q, R, self.state_space, self.act_space, min_rew=1e-4))
+        state_des = task_args.get('state_des', np.zeros(8))
+        Q = task_args.get('Q', np.diag([1e0, 1e0, 5e3, 5e3, 1e-2, 1e-2, 5e-1, 5e-1]))
+        R = task_args.get('R', np.diag([1e-2, 1e-2]))
+        # Q = np.diag([1e2, 1e2, 5e2, 5e2, 1e-2, 1e-2, 1e+1, 1e+1])  # for LQR
+        # R = np.diag([1e-2, 1e-2])  # for LQR
+
+        return DesStateTask(
+            self.spec, state_des, ScaledExpQuadrErrRewFcn(Q, R, self.state_space, self.act_space, min_rew=1e-4)
+        )
 
     # Cache measured thresholds during one run and reduce console log spam that way
     measured_tholds = None

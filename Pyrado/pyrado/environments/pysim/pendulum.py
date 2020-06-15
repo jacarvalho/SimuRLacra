@@ -29,12 +29,10 @@ class PendulumSim(SimPyEnv, Serializable):
 
     def _create_task(self, task_args: dict) -> Task:
         # Define the task including the reward function
-        state_des = task_args.get('state_des', None)
-        if state_des is None:
-            state_des = np.array([np.pi, 0.])
-        # Define the task including the reward function
-        Q = np.diag([1e-0, 5e-3])
-        R = np.diag([1e-3])
+        state_des = task_args.get('state_des', np.array([np.pi, 0.]))
+        Q = task_args.get('Q', np.diag([1e-0, 5e-3]))
+        R = task_args.get('R', np.diag([1e-3]))
+
         return RadiallySymmDesStateTask(self.spec, state_des, ExpQuadrErrRewFcn(Q, R), idcs=[1])
 
     def observe(self, state):

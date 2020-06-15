@@ -41,11 +41,10 @@ class OneMassOscillatorSim(SimPyEnv, Serializable):
 
     def _create_task(self, task_args: dict) -> Task:
         # Define the task including the reward function
-        state_des = task_args.get('state_des', None)
-        if state_des is None:
-            state_des = np.zeros(2)
-        Q = np.diag([1e1, 1e-3])
-        R = np.diag([1e-6])
+        state_des = task_args.get('state_des', np.zeros(2))
+        Q = task_args.get('Q', np.diag([1e1, 1e-3]))
+        R = task_args.get('R', np.diag([1e-6]))
+
         return FinalRewTask(
             DesStateTask(self.spec, state_des, QuadrErrRewFcn(Q, R)), factor=1e3, mode=FinalRewMode(always_negative=True)
         )

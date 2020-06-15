@@ -16,13 +16,13 @@ class SimPyEnv(SimEnv, Serializable):
     def __init__(self,
                  dt: float,
                  max_steps: int = pyrado.inf,
-                 state_des: np.ndarray = None):
+                 task_args: [dict, None] = None):
         """
         Constructor
 
         :param dt: simulation step size [s]
         :param max_steps: maximum number of simulation steps
-        :param state_des: goal state
+        :param task_args: arguments for the task construction
         """
         Serializable._init(self, locals())
         super().__init__(dt, max_steps)
@@ -39,9 +39,10 @@ class SimPyEnv(SimEnv, Serializable):
         self._init_space = None
         self._create_spaces()
 
-        # Initialize task
-        self._state_des = state_des
-        self._task = self._create_task(task_args=dict(state_des=state_des))
+        # Create task
+        if not (isinstance(task_args, dict) or task_args is None):
+            raise pyrado.TypeErr(given=task_args, expected_type=dict)
+        self._task = self._create_task(task_args=dict() if task_args is None else task_args)
 
         # Animation with VPython
         self._curr_act = np.zeros(self.act_space.shape)

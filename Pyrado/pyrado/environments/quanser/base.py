@@ -17,9 +17,9 @@ class RealEnv(Env, ABC):
                  ip: str,
                  rcv_dim: int,
                  snd_dim: int,
-                 dt: float = 1 / 500.,
+                 dt: float = 1/500.,
                  max_steps: int = pyrado.inf,
-                 state_des: np.ndarray = None):
+                 task_args: [dict, None] = None):
         """
         Constructor
 
@@ -28,7 +28,7 @@ class RealEnv(Env, ABC):
         :param snd_dim: number of dimensions of the action command (send to Simulink server)
         :param dt: sampling time interval
         :param max_steps: maximum number of time steps
-        :param state_des: desired state for the task
+        :param task_args: arguments for the task construction
         """
         # Call the base class constructor to initialize fundamental members
         super().__init__(dt, max_steps)
@@ -45,9 +45,10 @@ class RealEnv(Env, ABC):
         self._act_space = None
         self._create_spaces()
 
-        # Initialize task
-        self._state_des = state_des
-        self._task = self._create_task(task_args=dict(state_des=state_des))
+        # Create task
+        if not (isinstance(task_args, dict) or task_args is None):
+            raise pyrado.TypeErr(given=task_args, expected_type=dict)
+        self._task = self._create_task(task_args=dict() if task_args is None else task_args)
 
     def __del__(self):
         """ Finalizer forwards to close function. """
