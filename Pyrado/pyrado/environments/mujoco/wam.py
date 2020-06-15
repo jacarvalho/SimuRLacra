@@ -9,8 +9,9 @@ from pyrado.spaces.singular import SingularStateSpace
 from pyrado.tasks.base import Task
 from pyrado.environments.mujoco.base import MujocoSimEnv
 from pyrado.spaces.box import BoxSpace
+from pyrado.tasks.desired_space import DesSpaceTask
 from pyrado.tasks.desired_state import DesStateTask
-from pyrado.tasks.final_reward import BestStateFinalRewTask
+from pyrado.tasks.final_reward import BestStateFinalRewTask, FinalRewTask, FinalRewMode
 from pyrado.tasks.masked import MaskedTask
 from pyrado.tasks.reward_functions import ZeroPerStepRewFcn, ExpQuadrErrRewFcn
 from pyrado.utils.data_types import EnvSpec
@@ -72,7 +73,6 @@ class WAMSim(MujocoSimEnv, Serializable):
         self._obs_space = BoxSpace(-max_obs, max_obs)
 
     def _create_task(self, task_args: dict = None) -> Task:
-        # TODO: Formulate proper task/reward
         state_des = np.concatenate([self.init_qpos.copy(), self.init_qvel.copy()])
         return DesStateTask(self.spec, state_des, ZeroPerStepRewFcn())
 
@@ -180,10 +180,7 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         # Observation space (normalized time)
         self._obs_space = BoxSpace(np.array([0.]), np.array([1.]), labels=['$t$'])
 
-    def _create_task(self, task_args: dict = None) -> Task:
-        if task_args is None:
-            task_args = dict()
-
+    def _create_task(self, task_args: dict) -> Task:
         # Create a DesStateTask that masks everything but the ball position
         idcs = list(range(self.state_space.flat_dim - 3, self.state_space.flat_dim))  # Cartesian ball position
         spec = EnvSpec(
@@ -192,21 +189,28 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
             self.spec.state_space.subspace(self.spec.state_space.create_mask(idcs))
         )
 
-        # If we do not use copy(), state_des coming from MuJoCo is a reference and updates automatically at each step
+        # If we do not use copy(), state_des coming from MuJoCo is a reference and updates automatically at each step.
         # Note: sim.forward() + get_body_xpos() results in wrong output for state_des, as sim has not been updated to
         # init_space.sample(), which is first called in reset()
-        state_des = np.array([0., -0.8566, 1.164])
-        rew_fcn = ExpQuadrErrRewFcn(
-            Q=task_args.get('Q', 2e1*np.eye(3)),  # distance ball - cup
-            R=task_args.get('R', np.diag([1e0, 1e0, 1e0, 1e-1, 1e-1, 1e-1]))  # desired joint angles and velocities
-        )
-        dst = DesStateTask(spec, state_des, rew_fcn)
+        if task_args.get('sparse_rew_fcn', False):
+            space_des = BoxSpace(np.array([...]), np.array([...]))  # TODO define a space that captures if the ball is in the (randomized) cup.
+            dst = FinalRewTask(DesSpaceTask(spec, space_des), mode=FinalRewMode(always_positive=True), factor=1)
 
-        # Wrap the masked DesStateTask to add a bonus for the best state in the rollout
-        return BestStateFinalRewTask(
-            MaskedTask(self.spec, dst, idcs),
-            max_steps=self.max_steps, factor=task_args.get('factor', 1.)
-        )
+            return MaskedTask(self.spec, dst, idcs)
+
+        else:
+            state_des = np.array([0., -0.8566, 1.164])
+            rew_fcn = ExpQuadrErrRewFcn(
+                Q=task_args.get('Q', 2e1*np.eye(3)),  # distance ball - cup
+                R=task_args.get('R', np.diag([1e0, 1e0, 1e0, 1e-1, 1e-1, 1e-1]))  # desired joint angles and velocities
+            )
+            dst = DesStateTask(spec, state_des, rew_fcn)
+
+            # Wrap the masked DesStateTask to add a bonus for the best state in the rollout
+            return BestStateFinalRewTask(
+                MaskedTask(self.spec, dst, idcs),
+                max_steps=self.max_steps, factor=task_args.get('factor', 1.)
+            )
 
     def _adapt_model_file(self, xml_model: str, domain_param: dict) -> str:
         # First replace special domain parameters

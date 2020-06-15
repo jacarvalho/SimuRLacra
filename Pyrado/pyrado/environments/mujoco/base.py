@@ -57,9 +57,11 @@ class MujocoSimEnv(SimEnv, ABC, Serializable):
         self._init_space = None
         self._create_spaces()
 
-        # Initialize task
-        self.task_args = task_args
-        self._task = self._create_task(task_args)
+        # Create task
+        if not (isinstance(task_args, dict) or task_args is None):
+            raise pyrado.TypeErr(given=task_args, expected_type=dict)
+        self.task_args = dict() if task_args is None else task_args
+        self._task = self._create_task(self.task_args)
 
         # Visualization
         self.camera_config = dict()
