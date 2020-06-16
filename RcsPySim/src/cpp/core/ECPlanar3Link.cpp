@@ -1,8 +1,9 @@
 #include "ExperimentConfig.h"
-#include "action/AMJointControlPosition.h"
-#include "action/AMIntegrate2ndOrder.h"
-#include "action/AMTaskActivation.h"
 #include "action/ActionModelIK.h"
+#include "action/AMIntegrate1stOrder.h"
+#include "action/AMIntegrate2ndOrder.h"
+#include "action/AMJointControlPosition.h"
+#include "action/AMTaskActivation.h"
 #include "initState/ISSPlanar3Link.h"
 #include "observation/OMBodyStateLinear.h"
 #include "observation/OMCombined.h"
@@ -55,9 +56,14 @@ protected:
         {
             return new AMJointControlPosition(graph);
         }
+        else if (actionModelType == "joint_vel")
+        {
+            double max_action = 90*M_PI/180; // [rad/s]
+            return new AMIntegrate1stOrder(new AMJointControlPosition(graph), max_action);
+        }
         else if (actionModelType == "joint_acc")
         {
-            double max_action = 120*M_PI/180; // [1/s^2]
+            double max_action = 120*M_PI/180; // [rad/s^2]
             return new AMIntegrate2ndOrder(new AMJointControlPosition(graph), max_action);
         }
         else if (actionModelType == "activation")
