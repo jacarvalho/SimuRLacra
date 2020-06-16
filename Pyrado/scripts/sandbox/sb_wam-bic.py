@@ -7,11 +7,14 @@ import matplotlib.pyplot as plt
 import mpl_toolkits.mplot3d
 
 import pyrado
+from pyrado.environment_wrappers.utils import inner_env
 from pyrado.environments.mujoco.wam import WAMBallInCupSim
+from pyrado.logger.experiment import ask_for_experiment
 from pyrado.policies.environment_specific import DualRBFLinearPolicy
 from pyrado.utils.data_types import RenderMode
 from pyrado.policies.features import RBFFeat
 from pyrado.sampling.rollout import rollout, after_rollout_query
+from pyrado.utils.experiments import load_experiment
 
 
 def compute_trajectory(weights, time, width):
@@ -105,13 +108,40 @@ def check_feat_equality():
     return correct
 
 
-if __name__ == '__main__':
-    # Fix seed for reproducibility
-    pyrado.set_seed(101)
+def eval_damping():
+    # Environment
+    # env = WAMBallInCupSim(max_steps=1750)
 
-    # Check for function equality
-    print(check_feat_equality())
+    # Policy
+    # rbf_hparam = dict(num_feat_per_dim=7, bounds=(np.array([0.]), np.array([1.])))
+    # policy = DualRBFLinearPolicy(env.spec, rbf_hparam, dim_mask=1)
 
+    ex_dir = ask_for_experiment()
+    env, policy, _ = load_experiment(ex_dir)
+    env = inner_env(env)
+    env.domain_param = WAMBallInCupSim.get_nominal_domain_param()
+
+    data = []
+    dampings = [0., 1e-2, 1e-1, 1e0]  # np.logspace(-4, 0, 3)
+    for d in dampings:
+        env.reset(domain_param=dict(damping=d))
+        ro = rollout(env, policy, render_mode=RenderMode(video=False), eval=True)
+        data.append(ro.env_infos['qpos'])
+
+    fig, ax = plt.subplots(3, sharex='all')
+    ls = ['k-', 'b--', 'g-.', 'r:']  # line styles for better visibility
+    for i, idx in enumerate([1, 3, 5]):
+        for j in range(len(dampings)):
+            ax[i].plot(data[j][:, idx], ls[j], label=f'damping: {dampings[j]}')
+            if i == 0:
+                ax[i].legend()
+        ax[i].set_ylabel(f'joint {idx}')
+    ax[2].set_xlabel(f'time step')
+    plt.suptitle('Evaluation of joint damping coefficient')
+    plt.show()
+
+
+def main():
     # Environment
     env = WAMBallInCupSim(max_steps=1750)
 
@@ -158,3 +188,17 @@ if __name__ == '__main__':
     ax.set_zlabel('z')
     ax.view_init(elev=16., azim=-7.)
     plt.show()
+
+
+if __name__ == '__main__':
+    # Fix seed for reproducibility
+    pyrado.set_seed(101)
+
+    # Check for function equality
+    print(check_feat_equality())
+
+    # Plot damping coefficient comparison
+    eval_damping()
+
+    # Apply DualRBFLinearPolicy and plot the joint states over the desired ones
+    main()
