@@ -46,7 +46,7 @@ if __name__ == '__main__':
     policy_hparam = dict(
         hidden_size=20,
         conv_out_channels=1,
-        conv_kernel_size=1,
+        conv_kernel_size=7,
         tau_init=1.,
         tau_learnable=True,
         activation_nonlin=to.sigmoid,
@@ -61,7 +61,7 @@ if __name__ == '__main__':
         num_rollouts=1,
         expl_std_init=1.0,
         expl_r_init=policy.num_param/5,
-        num_sampler_envs=4,
+        num_sampler_envs=1,
     )
     algo = HCNormal(ex_dir, env, policy, **algo_hparam)
 
