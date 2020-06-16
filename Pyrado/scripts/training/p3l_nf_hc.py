@@ -10,6 +10,7 @@ from pyrado.environments.rcspysim.planar_3_link import Planar3LinkTASim
 from pyrado.logger.experiment import setup_experiment, save_list_of_dicts_to_yaml
 from pyrado.policies.neural_fields import NFPolicy
 
+
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
     ex_dir = setup_experiment(Planar3LinkTASim.name, f'adn-{HCNormal.name}', '', seed=1001)
@@ -43,9 +44,12 @@ if __name__ == '__main__':
 
     # Policy
     policy_hparam = dict(
+        hidden_size=20,
+        conv_out_channels=1,
+        conv_kernel_size=1,
         tau_init=1.,
         tau_learnable=True,
-        output_nonlin=to.sigmoid,
+        activation_nonlin=to.sigmoid,
     )
     policy = NFPolicy(spec=env.spec, dt=env.dt, **policy_hparam)
 
