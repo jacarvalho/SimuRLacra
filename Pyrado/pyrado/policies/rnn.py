@@ -25,14 +25,16 @@ def default_unpack_hidden(hidden: to.Tensor, num_recurrent_layers: int, hidden_s
         # we could handle that case, but for now it's not necessary.
         assert batch_size is None, 'Cannot use batched observations with unbatched hidden state'
         return hidden.view(num_recurrent_layers, 1, hidden_size)
+
     elif len(hidden.shape) == 2:
         assert hidden.shape[1] == num_recurrent_layers*hidden_size, \
             "Passed hidden variable's size doesn't match the one required by the network."
         assert hidden.shape[0] == batch_size, \
             f'Batch size of hidden state ({hidden.shape[0]}) must match batch size of observations ({batch_size})'
         return hidden.view(batch_size, num_recurrent_layers, hidden_size).permute(1, 0, 2)
+
     else:
-        raise RuntimeError(f"Improper shape of 'hidden'. Policy received {hidden.shape},"
+        raise RuntimeError(f"Improper shape of 'hidden'. Policy received {hidden.shape}, "
                            f"but shape should be 1- or 2-dim")
 
 
@@ -41,7 +43,7 @@ def default_pack_hidden(hidden: to.Tensor, num_recurrent_layers, hidden_size: in
     Pack the hidden state returned by torch.nn.RNNBase subclasses into an 1d state vector.
     This is the reverse operation of default_unpack_hidden.
 
-    :param hidden: unpacked hidden state, a tensor of num_recurrent_layers x batch_size x hidden_size.
+    :param hidden: unpacked hidden state, a tensor of num_recurrent_layers x batch_size x hidden_size
     :param num_recurrent_layers: number of recurrent layers
     :param hidden_size: size of the hidden layers (all equal)
     :param batch_size: if not none, the result should be 2d, and the first dimension represents parts of a data batch
@@ -51,7 +53,7 @@ def default_pack_hidden(hidden: to.Tensor, num_recurrent_layers, hidden_size: in
         # Simply flatten the hidden state
         return hidden.view(num_recurrent_layers*hidden_size)
     else:
-        # Need to make sure that the batch dimension is the first element.
+        # Need to make sure that the batch dimension is the first element
         return hidden.permute(1, 0, 2).reshape(batch_size, num_recurrent_layers*hidden_size)
 
 
@@ -137,8 +139,7 @@ class RNNPolicyBase(RecurrentPolicy):
             raise pyrado.ShapeErr(msg=f"Improper shape of 'obs'. Policy received {obs.shape},"
                                       f"but shape should be 1-dim or 2-dim")
 
-        # Unpack hidden tensor if specified
-        # The network can handle getting None by using default values
+        # Unpack hidden tensor if specified. The network can handle getting None by using default values.
         if hidden is not None:
             hidden = self._unpack_hidden(hidden, batch_size)
 
@@ -198,10 +199,10 @@ class RNNPolicyBase(RecurrentPolicy):
         """
         Unpack the flat hidden state vector into a form the actual network module can use.
         Since hidden usually comes from some outer source, this method should validate it's shape.
-        The default implementation is defined by default_unpack_hidden.
+        The default implementation is defined by `default_unpack_hidden`.
 
         :param hidden: flat hidden state
-        :param batch_size: if not None, hidden is 2-dim and the first dimension represents parts of a data batch
+        :param batch_size: if not `None`, hidden is 2-dim and the first dim represents parts of a data batch
         :return: unpacked hidden state, ready for the network
         """
         return default_unpack_hidden(hidden, self._num_recurrent_layers, self._hidden_size, batch_size)
@@ -209,11 +210,11 @@ class RNNPolicyBase(RecurrentPolicy):
     def _pack_hidden(self, hidden: to.Tensor, batch_size: int = None):
         """
         Pack the hidden state returned by the network into an 1-dim state vector.
-        This should be the reverse operation of _unpack_hidden.
-        The default implementation is defined by default_pack_hidden.
+        This should be the reverse operation of `_unpack_hidden`.
+        The default implementation is defined by `default_pack_hidden`.
 
         :param hidden: hidden state as returned by the network
-        :param batch_size: if not None, the result should be 2-dim and the first dimension represents parts of a data batch
+        :param batch_size: if not `None`, the result should be 2-dim and the first dim represents parts of a data batch
         :return: packed hidden state
         """
         return default_pack_hidden(hidden, self._num_recurrent_layers, self._hidden_size, batch_size)
