@@ -149,7 +149,8 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         return dict(
             cup_scale=1.,  # scaling factor for the radius of the cup
             rope_length=0.3103,  # length of the rope
-            ball_mass=0.021  # mass of the ball
+            ball_mass=0.021,  # mass of the ball
+            damping=0.,  # damping of motor joints
         )
 
     def _create_spaces(self):
