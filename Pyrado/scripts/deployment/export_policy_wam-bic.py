@@ -33,11 +33,13 @@ if __name__ == '__main__':
     env_real = wrap_like_other_env(env_real, env_sim)
 
     # Get the initial state from the command line, if given. Else, set None to delegate to the environment.
-    init_qpos = np.asarray(args.init_state) if args.init_state is not None else None
     if args.init_state is not None:
         init_state = env_sim.init_space.sample_uniform()
+        init_qpos = np.asarray(args.init_state)
         assert len(init_qpos) == 5
         np.put(init_state, [1, 3, 5, 6, 7], init_qpos)  # the passed init state only concerns certain joint angles
+    else:
+        init_state = None
 
     # Fix seed for reproducibility
     pyrado.set_seed(args.seed)
