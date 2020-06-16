@@ -16,8 +16,8 @@ if __name__ == '__main__':
     batch_size = 1
     num_neurons = 360  # each potential-based neuron is basically like time steps of a signal
     in_channels = 2  # number of input signals
-    out_channels = 4  # number of filters
-    kernel_size = 21  # larger number smooth out and reduce the length of the output signal, use odd numbers
+    out_channels = 1  # number of filters
+    kernel_size = 61  # larger number smooth out and reduce the length of the output signal, use odd numbers
     padding = kernel_size//2
 
     # Create arbitrary signal
@@ -40,6 +40,7 @@ if __name__ == '__main__':
         conv_layer = to.nn.Conv1d(in_channels, out_channels, kernel_size, stride=1, padding=padding,
                                   dilation=1, groups=1, bias=False, padding_mode='zeros')
         print(f'layer weights shape: {conv_layer.weight.shape}')
+        conv_layer.weight.data = to.linspace(0, 1, kernel_size).repeat(2, 1).unsqueeze(0)
 
     print(f'layer weights:\n{conv_layer.weight.data.numpy()}')
     print(f'input shape:  {signal.shape}')
