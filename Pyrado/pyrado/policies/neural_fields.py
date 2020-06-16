@@ -8,6 +8,7 @@ from pyrado.utils.data_types import EnvSpec
 from pyrado.policies.base import Policy, PositiveScaleLayer
 from pyrado.policies.base_recurrent import RecurrentPolicy
 from pyrado.policies.initialization import init_param
+from pyrado.utils.input_output import print_cbt
 
 
 class NFPolicy(RecurrentPolicy):
@@ -48,9 +49,13 @@ class NFPolicy(RecurrentPolicy):
         :param init_param_kwargs: additional keyword arguments for the policy parameter initialization
         :param use_cuda: `True` to move the policy to the GPU, `False` (default) to use the CPU
         """
-        super().__init__(spec, use_cuda)
         if not isinstance(dt, (float, int)):
             raise pyrado.TypeErr(given=dt, expected_type=float)
+        if not conv_kernel_size%2 == 1:
+            print_cbt(f'Made kernel size {conv_kernel_size} odd {conv_kernel_size + 1} for automated padding.', 'y')
+            conv_kernel_size = conv_kernel_size + 1
+
+        super().__init__(spec, use_cuda)
 
         # Store inputs
         self._dt = to.tensor([dt], dtype=to.get_default_dtype())
@@ -67,7 +72,8 @@ class NFPolicy(RecurrentPolicy):
         self.conv_layer = nn.Conv1d(
             in_channels=1,  # treat potentials as a time series of values (convolutions is over the "time" axis)
             out_channels=conv_out_channels,  # if 1 no act_layer needed
-            kernel_size=conv_kernel_size, stride=1, padding=0, dilation=1, groups=1, bias=True, padding_mode='zeros'
+            kernel_size=conv_kernel_size, stride=1, padding=conv_kernel_size//2,
+            dilation=1, groups=1, bias=True, padding_mode='zeros'  # PyTorch default values
         )
         # self.post_conv_layer = nn.Linear(conv_out_channels, spec.act_space.flat_dim, bias=False)
         self.act_layer = nn.Linear(self._hidden_size, spec.act_space.flat_dim, bias=False)
@@ -154,7 +160,7 @@ class NFPolicy(RecurrentPolicy):
             batch_size = obs.shape[0]
         else:
             raise pyrado.ShapeErr(msg=f"Improper shape of 'obs'. Policy received {obs.shape},"
-                                      f"but shape should be 1- or 2-dim")
+            f"but shape should be 1- or 2-dim")
 
         # Unpack hidden tensor (i.e. the potentials of the last step) if specified
         # The network can handle getting None by using default values
@@ -247,4 +253,3 @@ class NFPolicy(RecurrentPolicy):
         else:
             # Make sure that the batch dimension is the first element
             return hidden.view(batch_size, self._num_recurrent_layers*self._hidden_size)
-
