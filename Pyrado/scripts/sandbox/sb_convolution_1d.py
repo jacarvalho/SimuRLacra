@@ -8,13 +8,16 @@ import pyrado
 
 
 if __name__ == '__main__':
-    pyrado.set_seed(0)
+    pyrado.set_seed(10)
 
+    use_depth_wise_conv = False
+    # https://towardsdatascience.com/a-basic-introduction-to-separable-convolutions-b99ec3102728
+    # https://github.com/jayleicn/TVQAplus/blob/master/model/cnn.py
     batch_size = 1
     num_neurons = 360  # each potential-based neuron is basically like time steps of a signal
-    in_channels = 2  # like the dimension of our action space (due to previous actions)
-    out_channels = 4  # arbitrary ?
-    kernel_size = 20  # larger number smooth out and reduce the length of the output signal
+    in_channels = 2  # number of input signals
+    out_channels = 4  # number of filters
+    kernel_size = 21  # larger number smooth out and reduce the length of the output signal, use odd numbers
     padding = kernel_size//2
 
     # Create arbitrary signal
@@ -25,15 +28,30 @@ if __name__ == '__main__':
     steps_out = to.linspace(0, num_neurons - (kernel_size - 1 + 2*padding),
                             steps=num_neurons - (kernel_size - 1) + 2*padding)
 
-    layer = to.nn.Conv1d(in_channels, out_channels, kernel_size, stride=1, padding=padding,
-                         dilation=1, groups=1, bias=False, padding_mode='zeros')
-    print(f'layer weights shape: {layer.weight.shape}')
-    print(f'layer weights:\n{layer.weight.data.numpy()}')
+    if use_depth_wise_conv:
+        conv_layer = to.nn.Conv1d(in_channels, in_channels, kernel_size, stride=1, padding=padding,
+                                  dilation=1, groups=1, bias=False, padding_mode='zeros')
+        ptwise_conv_layer = to.nn.Conv1d(in_channels, out_channels, kernel_size=1, stride=1, padding=0,
+                                         dilation=1, groups=1, bias=False, padding_mode='zeros')
+        print(f'layer weights shape: {conv_layer.weight.shape}')
+        print(f'layer2 weights shape: {ptwise_conv_layer.weight.shape}')
 
+    else:
+        conv_layer = to.nn.Conv1d(in_channels, out_channels, kernel_size, stride=1, padding=padding,
+                                  dilation=1, groups=1, bias=False, padding_mode='zeros')
+        print(f'layer weights shape: {conv_layer.weight.shape}')
+
+    print(f'layer weights:\n{conv_layer.weight.data.numpy()}')
     print(f'input shape:  {signal.shape}')
+
     with to.no_grad():
-        result = layer(signal)
-        sum_over_channels = to.sum(result, dim=1, keepdim=True)
+        if use_depth_wise_conv:
+            result = ptwise_conv_layer(conv_layer(signal))
+        else:
+            result = conv_layer(signal)
+
+    sum_over_channels = to.sum(result, dim=1, keepdim=True)
+
     print(f'result shape: {result.shape}')
     print(f'sum_over_channels shape: {sum_over_channels.shape}')
 
