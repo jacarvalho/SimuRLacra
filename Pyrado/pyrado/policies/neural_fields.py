@@ -181,11 +181,11 @@ class NFPolicy(RecurrentPolicy):
         stimulus_obs = self.obs_layer(obs)
 
         # Pass the previous potentials through a nonlinearity
-        potentials = self._activation_nonlin(potentials)
+        potentials_conv = self._activation_nonlin(potentials)
 
         # Reshape and convolve
         b = batch_size if batch_size is not None else 1
-        stimulus_pot = self.conv_layer(potentials.view(b, 1, self._hidden_size))
+        stimulus_pot = self.conv_layer(potentials_conv.view(b, 1, self._hidden_size))
         stimulus_pot = to.sum(stimulus_pot, dim=1)  # TODO do multiple out channels makes sense if just summed up?
 
         # Combine the different output channels of the convolution
@@ -198,8 +198,8 @@ class NFPolicy(RecurrentPolicy):
         potentials = potentials + self._dt*self.potentials_dot(self._stimuli)
 
         # Compute the actions from the potentials
-        act = self.act_layer(potentials)
-        act = self._activation_nonlin(act)
+        act = self._activation_nonlin(potentials)
+        act = self.act_layer(act)
 
         # # Since we want that this kind of Policy only returns activations in [0, 1] or in [-1, 1],
         # # we clip the actions right here
