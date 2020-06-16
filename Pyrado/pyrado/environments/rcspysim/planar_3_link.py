@@ -189,7 +189,7 @@ class Planar3LinkIKSim(Planar3LinkSim, Serializable):
         Serializable._init(self, locals())
 
         # Forward to the Planar3LinkSim's constructor, specifying the characteristic action model
-        super().__init__(task_args=dict(state_des=state_des), actionModelType='joint_pos', **kwargs)
+        super().__init__(task_args=dict(state_des=state_des), actionModelType='joint_vel', **kwargs)  # former joint_pos
 
 
 class Planar3LinkTASim(Planar3LinkSim, Serializable):
