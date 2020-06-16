@@ -1,19 +1,19 @@
 """
-Train an agent to solve the Planar-3-Link task using Neural fields and Hill Climbing.
+Train an agent to solve the Planar-3-Link task using Activation Dynamics Networks and Hill Climbing.
 """
 import torch as to
 
 import pyrado
 from pyrado.algorithms.hc import HCNormal
 from pyrado.environment_wrappers.observation_normalization import ObsNormWrapper
-from pyrado.environments.rcspysim.planar_3_link import Planar3LinkIKSim
+from pyrado.environments.rcspysim.planar_3_link import Planar3LinkTASim
 from pyrado.logger.experiment import setup_experiment, save_list_of_dicts_to_yaml
-from pyrado.policies.neural_fields import NFPolicy
+from pyrado.policies.adn import pd_cubic, ADNPolicy
 
 
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
-    ex_dir = setup_experiment(Planar3LinkIKSim.name, f'nf-{HCNormal.name}', '', seed=1001)
+    ex_dir = setup_experiment(Planar3LinkTASim.name, f'adn-{HCNormal.name}', '', seed=1001)
 
     # Environment
     env_hparams = dict(
@@ -34,7 +34,7 @@ if __name__ == '__main__':
         observeGoalDistance=False,
         observeDynamicalSystemDiscrepancy=False,
     )
-    env = Planar3LinkIKSim(**env_hparams)
+    env = Planar3LinkTASim(**env_hparams)
     # eub = {
     #     'GD_DS0': 2.,
     #     'GD_DS1': 2.,
@@ -44,14 +44,12 @@ if __name__ == '__main__':
 
     # Policy
     policy_hparam = dict(
-        hidden_size=6,
-        conv_out_channels=1,
-        conv_kernel_size=1,
         tau_init=1.,
         tau_learnable=True,
-        activation_nonlin=to.sigmoid,
+        output_nonlin=to.sigmoid,
+        potentials_dyn_fcn=pd_cubic,
     )
-    policy = NFPolicy(spec=env.spec, dt=env.dt, **policy_hparam)
+    policy = ADNPolicy(spec=env.spec, dt=env.dt, **policy_hparam)
 
     # Algorithm
     algo_hparam = dict(

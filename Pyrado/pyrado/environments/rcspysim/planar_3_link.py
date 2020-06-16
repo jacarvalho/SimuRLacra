@@ -83,9 +83,6 @@ class Planar3LinkSim(RcsSim, Serializable):
         return NotImplementedError
 
     def _create_task(self, task_args: dict) -> Task:
-        # Define the task including the reward function
-        mps = task_args.get('mps')
-
         # Define the indices for selection. This needs to match the observations' names in RcsPySim.
         idcs = ['Effector_X', 'Effector_Z']
 
@@ -106,7 +103,7 @@ class Planar3LinkSim(RcsSim, Serializable):
 
         success_fcn = functools.partial(proximity_succeeded, thold_dist=7.5e-2, dims=[0, 1])  # min distance = 7cm
         Q = np.diag([1e0, 1e0])
-        R = 5e-2*np.eye(len(mps))
+        R = 5e-2*np.eye(self.act_space.flat_dim)
 
         # Create the tasks
         subtask_11 = FinalRewTask(
