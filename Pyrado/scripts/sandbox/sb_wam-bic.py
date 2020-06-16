@@ -15,6 +15,7 @@ from pyrado.utils.data_types import RenderMode
 from pyrado.policies.features import RBFFeat
 from pyrado.sampling.rollout import rollout, after_rollout_query
 from pyrado.utils.experiments import load_experiment
+from pyrado.utils.input_output import print_cbt
 
 
 def compute_trajectory(weights, time, width):
@@ -109,34 +110,33 @@ def check_feat_equality():
 
 
 def eval_damping():
-    # Environment
-    # env = WAMBallInCupSim(max_steps=1750)
+    """ Plot joint trajectories for different joint damping parameters """
 
-    # Policy
-    # rbf_hparam = dict(num_feat_per_dim=7, bounds=(np.array([0.]), np.array([1.])))
-    # policy = DualRBFLinearPolicy(env.spec, rbf_hparam, dim_mask=1)
-
+    # Load experiment and remove possible randomization wrappers
     ex_dir = ask_for_experiment()
     env, policy, _ = load_experiment(ex_dir)
     env = inner_env(env)
     env.domain_param = WAMBallInCupSim.get_nominal_domain_param()
 
     data = []
-    dampings = [0., 1e-2, 1e-1, 1e0]  # np.logspace(-4, 0, 3)
+    t = []
+    dampings = [0., 1e-2, 1e-1, 1e0]
+    print_cbt(f'Run policy for damping coefficients: {dampings}')
     for d in dampings:
-        env.reset(domain_param=dict(damping=d))
+        env.reset(domain_param=dict(joint_damping=d))
         ro = rollout(env, policy, render_mode=RenderMode(video=False), eval=True)
+        t.append(ro.env_infos['t'])
         data.append(ro.env_infos['qpos'])
 
     fig, ax = plt.subplots(3, sharex='all')
-    ls = ['k-', 'b--', 'g-.', 'r:']  # line styles for better visibility
+    ls = ['k-', 'b--', 'g-.', 'r:']  # line style setting for better visibility
     for i, idx in enumerate([1, 3, 5]):
         for j in range(len(dampings)):
-            ax[i].plot(data[j][:, idx], ls[j], label=f'damping: {dampings[j]}')
+            ax[i].plot(t[j], data[j][:, idx], ls[j], label=f'damping: {dampings[j]}')
             if i == 0:
                 ax[i].legend()
-        ax[i].set_ylabel(f'joint {idx}')
-    ax[2].set_xlabel(f'time step')
+        ax[i].set_ylabel(f'joint {idx} pos [rad]')
+    ax[2].set_xlabel('time [s]')
     plt.suptitle('Evaluation of joint damping coefficient')
     plt.show()
 
