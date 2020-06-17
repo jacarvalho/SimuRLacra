@@ -98,6 +98,7 @@ namespace Rcs
         
         // Initialize temp storage where possible
         dq_ref = MatNd_create(graph->dof, 1);
+        dq_ref = MatNd_create(graph->dof, 1);
         dH = MatNd_create(1, graph->nJ);
         
         // Since the subclass must initialize the dynamicalSystems first, we defer creation of these to the first reset call.
@@ -175,7 +176,7 @@ namespace Rcs
     void ActionModelIK::ikFromDX(MatNd* q_des, MatNd* q_dot_des, double dt) const
     {
         double alpha = 1e-4, lambda = 1e-6;
-        
+
         // Print desired task space delta if debug level is exceeded
         REXEC(6)
         {
@@ -197,10 +198,18 @@ namespace Rcs
             MatNd_addSelf(dH, dH_ca);
             MatNd_destroy(dH_ca);
         }
-        
+
+        MatNd* dq_ref_ts = MatNd_create(graph->dof, 1);
+        MatNd* dq_ref_ns = MatNd_create(graph->dof, 1);
+        MatNd* a_temp = MatNd_create(controller->getNumberOfTasks(), 1);
         // Compute joint space position error with IK
         MatNd_constMulSelf(dH, alpha);
-        solver->solveRightInverse(dq_ref, dx_des, dH, NULL, lambda); // tries to solve everything exactly
+//        solver->solveRightInverse(dq_ref, dx_des, dH, NULL, lambda); // tries to solve everything exactly
+        solver->solveLeftInverse(dq_ref_ts, dq_ref_ns, dx_des, dH, a_temp, lambda); // tries to solve everything exactly
+        MatNd_add(dq_ref, dq_ref_ts, dq_ref_ns);
+        MatNd_destroy(dq_ref_ts);
+        MatNd_destroy(dq_ref_ns);
+        MatNd_destroy(a_temp);
 
         // Check for speed limit violations
         RcsGraph_limitJointSpeeds(desiredGraph, dq_ref, dt, RcsStateFull);
