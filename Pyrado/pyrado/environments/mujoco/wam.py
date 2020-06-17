@@ -226,6 +226,7 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
             xml_model = xml_model.replace('[pos_mesh]', str(0.055 - (cup_scale - 1.)*0.023))
             xml_model = xml_model.replace('[pos_goal]', str(0.1165 + (cup_scale - 1.)*0.0385))
             xml_model = xml_model.replace('[size_cup]', str(cup_scale*0.038))
+            xml_model = xml_model.replace('[size_cup_inner]', str(cup_scale * 0.03))
 
         if rope_length is not None:
             # The rope consists of 29 capsules
@@ -307,6 +308,35 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
             if c1 or c2:
                 if verbose:
                     print_cbt(f'Undesired collision of {body1_name} and {body2_name} detected!', 'y')
+                return True
+
+        return False
+
+    def check_ball_in_cup(self, verbose: bool = False):
+        """
+        Check if the ball is in the cup.
+
+        :param verbose: print messages when ball is in the cup
+        :return: `True` if the ball is in the cup
+        """
+        for i in range(self.sim.data.ncon):
+            # Get current contact object
+            contact = self.sim.data.contact[i]
+
+            # Extract body-id and body-name of both contact geoms
+            body1 = self.model.geom_bodyid[contact.geom1]
+            body1_name = self.model.body_names[body1]
+            body2 = self.model.geom_bodyid[contact.geom2]
+            body2_name = self.model.body_names[body2]
+
+            # Evaluate if the ball collides with part of the WAM (collision bodies)
+            # or the connection of WAM and cup (geom_ids)
+            cup_inner_id = self.model._geom_name2id['cup_inner']
+            c1 = body1_name == 'ball' and contact.geom2 == cup_inner_id
+            c2 = body2_name == 'ball' and contact.geom1 == cup_inner_id
+            if c1 or c2:
+                if verbose:
+                    print_cbt(f'Timestep {self.curr_step}: Ball is in the cup.', 'y')
                 return True
 
         return False
