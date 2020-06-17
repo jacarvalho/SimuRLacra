@@ -6,7 +6,7 @@
 namespace Rcs
 {
 
-/*
+/**
  * Descriptor for the body's mass, center of mass and inertia.
  *
  * If the center of mass or the inertia are not set, they will be calculated automatically.

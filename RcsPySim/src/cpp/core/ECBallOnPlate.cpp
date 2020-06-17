@@ -143,7 +143,7 @@ protected:
 
     virtual void populatePhysicsParameters(PhysicsParameterManager* manager)
     {
-        manager->addParam("Ball", new PPDSphereRadius());
+        manager->addParam("Ball", new PPDSphereRadius("Plate"));
         manager->addParam("Ball", new PPDMassProperties());
         manager->addParam("Ball", new PPDMaterialProperties());
         manager->addParam("Plate", new PPDMaterialProperties());

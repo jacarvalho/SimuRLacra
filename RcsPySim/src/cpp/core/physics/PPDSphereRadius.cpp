@@ -6,52 +6,85 @@
 namespace Rcs
 {
 
-PPDSphereRadius::PPDSphereRadius() :
-        PPDSingleVar("radius", BodyParamInfo::MOD_SHAPE,
-                     // Use a lambda to access the variable.
-                     [](BodyParamInfo& bpi) -> double& { return bpi.body->shape[0]->extents[0]; })
-{
-}
+PPDSphereRadius::PPDSphereRadius(std::string prevBodyName, unsigned int shapeIdx, unsigned int shapeIdxPrevBody) :
+    PPDSingleVar("radius", BodyParamInfo::MOD_SHAPE,
+                 [](BodyParamInfo& bpi) -> double& { return bpi.body->shape[0]->extents[0]; }),
+    prevBodyName(std::move(prevBodyName)), shapeIdx(shapeIdx), shapeIdxPrevBody(shapeIdxPrevBody)
+    {}
 
 PPDSphereRadius::~PPDSphereRadius() = default;
 
 void PPDSphereRadius::setValues(PropertySource* inValues)
 {
-    // adapt properties
+    // Adapt properties
     PPDSingleVar::setValues(inValues);
 
-    // Adapt the ball's z-position to prevent clipping into the plate
-    double newRad = bodyParamInfo->body->shape[0]->extents[0];
+    // Check if the ball position variable is relative to another body
+    RcsBody* prevBody = RcsGraph_getBodyByName(bodyParamInfo->graph, prevBodyName.c_str());
+    double zOffset = 0.;
+    if (prevBody != NULL)
+    {
+        if (bodyParamInfo->body->parent == prevBody)
+        {
+            // Sphere rigid body coordinates are relative
+        }
+        else
+        {
+            // The sphere's rigid body coordinates are absolute, shift them accordingly
+            // Note: this assumes that the refBody is level, i.e. not tilted
+            zOffset = prevBody->A_BI->org[2];
+        }
 
-    // need to check if the ball position variable is relative
-    RcsBody* plate = RcsGraph_getBodyByName(bodyParamInfo->graph, "Plate");
-    double plateZ;
-    if (bodyParamInfo->body->parent == plate) {
-        // ball rigid body coordinates are relative, no offset needed
-        plateZ = 0;
-    } else {
-        // ball ball rigid body coordinates are absolute, shift so that the ball is on the plate
-        // NOTE: this assumes a level plate
-        plateZ = plate->A_BI->org[2];
+        if (prevBody->shape[shapeIdxPrevBody]->type == RCSSHAPE_TYPE::RCSSHAPE_BOX)
+        {
+            zOffset += prevBody->shape[shapeIdxPrevBody]->extents[2]/2.;
+        }
+        else if (prevBody->shape[shapeIdxPrevBody]->type == RCSSHAPE_TYPE::RCSSHAPE_CYLINDER)
+        {
+            zOffset += prevBody->shape[shapeIdxPrevBody]->extents[2]/2.;
+        }
+        else if (prevBody->shape[shapeIdxPrevBody]->type == RCSSHAPE_TYPE::RCSSHAPE_SPHERE)
+        {
+            zOffset += prevBody->shape[shapeIdxPrevBody]->extents[0];
+        }
+        else
+        {
+            REXEC(4)
+            {
+                std::cout << "No default vertical offset found for previous body shape " <<
+                prevBody->shape[0]->type << std::endl;
+            }
+        }
+    }
+    else
+    {
+        REXEC(4)
+        {
+            std::cout << "No reference body found for adding an offset to the randomized sphere's position! "  <<
+            "Received " << prevBodyName << std::endl;
+        }
     }
 
-    bodyParamInfo->graph->q->ele[bodyParamInfo->body->jnt->jointIndex + 2] = plateZ + newRad; // set ball's z DoF
+    // Adapt the sphere's z-position
+    double newRadius = bodyParamInfo->body->shape[shapeIdx]->extents[0];
+    bodyParamInfo->graph->q->ele[bodyParamInfo->body->jnt->jointIndex + 2] = zOffset + newRadius;
+
     // Make sure the state is propagated
     RcsGraph_setState(bodyParamInfo->graph, NULL, bodyParamInfo->graph->q_dot);
 
-    RLOG(4, "New radius = %f; New z-position = %f", newRad, plateZ + newRad);
+    RLOG(4, "New radius = %f; New z-position = %f", newRadius, zOffset + newRadius);
 }
 
 void PPDSphereRadius::init(BodyParamInfo* bodyParamInfo)
 {
+    // Check if the ball is valid
     PPDSingleVar::init(bodyParamInfo);
-    // check that the ball is valid
     RCHECK_MSG(bodyParamInfo->body->shape != NULL, "Invalid ball body %s", bodyParamInfo->body->name);
-    RCHECK_MSG(bodyParamInfo->body->shape[0] != NULL, "Invalid ball body %s", bodyParamInfo->body->name);
-    RCHECK_MSG(bodyParamInfo->body->shape[0]->type == RCSSHAPE_SPHERE, "Invalid ball body %s",
+    RCHECK_MSG(bodyParamInfo->body->shape[shapeIdx] != NULL, "Invalid ball body %s", bodyParamInfo->body->name);
+    RCHECK_MSG(bodyParamInfo->body->shape[shapeIdx]->type == RCSSHAPE_SPHERE, "Invalid ball body %s",
                bodyParamInfo->body->name);
-    RCHECK_MSG((bodyParamInfo->body->shape[0]->computeType & RCSSHAPE_COMPUTE_PHYSICS) != 0, "Invalid ball body %s",
-               bodyParamInfo->body->name);
+    RCHECK_MSG((bodyParamInfo->body->shape[shapeIdx]->computeType & RCSSHAPE_COMPUTE_PHYSICS) != 0,
+               "Invalid ball body %s", bodyParamInfo->body->name);
     RCHECK_MSG(bodyParamInfo->body->rigid_body_joints, "Invalid ball body %s", bodyParamInfo->body->name);
 }
 

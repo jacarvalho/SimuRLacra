@@ -19,13 +19,20 @@ namespace Rcs
  * Exposes:
  *
  * - radius:
- *   Radius of the sphere.
- *   Unit: m
+ *   Radius of the sphere [m]
  */
 class PPDSphereRadius : public PPDSingleVar<double>
 {
 public:
-    PPDSphereRadius();
+    /**
+     * Constructor
+     *
+     * @param shapeIdx The spheres's index within given the body.
+     *                 This is given by the order of the shapes in the config xml-file.
+     * @param prevBodyName Name of the previous body if the graph to which the sphere is placed relative to,
+     *                     Use "" if the sphere is defined in world coordinates
+     */
+    PPDSphereRadius(std::string prevBodyName, unsigned int shapeIdx = 0, unsigned int shapeIdxPrevBody = 0);
 
     virtual ~PPDSphereRadius();
 
@@ -33,6 +40,15 @@ public:
 
 protected:
     virtual void init(BodyParamInfo* bodyParamInfo);
+
+private:
+    //! Name of the previous body if the graph to which the sphere is placed relative to
+    std::string prevBodyName;
+
+    //! The spheres's index within given the body. This is given by the order of the shapes in the config xml-file.
+    unsigned int shapeIdx;
+    //! The spheres's index within the previous body. This is given by the order of the shapes in the config xml-file.
+    unsigned int shapeIdxPrevBody;
 };
 
 } /* namespace Rcs */
