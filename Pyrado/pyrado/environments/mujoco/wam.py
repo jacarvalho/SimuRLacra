@@ -172,9 +172,11 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         self._state_space = BoxSpace(-max_state, max_state)
 
         # Action space (PD controller on 3 joint positions and velocities)
-        max_act = np.array([np.pi, np.pi, np.pi,  # [rad, rad, rad, ...
+        act_up = np.array([1.985, np.pi, np.pi/2,  # [rad, rad, rad, ...
                             10*np.pi, 10*np.pi, 10*np.pi])  # ... rad/s, rad/s, rad/s]
-        self._act_space = BoxSpace(-max_act, max_act,
+        act_lo = np.array([-1.985, -0.9, -np.pi/2,  # [rad, rad, rad, ...
+                            -10 * np.pi, -10 * np.pi, -10 * np.pi])  # ... rad/s, rad/s, rad/s]
+        self._act_space = BoxSpace(act_lo, act_up,
                                    labels=[r'$q_{1,des}$', r'$q_{3,des}$', r'$q_{5,des}$',
                                            r'$\dot{q}_{1,des}$', r'$\dot{q}_{3,des}$', r'$\dot{q}_{5,des}$'])
 
