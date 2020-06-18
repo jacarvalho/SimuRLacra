@@ -10,7 +10,6 @@ from pyrado.tasks.base import Task
 from pyrado.environments.mujoco.base import MujocoSimEnv
 from pyrado.spaces.box import BoxSpace
 from pyrado.tasks.condition_only import ConditionOnlyTask
-from pyrado.tasks.desired_space import DesSpaceTask
 from pyrado.tasks.desired_state import DesStateTask
 from pyrado.tasks.final_reward import BestStateFinalRewTask, FinalRewTask, FinalRewMode
 from pyrado.tasks.masked import MaskedTask
@@ -175,11 +174,9 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         self._state_space = BoxSpace(-max_state, max_state)
 
         # Action space (PD controller on 3 joint positions and velocities)
-        act_up = np.array([1.985, np.pi, np.pi/2,  # [rad, rad, rad, ...
-                            10*np.pi, 10*np.pi, 10*np.pi])  # ... rad/s, rad/s, rad/s]
-        act_lo = np.array([-1.985, -0.9, -np.pi/2,  # [rad, rad, rad, ...
-                            -10 * np.pi, -10 * np.pi, -10 * np.pi])  # ... rad/s, rad/s, rad/s]
-        self._act_space = BoxSpace(act_lo, act_up,
+        act_up = np.array([1.985, np.pi, np.pi/2, 10*np.pi, 10*np.pi, 10*np.pi])
+        act_lo = np.array([-1.985, -0.9, -np.pi/2, -10 * np.pi, -10 * np.pi, -10 * np.pi])
+        self._act_space = BoxSpace(act_lo, act_up,  # [rad, rad, rad, rad/s, rad/s, rad/s]
                                    labels=[r'$q_{1,des}$', r'$q_{3,des}$', r'$q_{5,des}$',
                                            r'$\dot{q}_{1,des}$', r'$\dot{q}_{3,des}$', r'$\dot{q}_{5,des}$'])
 
