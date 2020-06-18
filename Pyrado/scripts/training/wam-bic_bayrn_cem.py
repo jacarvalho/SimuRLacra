@@ -39,25 +39,25 @@ if __name__ == '__main__':
 
     # Subroutine
     subroutine_hparam = dict(
-        max_iter=15,
-        pop_size=50,
-        num_rollouts=40,
-        num_is_samples=5,
+        max_iter=20,
+        pop_size=100,
+        num_rollouts=50,
+        num_is_samples=10,
         expl_std_init=0.5,
         expl_std_min=0.02,
         extra_expl_std_init=0.5,
-        extra_expl_decay_iter=5,
+        extra_expl_decay_iter=10,
         full_cov=False,
         symm_sampling=False,
-        num_sampler_envs=6,
+        num_sampler_envs=8,
     )
     cem = CEM(ex_dir, env_sim, policy, **subroutine_hparam)
 
     # Set the boundaries for the GP
     dp_nom = WAMBallInCupSim.get_nominal_domain_param()
     bounds = to.tensor(
-        [[0.8*dp_nom['cup_scale'], dp_nom['cup_scale']/50, 0.9*dp_nom['rope_length'], dp_nom['rope_length']/50],
-         [1.2*dp_nom['cup_scale'], dp_nom['cup_scale']/10, 1.1*dp_nom['rope_length'], dp_nom['rope_length']/5]]
+        [[0.7*dp_nom['cup_scale'], dp_nom['cup_scale']/100, 0.8*dp_nom['rope_length'], dp_nom['rope_length']/100],
+         [1.3*dp_nom['cup_scale'], dp_nom['cup_scale']/20, 1.2*dp_nom['rope_length'], dp_nom['rope_length']/10]]
     )
 
     policy_init = to.load(osp.join(pyrado.EXP_DIR, WAMBallInCupSim.name, cem.name,
@@ -71,10 +71,10 @@ if __name__ == '__main__':
         acq_fc='EI',
         acq_restarts=500,
         acq_samples=1000,
-        num_init_cand=3,
+        num_init_cand=5,
         warmstart=False,
-        num_eval_rollouts_real=50 if isinstance(env_real, WAMBallInCupSim) else 5,
-        num_eval_rollouts_sim=50,
+        num_eval_rollouts_real=100 if isinstance(env_real, WAMBallInCupSim) else 5,
+        num_eval_rollouts_sim=100,
         policy_param_init=policy_init.param_values.data,
     )
 

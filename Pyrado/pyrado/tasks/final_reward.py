@@ -88,20 +88,26 @@ class FinalRewTask(TaskWrapper):
                     not self.mode.state_dependent and not self.mode.time_dependent):
                     if self.has_failed(state):
                         return -1.*np.abs(self.factor)
-                    else:
+                    elif self.has_succeeded(state):
                         return np.abs(self.factor)
+                    else:
+                        return 0.
 
                 elif (self.mode.always_positive and not self.mode.always_negative and
                       not self.mode.state_dependent and not self.mode.time_dependent):
                     if self.has_failed(state):
                         return 0.
-                    else:
+                    elif self.has_succeeded(state):
                         return np.abs(self.factor)
+                    else:
+                        return 0.
 
                 elif (not self.mode.always_positive and self.mode.always_negative and
                       not self.mode.state_dependent and not self.mode.time_dependent):
                     if self.has_failed(state):
                         return -1.*np.abs(self.factor)
+                    elif self.has_succeeded(state):
+                        return 0.
                     else:
                         return 0.
 
@@ -109,10 +115,12 @@ class FinalRewTask(TaskWrapper):
                       self.mode.state_dependent and not self.mode.time_dependent):
                     if self.has_failed(state):
                         return 0.
-                    else:
+                    elif self.has_succeeded(state):
                         act = np.zeros(self.env_spec.act_space.shape)  # dummy
                         step_rew = self._wrapped_task.step_rew(state, act, remaining_steps)
                         return self.factor*abs(step_rew)
+                    else:
+                        return 0.
 
                 elif (not self.mode.always_positive and self.mode.always_negative and
                       self.mode.state_dependent and not self.mode.time_dependent):
@@ -120,6 +128,8 @@ class FinalRewTask(TaskWrapper):
                         act = np.zeros(self.env_spec.act_space.shape)  # dummy
                         step_rew = self._wrapped_task.step_rew(state, act, remaining_steps)
                         return -1.*self.factor*abs(step_rew)
+                    elif self.has_succeeded(state):
+                        return 0.
                     else:
                         return 0.
 
@@ -129,8 +139,10 @@ class FinalRewTask(TaskWrapper):
                     step_rew = self._wrapped_task.step_rew(state, act, remaining_steps)
                     if self.has_failed(state):
                         return -1.*self.factor*abs(step_rew)
-                    else:
+                    elif self.has_succeeded(state):
                         return self.factor*abs(step_rew)
+                    else:
+                        return 0.
 
                 elif (not self.mode.always_positive and not self.mode.always_negative and
                       self.mode.state_dependent and self.mode.time_dependent):
@@ -138,27 +150,35 @@ class FinalRewTask(TaskWrapper):
                     step_rew = self._wrapped_task.step_rew(state, act, remaining_steps)
                     if self.has_failed(state):
                         return -1.*remaining_steps*abs(step_rew)
-                    else:
+                    elif self.has_succeeded(state):
                         return remaining_steps*abs(step_rew)
+                    else:
+                        return 0.
 
                 elif (not self.mode.always_positive and not self.mode.always_negative and
                       not self.mode.state_dependent and self.mode.time_dependent):
                     if self.has_failed(state):
                         return -1.*remaining_steps
-                    else:
+                    elif self.has_succeeded(state):
                         return remaining_steps
+                    else:
+                        return 0.
 
                 elif (self.mode.always_positive and not self.mode.always_negative and
                       not self.mode.state_dependent and self.mode.time_dependent):
                     if self.has_failed(state):
                         return 0.
-                    else:
+                    elif self.has_succeeded(state):
                         return remaining_steps
+                    else:
+                        return 0.
 
                 elif (not self.mode.always_positive and self.mode.always_negative and
                       not self.mode.state_dependent and self.mode.time_dependent):
                     if self.has_failed(state):
                         return -1.*remaining_steps
+                    elif self.has_succeeded(state):
+                        return 0.
                     else:
                         return 0.
 

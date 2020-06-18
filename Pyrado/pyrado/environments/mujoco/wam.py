@@ -9,8 +9,9 @@ from pyrado.spaces.singular import SingularStateSpace
 from pyrado.tasks.base import Task
 from pyrado.environments.mujoco.base import MujocoSimEnv
 from pyrado.spaces.box import BoxSpace
+from pyrado.tasks.condition_only import ConditionOnlyTask
 from pyrado.tasks.desired_state import DesStateTask
-from pyrado.tasks.final_reward import BestStateFinalRewTask
+from pyrado.tasks.final_reward import BestStateFinalRewTask, FinalRewTask, FinalRewMode
 from pyrado.tasks.masked import MaskedTask
 from pyrado.tasks.reward_functions import ZeroPerStepRewFcn, ExpQuadrErrRewFcn
 from pyrado.utils.data_types import EnvSpec
@@ -72,7 +73,6 @@ class WAMSim(MujocoSimEnv, Serializable):
         self._obs_space = BoxSpace(-max_obs, max_obs)
 
     def _create_task(self, task_args: dict = None) -> Task:
-        # TODO: Formulate proper task/reward
         state_des = np.concatenate([self.init_qpos.copy(), self.init_qvel.copy()])
         return DesStateTask(self.spec, state_des, ZeroPerStepRewFcn())
 
@@ -149,7 +149,8 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         return dict(
             cup_scale=1.,  # scaling factor for the radius of the cup
             rope_length=0.3103,  # length of the rope
-            ball_mass=0.021  # mass of the ball
+            ball_mass=0.021,  # mass of the ball
+            joint_damping=0.2,  # damping of motor joints
         )
 
     def _create_spaces(self):
@@ -160,7 +161,9 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         # Initial state space
         # Set the actual stable initial position. This position would be reached after some time using the internal
         # PD controller to stabilize at self.init_pose_des
+        # The last entry (7) is the angle of the first rope segment relative to the cup bottom plate
         np.put(self.init_qpos, [1, 3, 5, 6, 7], [0.6519, 1.409, -0.2827, -1.57, -0.2115])
+        # Initial (actual) qpos: [-3.6523e-05  6.4910e-01  4.4244e-03  1.4211e+00  8.8864e-03 -2.7763e-01 -1.5309e+00] TODO
         init_ball_pos = np.array([0., -0.8566, 0.85391])
         init_state = np.concatenate([self.init_qpos, self.init_qvel, init_ball_pos])
         self._init_space = SingularStateSpace(init_state)
@@ -171,19 +174,16 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         self._state_space = BoxSpace(-max_state, max_state)
 
         # Action space (PD controller on 3 joint positions and velocities)
-        max_act = np.array([np.pi, np.pi, np.pi,  # [rad, rad, rad, ...
-                            10*np.pi, 10*np.pi, 10*np.pi])  # ... rad/s, rad/s, rad/s]
-        self._act_space = BoxSpace(-max_act, max_act,
+        act_up = np.array([1.985, np.pi, np.pi/2, 10*np.pi, 10*np.pi, 10*np.pi])
+        act_lo = np.array([-1.985, -0.9, -np.pi/2, -10 * np.pi, -10 * np.pi, -10 * np.pi])
+        self._act_space = BoxSpace(act_lo, act_up,  # [rad, rad, rad, rad/s, rad/s, rad/s]
                                    labels=[r'$q_{1,des}$', r'$q_{3,des}$', r'$q_{5,des}$',
                                            r'$\dot{q}_{1,des}$', r'$\dot{q}_{3,des}$', r'$\dot{q}_{5,des}$'])
 
         # Observation space (normalized time)
         self._obs_space = BoxSpace(np.array([0.]), np.array([1.]), labels=['$t$'])
 
-    def _create_task(self, task_args: dict = None) -> Task:
-        if task_args is None:
-            task_args = dict()
-
+    def _create_task(self, task_args: dict) -> Task:
         # Create a DesStateTask that masks everything but the ball position
         idcs = list(range(self.state_space.flat_dim - 3, self.state_space.flat_dim))  # Cartesian ball position
         spec = EnvSpec(
@@ -192,21 +192,32 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
             self.spec.state_space.subspace(self.spec.state_space.create_mask(idcs))
         )
 
-        # If we do not use copy(), state_des coming from MuJoCo is a reference and updates automatically at each step
+        # If we do not use copy(), state_des coming from MuJoCo is a reference and updates automatically at each step.
         # Note: sim.forward() + get_body_xpos() results in wrong output for state_des, as sim has not been updated to
         # init_space.sample(), which is first called in reset()
-        state_des = np.array([0., -0.8566, 1.164])
-        rew_fcn = ExpQuadrErrRewFcn(
-            Q=task_args.get('Q', 2e1*np.eye(3)),  # distance ball - cup
-            R=task_args.get('R', np.diag([1e0, 1e0, 1e0, 1e0, 1e0, 1e0]))  # desired joint angles and velocities
-        )
-        dst = DesStateTask(spec, state_des, rew_fcn)
 
-        # Wrap the masked DesStateTask to add a bonus for the best state in the rollout
-        return BestStateFinalRewTask(
-            MaskedTask(self.spec, dst, idcs),
-            max_steps=self.max_steps, factor=task_args.get('factor', 1.)
-        )
+        if task_args.get('sparse_rew_fcn', False):
+            # Binary final reward task
+            task = FinalRewTask(
+                ConditionOnlyTask(spec, condition_fcn=self.check_ball_in_cup, is_success_condition=True),
+                mode=FinalRewMode(always_positive=True), factor=1
+            )
+
+            return MaskedTask(self.spec, task, idcs)
+
+        else:
+            state_des = np.array([0., -0.8566, 1.164])
+            rew_fcn = ExpQuadrErrRewFcn(
+                Q=task_args.get('Q', 2e1*np.eye(3)),  # distance ball - cup
+                R=task_args.get('R', np.diag([1e0, 1e0, 1e0, 1e-1, 1e-1, 1e-1]))  # desired joint angles and velocities
+            )
+            task = DesStateTask(spec, state_des, rew_fcn)
+
+            # Wrap the masked DesStateTask to add a bonus for the best state in the rollout
+            return BestStateFinalRewTask(
+                MaskedTask(self.spec, task, idcs),
+                max_steps=self.max_steps, factor=task_args.get('factor', 1.)
+            )
 
     def _adapt_model_file(self, xml_model: str, domain_param: dict) -> str:
         # First replace special domain parameters
@@ -219,6 +230,7 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
             xml_model = xml_model.replace('[pos_mesh]', str(0.055 - (cup_scale - 1.)*0.023))
             xml_model = xml_model.replace('[pos_goal]', str(0.1165 + (cup_scale - 1.)*0.0385))
             xml_model = xml_model.replace('[size_cup]', str(cup_scale*0.038))
+            xml_model = xml_model.replace('[size_cup_inner]', str(cup_scale * 0.03))
 
         if rope_length is not None:
             # The rope consists of 29 capsules
@@ -233,14 +245,14 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
 
     def _mujoco_step(self, act: np.ndarray) -> dict:
         # Get the desired positions and velocities for the selected joints
-        des_qpos = self.init_pose_des.copy()  # the desired trajectory is relative to self.init_pose_des
-        np.add.at(des_qpos, [1, 3, 5], act[:3])
-        des_qvel = np.zeros_like(des_qpos)
-        np.add.at(des_qvel, [1, 3, 5], act[3:])
+        qpos_des = self.init_pose_des.copy()  # the desired trajectory is relative to self.init_pose_des
+        np.add.at(qpos_des, [1, 3, 5], act[:3])
+        qvel_des = np.zeros_like(qpos_des)
+        np.add.at(qvel_des, [1, 3, 5], act[3:])
 
         # Compute the position and velocity errors
-        err_pos = des_qpos - self.state[:7]
-        err_vel = des_qvel - self.state[self.model.nq:self.model.nq + 7]
+        err_pos = qpos_des - self.state[:7]
+        err_vel = qvel_des - self.state[self.model.nq:self.model.nq + 7]
 
         # Compute the torques (PD controller)
         torque = self.p_gains*err_pos + self.d_gains*err_vel
@@ -264,13 +276,15 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         # Update task's desired state
         state_des = np.zeros_like(self.state)  # needs to be of same dimension as self.state since it is masked later
         state_des[-3:] = self.sim.data.get_body_xpos('B0').copy()
-        self._task.state_des = state_des
+        if isinstance(self._task.wrapped_task, DesStateTask):
+            # In case of a continous reward task
+            self._task.state_des = state_des
 
         # If desired, check for collisions of the ball with the robot
         ball_collided = self.check_ball_collisions() if self.stop_on_collision else False
 
         return dict(
-            des_qpos=des_qpos, des_qvel=des_qvel, qpos=qpos[:7], qvel=qvel[:7], ball_pos=ball_pos,
+            qpos_des=qpos_des, qvel_des=qvel_des, qpos=qpos[:7], qvel=qvel[:7], ball_pos=ball_pos,
             state_des=state_des[-3:], failed=mjsim_crashed or ball_collided
         )
 
@@ -300,6 +314,35 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
             if c1 or c2:
                 if verbose:
                     print_cbt(f'Undesired collision of {body1_name} and {body2_name} detected!', 'y')
+                return True
+
+        return False
+
+    def check_ball_in_cup(self, verbose: bool = False):
+        """
+        Check if the ball is in the cup.
+
+        :param verbose: print messages when ball is in the cup
+        :return: `True` if the ball is in the cup
+        """
+        for i in range(self.sim.data.ncon):
+            # Get current contact object
+            contact = self.sim.data.contact[i]
+
+            # Extract body-id and body-name of both contact geoms
+            body1 = self.model.geom_bodyid[contact.geom1]
+            body1_name = self.model.body_names[body1]
+            body2 = self.model.geom_bodyid[contact.geom2]
+            body2_name = self.model.body_names[body2]
+
+            # Evaluate if the ball collides with part of the WAM (collision bodies)
+            # or the connection of WAM and cup (geom_ids)
+            cup_inner_id = self.model._geom_name2id['cup_inner']
+            c1 = body1_name == 'ball' and contact.geom2 == cup_inner_id
+            c2 = body2_name == 'ball' and contact.geom1 == cup_inner_id
+            if c1 or c2:
+                if verbose:
+                    print_cbt(f'Timestep {self.curr_step}: Ball is in the cup.', 'y')
                 return True
 
         return False

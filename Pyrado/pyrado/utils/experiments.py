@@ -81,15 +81,11 @@ def load_experiment(ex_dir: str, args: Any = None) -> ([SimEnv, EnvWrapper], Pol
             if hasattr(env, 'randomizer'):
                 last_cand = to.load(osp.join(ex_dir, 'candidates.pt'))[-1, :]
                 env.adapt_randomizer(last_cand.numpy())
-                print_cbt(f'Using the domain randomizer\n{env.randomizer}', 'w')
+                print_cbt(f'Loaded the domain randomizer\n{env.randomizer}', 'w')
             # Policy
             if args.iter == -1:
-                try:
-                    policy = to.load(osp.join(ex_dir, 'final_policy.pt'))
-                    print_cbt(f"Loaded {osp.join(ex_dir, 'final_policy.pt')}", 'g')
-                except FileNotFoundError:
-                    policy = to.load(osp.join(ex_dir, 'policy.pt'))
-                    print_cbt(f"Loaded {osp.join(ex_dir, 'policy.pt')}", 'g')
+                policy = to.load(osp.join(ex_dir, 'policy.pt'))
+                print_cbt(f"Loaded {osp.join(ex_dir, 'policy.pt')}", 'g')
             else:
                 policy = to.load(osp.join(ex_dir, f'iter_{args.iter}.pt'))
                 print_cbt(f"Loaded {osp.join(ex_dir, f'iter_{args.iter}.pt')}", 'g')

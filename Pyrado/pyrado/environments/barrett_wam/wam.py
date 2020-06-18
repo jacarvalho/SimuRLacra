@@ -133,18 +133,18 @@ class WAMBallInCupReal(Env):
 
         if self.poses_des is not None and self._curr_step < self.poses_des.shape[0]:
             # Use given desired trajectory if given and time step does no exceed its length
-            des_qpos = self.poses_des[self._curr_step]
+            qpos_des = self.poses_des[self._curr_step]
         else:
             # Otherwise use the action given by a policy
-            des_qpos = self.init_pose_des.copy()  # keep the initial joint angles deselected joints
-            np.add.at(des_qpos, [1, 3, 5], act[:3])  # the policy operates on joint 1, 3 and 5
+            qpos_des = self.init_pose_des.copy()  # keep the initial joint angles deselected joints
+            np.add.at(qpos_des, [1, 3, 5], act[:3])  # the policy operates on joint 1, 3 and 5
 
         # Create robcom GoTo process at the first time step TODO @Christian: possible move to the end of reset()?
         if self._curr_step == 0:
             self._gt = self._client.create(robcom.Goto, 'RIGHT_ARM', '')
 
         # Add desired joint position as step to the process
-        self._gt.add_step(self.dt, des_qpos)
+        self._gt.add_step(self.dt, qpos_des)
         self._curr_step += 1
         self.state = np.array([self._curr_step/self.max_steps])
 
