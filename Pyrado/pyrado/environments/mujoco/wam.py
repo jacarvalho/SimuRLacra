@@ -148,7 +148,7 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
     def get_nominal_domain_param(cls) -> dict:
         return dict(
             cup_scale=1.,  # scaling factor for the radius of the cup
-            rope_length=0.3103,  # length of the rope
+            rope_length=0.3,  # length of the rope [previously: 0.3103]
             ball_mass=0.021,  # mass of the ball
             joint_damping=0.2,  # damping of motor joints
         )
