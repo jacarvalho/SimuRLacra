@@ -103,6 +103,7 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
                  frame_skip: int = 4,
                  max_steps: int = pyrado.inf,
                  stop_on_collision: bool = True,
+                 fixed_initial_state: bool = True,
                  task_args: [dict, None] = None):
         """
         Constructor
@@ -113,9 +114,12 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
                                   collides with something else than the desired parts of the cup. This causes the
                                   episode to end. Keep in mind that in case of a negative step reward and no final
                                   cost on failing, this might result in undesired behavior.
+        :param fixed_initial_state: enables/disables deterministic, fixed initial state
         :param task_args: arguments for the task construction
         """
         Serializable._init(self, locals())
+
+        self.fixed_initial_state = fixed_initial_state
 
         model_path = osp.join(pyrado.MUJOCO_ASSETS_DIR, 'wam_7dof_bic.xml')
         super().__init__(model_path, frame_skip, max_steps, task_args)
@@ -131,7 +135,8 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         # not every geom has a name
         self._collision_geom_ids = [self.model._geom_name2id[name] for name in ['cup_geom1', 'cup_geom2']]
         self._collision_bodies = ['wam/wrist_pitch_link', 'wam/wrist_yaw_link', 'wam/forearm_link',
-                                  'wam/upper_arm_link', 'wam/shoulder_pitch_link', 'wam/shoulder_yaw_link']
+                                  'wam/upper_arm_link', 'wam/shoulder_pitch_link', 'wam/shoulder_yaw_link',
+                                  'wam/base_link']
         self.stop_on_collision = stop_on_collision
 
         self.camera_config = dict(
@@ -161,12 +166,23 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         # Initial state space
         # Set the actual stable initial position. This position would be reached after some time using the internal
         # PD controller to stabilize at self.init_pose_des
-        # The last entry (7) is the angle of the first rope segment relative to the cup bottom plate
-        np.put(self.init_qpos, [1, 3, 5, 6, 7], [0.6519, 1.409, -0.2827, -1.57, -0.2115])
-        # Initial (actual) qpos: [-3.6523e-05  6.4910e-01  4.4244e-03  1.4211e+00  8.8864e-03 -2.7763e-01 -1.5309e+00] TODO
+        # An initial qpos measured on real Barret WAM:
+        #   [-3.6523e-05  6.4910e-01  4.4244e-03  1.4211e+00  8.8864e-03 -2.7763e-01 -1.5309e+00]
+        self.init_qpos[:7] = np.array([0., 0.65, 0., 1.41, 0., -0.28, -1.57])
+        # Set the angle of the first rope segment relative to the cup bottom plate
+        self.init_qpos[7] = -0.21
+        # The initial position of the ball in cartesian coordinates
         init_ball_pos = np.array([0., -0.8566, 0.85391])
         init_state = np.concatenate([self.init_qpos, self.init_qvel, init_ball_pos])
-        self._init_space = SingularStateSpace(init_state)
+        if self.fixed_initial_state:
+            self._init_space = SingularStateSpace(init_state)
+        else:
+            # Add plus/minus one degree to each motor joint and the first rope segment joint
+            init_state_up = init_state.copy()
+            init_state_up[:8] += 1 * np.pi / 180
+            init_state_lo = init_state.copy()
+            init_state_lo[:8] -= 1 * np.pi / 180
+            self._init_space = BoxSpace(init_state_lo, init_state_up)
 
         # State space
         state_shape = init_state.shape
