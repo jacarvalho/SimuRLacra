@@ -22,9 +22,10 @@ if __name__ == '__main__':
 
     # Policy
     policy_hparam = dict(
-        hidden_size=2,
+        hidden_size=6,
         conv_out_channels=1,
         conv_kernel_size=3,
+        conv_padding_mode='circular',
         activation_nonlin=to.tanh,
         tau_init=1.,
         tau_learnable=True,

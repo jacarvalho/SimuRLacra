@@ -27,6 +27,7 @@ class NFPolicy(RecurrentPolicy):
                  conv_kernel_size: int,
                  activation_nonlin: Callable,
                  obs_layer: [nn.Module, Policy] = None,
+                 conv_padding_mode: str = 'circular',
                  tau_init: float = 1.,
                  tau_learnable: bool = True,
                  init_param_kwargs: dict = None,
@@ -56,6 +57,8 @@ class NFPolicy(RecurrentPolicy):
         if not conv_kernel_size%2 == 1:
             print_cbt(f'Made kernel size {conv_kernel_size} odd {conv_kernel_size + 1} for automated padding.', 'y')
             conv_kernel_size = conv_kernel_size + 1
+        if not conv_padding_mode in ['circular', 'reflected', 'zeros']:
+            raise pyrado.ValueErr(given=conv_padding_mode, eq_constraint='circular, reflected, or zeros')
 
         super().__init__(spec, use_cuda)
 
@@ -74,8 +77,9 @@ class NFPolicy(RecurrentPolicy):
         self.conv_layer = nn.Conv1d(
             in_channels=1,  # treat potentials as a time series of values (convolutions is over the "time" axis)
             out_channels=conv_out_channels,
-            kernel_size=conv_kernel_size, stride=1, padding=conv_kernel_size//2,
-            dilation=1, groups=1, bias=True, padding_mode='zeros'  # PyTorch default values
+            kernel_size=conv_kernel_size, stride=1,
+            padding=conv_kernel_size//2 if conv_padding_mode != 'circular' else (conv_kernel_size + 1)//2,
+            padding_mode=conv_padding_mode, dilation=1, groups=1, bias=False
         )
         # self.post_conv_layer = nn.Linear(conv_out_channels, spec.act_space.flat_dim, bias=False)
         self.act_layer = nn.Linear(self._hidden_size, spec.act_space.flat_dim, bias=False)
