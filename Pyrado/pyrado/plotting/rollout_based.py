@@ -216,38 +216,57 @@ def plot_rewards(ro: StepSequence):
         plt.show()
 
 
-def plot_adn_data(ro: StepSequence):
+def plot_potentials(ro: StepSequence, layout: str = 'joint'):
     """
-    Plot the trajectories specific to an Activation Dynamic Network (ADN).
+    Plot the trajectories specific to an Activation Dynamic Network (ADN) or a Neural Field (NF) policy.
 
     :param ro: input rollout
+    :param layout: group jointly (default), or create a separate sub-figure for each plot
     """
     if hasattr(ro, 'actions') and hasattr(ro, 'potentials') and hasattr(ro, 'stimuli'):
         # Use recorded time stamps if possible
         t = ro.env_infos.get('t', np.arange(0, ro.length)) if hasattr(ro, 'env_infos') else np.arange(0, ro.length)
-        num_rows = ro.potentials.shape[1]  # number of movement primitives / dynamical systems
+        num_pot = ro.potentials.shape[1]  # number of neurons with potential
+        num_act = ro.actions.shape[1]
 
-        fig = plt.figure()
-        gs = gridspec.GridSpec(num_rows, 3)
+        if layout == 'separate':
+            fig = plt.figure(figsize=(12, 8))
+            gs = fig.add_gridspec(nrows=num_pot, ncols=3)
+            for i in range(num_pot):
+                ax0 = fig.add_subplot(gs[i, 0])
+                ax0.plot(t, ro.stimuli[:, i], label=rf'$s_{i}$', c=f'C{i%10}')
+                ax0.legend()
+                ax1 = fig.add_subplot(gs[i, 1], sharex=ax0)
+                ax1.plot(t, ro.potentials[:, i], label=rf'$p_{i}$', c=f'C{i%10}')
+                ax1.legend()
+                if i < num_act:  # could have more potentials than actions
+                    ax2 = fig.add_subplot(gs[i, 2], sharex=ax0)
+                    ax2.plot(t, ro.actions[:, i], label=rf'$a_{i}$', c=f'C{i%10}')
+                    ax2.legend()
 
-        for i in range(num_rows):
-            ax0 = fig.add_subplot(gs[i, 0])
-            ax0.plot(t, ro.stimuli[:, i], label=rf'$s_{i}$', c=f'C{i%10}')
-            ax0.legend()
-            ax1 = fig.add_subplot(gs[i, 1], sharex=ax0)
-            ax1.plot(t, ro.potentials[:, i], label=rf'$p_{i}$', c=f'C{i%10}')
-            ax1.legend()
-            ax2 = fig.add_subplot(gs[i, 2], sharex=ax0)
-            ax2.plot(t, ro.actions[:, i], label=rf'$a_{i}$', c=f'C{i%10}')
-            ax2.legend()
+                if i == 0:
+                    ax0.set_title('Stimuli over time')
+                    ax1.set_title('Potentials over time')
+                    ax2.set_title('Actions over time')
 
-            if i == 0:
-                ax0.set_title('Stimuli over time')
-                ax1.set_title('Potentials over time')
-                ax2.set_title('Activations over time')
+        elif layout == 'joint':
+            _, axs = plt.subplots(nrows=3, ncols=1, sharex=True, figsize=(8, 12))
 
-        plt.subplots_adjust(hspace=.2)
-        plt.subplots_adjust(wspace=.3)
+            for i in range(num_pot):
+                axs[0].plot(t, ro.stimuli[:, i], label=rf'$s_{i}$', c=f'C{i%10}')
+                axs[1].plot(t, ro.potentials[:, i], label=rf'$p_{i}$', c=f'C{i%10}')
+
+            for i in range(num_act):
+                axs[2].plot(t, ro.actions[:, i], label=rf'$a_{i}$', c=f'C{i%10}')
+
+            for a in axs:
+                a.legend()
+            axs[0].set_title('Stimuli over time')
+            axs[1].set_title('Potentials over time')
+            axs[2].set_title('Actions over time')
+
+        # plt.subplots_adjust(hspace=.2)
+        # plt.subplots_adjust(wspace=.3)
         plt.show()
 
 

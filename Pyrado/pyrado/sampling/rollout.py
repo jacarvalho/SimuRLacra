@@ -13,9 +13,10 @@ from pyrado.environment_wrappers.utils import inner_env, typed_env
 from pyrado.plotting.curve import plot_dts
 from pyrado.plotting.policy_parameters import render_policy_params
 from pyrado.plotting.rollout_based import plot_observations_actions_rewards, plot_actions, plot_observations, \
-    plot_rewards, plot_adn_data, plot_features
+    plot_rewards, plot_potentials, plot_features
 from pyrado.policies.adn import ADNPolicy
 from pyrado.policies.base import Policy
+from pyrado.policies.neural_fields import NFPolicy
 from pyrado.policies.two_headed import TwoHeadedPolicy
 from pyrado.sampling.step_sequence import StepSequence
 from pyrado.utils.data_types import RenderMode
@@ -72,7 +73,7 @@ def rollout(env: Env,
     if policy.is_recurrent:
         hidden_hist = []
     # If an ExplStrat is passed use the policy property, if a Policy is passed use it directly
-    if isinstance(getattr(policy, 'policy', policy), ADNPolicy):
+    if isinstance(getattr(policy, 'policy', policy), (ADNPolicy, NFPolicy)):
         potentials_hist = []
         stimuli_hist = []
     elif isinstance(getattr(policy, 'policy', policy), TwoHeadedPolicy):
@@ -194,7 +195,7 @@ def rollout(env: Env,
             hidden_hist.append(hidden)
             hidden = hidden_next
         # If an ExplStrat is passed use the policy property, if a Policy is passed use it directly
-        if isinstance(getattr(policy, 'policy', policy), ADNPolicy):
+        if isinstance(getattr(policy, 'policy', policy), (ADNPolicy, NFPolicy)):
             potentials_hist.append(getattr(policy, 'policy', policy).potentials.detach().numpy())
             stimuli_hist.append(getattr(policy, 'policy', policy).stimuli.detach().numpy())
         elif isinstance(getattr(policy, 'policy', policy), TwoHeadedPolicy):
@@ -253,7 +254,7 @@ def rollout(env: Env,
     # Add special entries to the resulting rollout
     if policy.is_recurrent:
         res.add_data('hidden_states', hidden_hist)
-    if isinstance(getattr(policy, 'policy', policy), ADNPolicy):
+    if isinstance(getattr(policy, 'policy', policy), (ADNPolicy, NFPolicy)):
         res.add_data('potentials', potentials_hist)
         res.add_data('stimuli', stimuli_hist)
     elif isinstance(getattr(policy, 'policy', policy), TwoHeadedPolicy):
@@ -289,7 +290,7 @@ def after_rollout_query(env: Env, policy: Policy, rollout: StepSequence) -> tupl
         ['PF', 'plot features (for linear policy)'],
         ['PP', 'plot policy parameters (not suggested for many parameters)'],
         ['PDT', 'plot time deltas (profiling of a real system)'],
-        ['PADN', 'plot activation dynamic network data'],
+        ['PPOT', 'plot potentials, stimuli, and actions'],
         ['E', 'exit']
     ]
 
@@ -346,8 +347,8 @@ def after_rollout_query(env: Env, policy: Policy, rollout: StepSequence) -> tupl
         plot_dts(rollout.dts_policy, rollout.dts_step, rollout.dts_remainder)
         return after_rollout_query(env, policy, rollout),
 
-    elif ans == 'padn':
-        plot_adn_data(rollout)
+    elif ans == 'ppot':
+        plot_potentials(rollout)
         return after_rollout_query(env, policy, rollout)
 
     elif ans == 's':
