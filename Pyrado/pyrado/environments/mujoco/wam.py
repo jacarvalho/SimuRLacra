@@ -9,6 +9,7 @@ from pyrado.spaces.singular import SingularStateSpace
 from pyrado.tasks.base import Task
 from pyrado.environments.mujoco.base import MujocoSimEnv
 from pyrado.spaces.box import BoxSpace
+from pyrado.tasks.condition_only import ConditionOnlyTask
 from pyrado.tasks.desired_space import DesSpaceTask
 from pyrado.tasks.desired_state import DesStateTask
 from pyrado.tasks.final_reward import BestStateFinalRewTask, FinalRewTask, FinalRewMode
@@ -195,11 +196,15 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         # If we do not use copy(), state_des coming from MuJoCo is a reference and updates automatically at each step.
         # Note: sim.forward() + get_body_xpos() results in wrong output for state_des, as sim has not been updated to
         # init_space.sample(), which is first called in reset()
-        if task_args.get('sparse_rew_fcn', False):
-            space_des = BoxSpace(np.array([...]), np.array([...]))  # TODO define a space that captures if the ball is in the (randomized) cup.
-            dst = FinalRewTask(DesSpaceTask(spec, space_des), mode=FinalRewMode(always_positive=True), factor=1)
 
-            return MaskedTask(self.spec, dst, idcs)
+        if task_args.get('sparse_rew_fcn', False):
+            # Binary final reward task
+            task = FinalRewTask(
+                ConditionOnlyTask(spec, condition_fcn=self.check_ball_in_cup, is_success_condition=True),
+                mode=FinalRewMode(always_positive=True), factor=1
+            )
+
+            return MaskedTask(self.spec, task, idcs)
 
         else:
             state_des = np.array([0., -0.8566, 1.164])
@@ -207,11 +212,11 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
                 Q=task_args.get('Q', 2e1*np.eye(3)),  # distance ball - cup
                 R=task_args.get('R', np.diag([1e0, 1e0, 1e0, 1e-1, 1e-1, 1e-1]))  # desired joint angles and velocities
             )
-            dst = DesStateTask(spec, state_des, rew_fcn)
+            task = DesStateTask(spec, state_des, rew_fcn)
 
             # Wrap the masked DesStateTask to add a bonus for the best state in the rollout
             return BestStateFinalRewTask(
-                MaskedTask(self.spec, dst, idcs),
+                MaskedTask(self.spec, task, idcs),
                 max_steps=self.max_steps, factor=task_args.get('factor', 1.)
             )
 
@@ -272,7 +277,9 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         # Update task's desired state
         state_des = np.zeros_like(self.state)  # needs to be of same dimension as self.state since it is masked later
         state_des[-3:] = self.sim.data.get_body_xpos('B0').copy()
-        self._task.state_des = state_des
+        if isinstance(self._task.wrapped_task, DesStateTask):
+            # In case of a continous reward task
+            self._task.state_des = state_des
 
         # If desired, check for collisions of the ball with the robot
         ball_collided = self.check_ball_collisions() if self.stop_on_collision else False

@@ -111,7 +111,6 @@ def check_feat_equality():
 
 def eval_damping():
     """ Plot joint trajectories for different joint damping parameters """
-
     # Load experiment and remove possible randomization wrappers
     ex_dir = ask_for_experiment()
     env, policy, _ = load_experiment(ex_dir)
@@ -141,9 +140,9 @@ def eval_damping():
     plt.show()
 
 
-def main():
+def rollout_dummy_rbf_policy():
     # Environment
-    env = WAMBallInCupSim(max_steps=1750)
+    env = WAMBallInCupSim(max_steps=1750, task_args=dict(sparse_rew_fcn=True))
 
     # Stabilize around initial position
     env.reset(domain_param=dict(cup_scale=1., rope_length=0.3103, ball_mass=0.021))
@@ -158,13 +157,14 @@ def main():
     done, param = False, None
     while not done:
         ro = rollout(env, policy, render_mode=RenderMode(video=True), eval=True, reset_kwargs=dict(domain_param=param))
+        print_cbt(f'Return: {ro.undiscounted_return()}', 'g', bright=True)
         done, _, param = after_rollout_query(env, policy, ro)
 
     # Retrieve infos from rollout
     t = ro.env_infos['t']
-    des_pos_traj = ro.env_infos['des_qpos']  # (max_steps,7) ndarray >> can directly be saved
+    des_pos_traj = ro.env_infos['des_qpos']  # (max_steps,7) ndarray
     pos_traj = ro.env_infos['qpos']
-    des_vel_traj = ro.env_infos['des_qvel']  # (max_steps,7) ndarray >> can directly be saved
+    des_vel_traj = ro.env_infos['des_qvel']  # (max_steps,7) ndarray
     vel_traj = ro.env_infos['qvel']
     ball_pos = ro.env_infos['ball_pos']
     state_des = ro.env_infos['state_des']
@@ -179,9 +179,9 @@ def main():
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
     ax.plot(xs=ball_pos[:, 0], ys=ball_pos[:, 1], zs=ball_pos[:, 2], color='blue', label='Ball')
-    ax.scatter(xs=ball_pos[-1, 0], ys=ball_pos[-1, 1], zs=ball_pos[-1, 2], color='blue', label='Ball Final')
+    ax.scatter(xs=ball_pos[-1, 0], ys=ball_pos[-1, 1], zs=ball_pos[-1, 2], color='blue', label='Ball final')
     ax.plot(xs=state_des[:, 0], ys=state_des[:, 1], zs=state_des[:, 2], color='red', label='Cup')
-    ax.scatter(xs=state_des[-1, 0], ys=state_des[-1, 1], zs=state_des[-1, 2], color='red', label='Cup Final')
+    ax.scatter(xs=state_des[-1, 0], ys=state_des[-1, 1], zs=state_des[-1, 2], color='red', label='Cup final')
     ax.legend()
     ax.set_xlabel('x')
     ax.set_ylabel('y')
@@ -195,10 +195,13 @@ if __name__ == '__main__':
     pyrado.set_seed(101)
 
     # Check for function equality
-    print(check_feat_equality())
+    if check_feat_equality():
+        print_cbt('The two methods to compute the trajectory yield equal results.', 'g')
+    else:
+        print_cbt('The two methods to compute the trajectory do not yield equal results.', 'r')
 
     # Plot damping coefficient comparison
-    eval_damping()
+    # eval_damping()
 
     # Apply DualRBFLinearPolicy and plot the joint states over the desired ones
-    main()
+    rollout_dummy_rbf_policy()
