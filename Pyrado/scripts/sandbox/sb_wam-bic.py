@@ -162,9 +162,9 @@ def rollout_dummy_rbf_policy():
 
     # Retrieve infos from rollout
     t = ro.env_infos['t']
-    des_pos_traj = ro.env_infos['des_qpos']  # (max_steps,7) ndarray
+    des_pos_traj = ro.env_infos['qpos_des']  # (max_steps,7) ndarray
     pos_traj = ro.env_infos['qpos']
-    des_vel_traj = ro.env_infos['des_qvel']  # (max_steps,7) ndarray
+    des_vel_traj = ro.env_infos['qvel_des']  # (max_steps,7) ndarray
     vel_traj = ro.env_infos['qvel']
     ball_pos = ro.env_infos['ball_pos']
     state_des = ro.env_infos['state_des']
@@ -172,7 +172,7 @@ def rollout_dummy_rbf_policy():
     # Plot trajectories of the directly controlled joints and their corresponding desired trajectories
     fig, ax = plt.subplots(3, sharex='all')
     for i, idx in enumerate([1, 3, 5]):
-        ax[i].plot(t, des_pos_traj[:, idx], label=f'des_qpos {idx}')
+        ax[i].plot(t, des_pos_traj[:, idx], label=f'qpos_des {idx}')
         ax[i].plot(t, pos_traj[:, idx], label=f'qpos {idx}')
         ax[i].legend()
 

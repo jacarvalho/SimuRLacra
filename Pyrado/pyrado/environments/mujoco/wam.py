@@ -162,7 +162,9 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         # Initial state space
         # Set the actual stable initial position. This position would be reached after some time using the internal
         # PD controller to stabilize at self.init_pose_des
+        # The last entry (7) is the angle of the first rope segment relative to the cup bottom plate
         np.put(self.init_qpos, [1, 3, 5, 6, 7], [0.6519, 1.409, -0.2827, -1.57, -0.2115])
+        # Initial (actual) qpos: [-3.6523e-05  6.4910e-01  4.4244e-03  1.4211e+00  8.8864e-03 -2.7763e-01 -1.5309e+00] TODO
         init_ball_pos = np.array([0., -0.8566, 0.85391])
         init_state = np.concatenate([self.init_qpos, self.init_qvel, init_ball_pos])
         self._init_space = SingularStateSpace(init_state)
@@ -246,14 +248,14 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
 
     def _mujoco_step(self, act: np.ndarray) -> dict:
         # Get the desired positions and velocities for the selected joints
-        des_qpos = self.init_pose_des.copy()  # the desired trajectory is relative to self.init_pose_des
-        np.add.at(des_qpos, [1, 3, 5], act[:3])
-        des_qvel = np.zeros_like(des_qpos)
-        np.add.at(des_qvel, [1, 3, 5], act[3:])
+        qpos_des = self.init_pose_des.copy()  # the desired trajectory is relative to self.init_pose_des
+        np.add.at(qpos_des, [1, 3, 5], act[:3])
+        qvel_des = np.zeros_like(qpos_des)
+        np.add.at(qvel_des, [1, 3, 5], act[3:])
 
         # Compute the position and velocity errors
-        err_pos = des_qpos - self.state[:7]
-        err_vel = des_qvel - self.state[self.model.nq:self.model.nq + 7]
+        err_pos = qpos_des - self.state[:7]
+        err_vel = qvel_des - self.state[self.model.nq:self.model.nq + 7]
 
         # Compute the torques (PD controller)
         torque = self.p_gains*err_pos + self.d_gains*err_vel
@@ -285,7 +287,7 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         ball_collided = self.check_ball_collisions() if self.stop_on_collision else False
 
         return dict(
-            des_qpos=des_qpos, des_qvel=des_qvel, qpos=qpos[:7], qvel=qvel[:7], ball_pos=ball_pos,
+            qpos_des=qpos_des, qvel_des=qvel_des, qpos=qpos[:7], qvel=qvel[:7], ball_pos=ball_pos,
             state_des=state_des[-3:], failed=mjsim_crashed or ball_collided
         )
 

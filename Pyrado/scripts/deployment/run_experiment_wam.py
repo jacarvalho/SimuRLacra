@@ -16,7 +16,7 @@ from pyrado.logger.experiment import ask_for_experiment
 from pyrado.utils.argparser import get_argparser
 
 
-def run_direct_control(des_qpos, des_qvel):
+def run_direct_control(ex_dir, qpos_des, qvel_des):
 
     def callback(jg, eg, data_provider):
         nonlocal n
@@ -27,8 +27,8 @@ def run_direct_control(des_qpos, des_qvel):
         if time_step >= n:
             return True
 
-        dpos = des_qpos[time_step].tolist()
-        dvel = des_qvel[time_step].tolist()
+        dpos = qpos_des[time_step].tolist()
+        dvel = qvel_des[time_step].tolist()
 
         pos = np.array(jg.get(r.JointState.POS))
         vel = np.array(jg.get(r.JointState.VEL))
@@ -57,15 +57,17 @@ def run_direct_control(des_qpos, des_qvel):
 
     # Read out some states
     group = c.robot.get_group(["RIGHT_ARM"])
-    home_pos = np.array(group.get(r.JointState.POS))
+    home_qpos = np.array(group.get(r.JointState.POS))
     p_gains = np.array(group.get(r.JointState.P_GAIN))
     d_gains = np.array(group.get(r.JointState.D_GAIN))
-    print("Initial POS:", home_pos)
-    print("P Gain:", p_gains)
-    print("D Gain:", d_gains)
+    print("Initial (actual) qpos:", home_qpos)
+    print("P gain:", p_gains)
+    print("D gain:", d_gains)
+
+    input('Hit enter to continue.')
 
     # Global callback attributes
-    n = des_qpos.shape[0]
+    n = qpos_des.shape[0]
     time_step = 0
     qpos = []
     qvel = []
@@ -80,11 +82,14 @@ def run_direct_control(des_qpos, des_qvel):
     print('Measured positions:', np.array(qpos).shape)
     print('Measured velocities:', np.array(qvel).shape)
 
+    np.save(osp.join(ex_dir, 'qpos_real.npy'), qpos)
+    np.save(osp.join(ex_dir, 'qvel_real.npy'), qvel)
+
     c.stop()
     print('Connection closed.')
 
 
-def run_goto(des_qpos, start_pos, dt):
+def run_goto(qpos_des, start_pos, dt):
     # Connect to client
     c = r.Client()
     c.start('192.168.2.2', 2013)  # ip adress and port
@@ -98,9 +103,15 @@ def run_goto(des_qpos, start_pos, dt):
     gt.wait_for_completion()
     print("Reached initial position")
 
+    group = c.robot.get_group(["RIGHT_ARM"])
+    home_qpos = np.array(group.get(r.JointState.POS))
+    print("Initial (actual) qpos:", home_qpos)
+
+    input('Hit enter to continue.')
+
     gt = c.create(r.Goto, "RIGHT_ARM", "")
-    for i in range(0, des_qpos.shape[0]):
-        gt.add_step(dt, des_qpos[i, :])
+    for i in range(0, qpos_des.shape[0]):
+        gt.add_step(dt, qpos_des[i, :])
     print("Executing trajectory")
     gt.start()
     gt.wait_for_completion()
@@ -118,11 +129,12 @@ if __name__ == '__main__':
     ex_dir = ask_for_experiment() if args.ex_dir is None else args.ex_dir
 
     # Get desired positions and velocities
-    des_qpos = np.load(osp.join(ex_dir, 'des_qpos.npy'))
-    des_qvel = np.load(osp.join(ex_dir, 'des_qvel.npy'))
+    qpos_des = np.load(osp.join(ex_dir, 'qpos_des.npy'))
+    qvel_des = np.load(osp.join(ex_dir, 'qvel_des.npy'))
 
     start_pos = np.array([0.0, 0.5876, 0.0, 1.36, 0.0, -0.321, -1.57])  # starting position
     dt = 0.002  # step size
 
-    run_goto(des_qpos, start_pos, dt)
-    # run_direct_control(des_qpos, des_qvel)
+    #run_goto(qpos_des, start_pos, dt)
+    #input('Hit enter to continue.')
+    run_direct_control(ex_dir, qpos_des, qvel_des)
