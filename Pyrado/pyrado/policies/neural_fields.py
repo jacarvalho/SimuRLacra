@@ -1,11 +1,10 @@
 import torch as to
 import torch.nn as nn
-from typing import Callable, Sequence
+from typing import Callable
 
 import pyrado
-from pyrado.policies.rnn import default_unpack_hidden, default_pack_hidden
 from pyrado.utils.data_types import EnvSpec
-from pyrado.policies.base import Policy, PositiveScaleLayer
+from pyrado.policies.base import Policy
 from pyrado.policies.base_recurrent import RecurrentPolicy
 from pyrado.policies.initialization import init_param
 from pyrado.utils.input_output import print_cbt
@@ -14,8 +13,6 @@ from pyrado.utils.input_output import print_cbt
 class NFPolicy(RecurrentPolicy):
     """
     Neural Fields (NF)
-
-    https://discuss.pytorch.org/t/understanding-convolution-1d-output-and-input/30764/3
     
     .. seealso::
         [1] S.-I. Amari "Dynamics of Pattern Formation in Lateral-Inhibition Type Neural Fields",
@@ -30,7 +27,7 @@ class NFPolicy(RecurrentPolicy):
                  conv_kernel_size: int,
                  activation_nonlin: Callable,
                  obs_layer: [nn.Module, Policy] = None,
-                 tau_init: float = 2.,
+                 tau_init: float = 1.,
                  tau_learnable: bool = True,
                  init_param_kwargs: dict = None,
                  use_cuda: bool = False):
@@ -39,10 +36,11 @@ class NFPolicy(RecurrentPolicy):
 
         :param spec: environment specification
         :param dt: time step size
-        :param hidden_size:
-        :param kernel_size:
+        :param hidden_size: number of neurons with potential
+        :param conv_out_channels: number of filter for the 1-dim convolution along the potential-based neurons
+        :param conv_kernel_size: size of the kernel for the 1-dim convolution along the potential-based neurons
         :param activation_nonlin: nonlinearity to compute the activations from the potential levels
-        :param obs_layer: specify a custom Pytorch Module;
+        :param obs_layer: specify a custom PyTorch Module;
                           by default (`None`) a linear layer with biases is used
         :param tau_init: initial value for the shared time constant of the potentials
         :param tau_learnable: flag to determine if the time constant is a learnable parameter or a fixed tensor
@@ -51,6 +49,10 @@ class NFPolicy(RecurrentPolicy):
         """
         if not isinstance(dt, (float, int)):
             raise pyrado.TypeErr(given=dt, expected_type=float)
+        if not isinstance(hidden_size, int):
+            raise pyrado.TypeErr(given=hidden_size, expected_type=int)
+        if hidden_size < 2:
+            raise pyrado.ValueErr(given=hidden_size, g_constraint='15735c')
         if not conv_kernel_size%2 == 1:
             print_cbt(f'Made kernel size {conv_kernel_size} odd {conv_kernel_size + 1} for automated padding.', 'y')
             conv_kernel_size = conv_kernel_size + 1
@@ -71,7 +73,7 @@ class NFPolicy(RecurrentPolicy):
         self.obs_layer = nn.Linear(self._input_size, self._hidden_size, bias=True) if obs_layer is None else obs_layer
         self.conv_layer = nn.Conv1d(
             in_channels=1,  # treat potentials as a time series of values (convolutions is over the "time" axis)
-            out_channels=conv_out_channels,  # if 1 no act_layer needed
+            out_channels=conv_out_channels,
             kernel_size=conv_kernel_size, stride=1, padding=conv_kernel_size//2,
             dilation=1, groups=1, bias=True, padding_mode='zeros'  # PyTorch default values
         )
@@ -160,7 +162,7 @@ class NFPolicy(RecurrentPolicy):
             batch_size = obs.shape[0]
         else:
             raise pyrado.ShapeErr(msg=f"Improper shape of 'obs'. Policy received {obs.shape},"
-            f"but shape should be 1- or 2-dim")
+                                      f"but shape should be 1- or 2-dim")
 
         # Unpack hidden tensor (i.e. the potentials of the last step) if specified
         # The network can handle getting None by using default values
@@ -168,10 +170,10 @@ class NFPolicy(RecurrentPolicy):
 
         # Don't track the gradient through the potentials
         potentials = potentials.detach()
+        self._potentials = potentials
 
         # Clip the potentials, and save them for later use
         potentials = potentials.clamp(min=-self._potentials_max, max=self._potentials_max)
-        self._potentials = potentials  # TODO placement
 
         # ----------------
         # Activation Logic

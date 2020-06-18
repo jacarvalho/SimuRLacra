@@ -98,8 +98,8 @@ def render_policy_params(policy: Policy,
     # Create axes and subplots depending on the NN structure
     num_rows = len(list(policy.parameters()))
     fig = plt.figure(figsize=(14, 10), tight_layout=False)
-    gs = gridspec.GridSpec(num_rows, 2, width_ratios=[14, 1])  # right column is the color bar
-    ax_cb = plt.subplot(gs[:, 1])
+    gs = fig.add_gridspec(num_rows, 2, width_ratios=[14, 1])  # right column is the color bar
+    ax_cb = fig.add_subplot(gs[:, 1])
 
     # Accumulative norm for the colors
     norm = AccNorm()
