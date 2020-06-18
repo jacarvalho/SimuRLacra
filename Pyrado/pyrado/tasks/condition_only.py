@@ -20,6 +20,14 @@ class ConditionOnlyTask(Task):
         """
         Constructor
 
+        :usage:
+        .. code-block:: python
+
+            task = FinalRewTask(
+                       ConditionOnlyTask(<some EnvSpec>, <some Callable>, <True or False>),
+                       mode=FinalRewMode(time_dependent=True)
+            )
+
         :param env_spec: environment specification of a simulated or real environment
         :param condition_fcn: function to determine if the task was solved, by default (`None`) this task runs endlessly
         :param is_success_condition: if `True` the `condition_fcn` returns `True` for a success,
@@ -70,14 +78,16 @@ class ConditionOnlyTask(Task):
 
     def has_succeeded(self, state: np.ndarray) -> bool:
         if self.is_success_condition:
-            # Use given function to determine success
+            # Use given condition function to determine success
             return self.condition_fcn(state)
         else:
+            # Ignore condition function
             return False
 
     def has_failed(self, state: np.ndarray) -> bool:
         if self.is_success_condition:
+            # Ignore condition function
             return super().has_failed(state)
         else:
-            # Use given function to determine failure
+            # Use given condition function to determine failure
             return self.condition_fcn(state)
