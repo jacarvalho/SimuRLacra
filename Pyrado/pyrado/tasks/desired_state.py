@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Sequence
+from typing import Sequence, Callable
 
 import pyrado
 from pyrado.utils.data_types import EnvSpec
@@ -9,13 +9,13 @@ from pyrado.tasks.reward_functions import RewFcn
 
 
 class DesStateTask(Task):
-    """ Task class for moving to a (fixed) desired state. Operates on the error in state and action. """
+    """ Task class for moving to a desired state. Operates on the error in state and action. """
 
     def __init__(self,
                  env_spec: EnvSpec,
                  state_des: np.ndarray,
                  rew_fcn: RewFcn,
-                 success_fcn: callable = None):
+                 success_fcn: Callable = None):
         """
         Constructor
 
@@ -34,7 +34,7 @@ class DesStateTask(Task):
         self._env_spec = env_spec
         self._state_des = state_des
         self._rew_fcn = rew_fcn
-        self._success_fcn = success_fcn if success_fcn is not None else never_succeeded
+        self.success_fcn = success_fcn if success_fcn is not None else never_succeeded
 
     @property
     def env_spec(self) -> EnvSpec:
@@ -85,7 +85,7 @@ class DesStateTask(Task):
         return self._rew_fcn(err_state, -act, remaining_steps)  # act_des = 0
 
     def has_succeeded(self, state: np.ndarray) -> bool:
-        return self._success_fcn(self.state_des - state)
+        return self.success_fcn(self.state_des - state)
 
 
 class RadiallySymmDesStateTask(DesStateTask):
@@ -99,7 +99,8 @@ class RadiallySymmDesStateTask(DesStateTask):
                  state_des: np.ndarray,
                  rew_fcn: RewFcn,
                  idcs: Sequence[int],
-                 modulation: [float, np.ndarray] = 2*np.pi):
+                 modulation: [float, np.ndarray] = 2*np.pi,
+                 success_fcn: Callable = None):
         """
         Constructor
 
@@ -107,9 +108,10 @@ class RadiallySymmDesStateTask(DesStateTask):
         :param state_des: desired state a.k.a. goal state
         :param rew_fcn: reward function, an instance of a subclass of RewFcn
         :param idcs: indices of the state dimension(s) to apply the modulation
-        :param modulation: factor for the modulo operation, can be specified separately for every `idcs`
+        :param modulation: factor for the modulo operation, can be specified separately for every of `idcs`
+        :param success_fcn: function to determine if the task was solved, by default (`None`) this task runs endlessly
         """
-        super().__init__(env_spec, state_des, rew_fcn)
+        super().__init__(env_spec, state_des, rew_fcn, success_fcn)
 
         self.idcs = idcs
         self.mod = modulation*np.ones(len(idcs))

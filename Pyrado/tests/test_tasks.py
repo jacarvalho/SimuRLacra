@@ -3,6 +3,7 @@ import numpy as np
 import pytest
 
 import pyrado
+from pyrado.tasks.condition_only import ConditionOnlyTask
 from pyrado.tasks.desired_space import DesSpaceTask
 from pyrado.utils.data_types import EnvSpec
 from pyrado.spaces.box import BoxSpace
@@ -337,3 +338,28 @@ def test_set_goals_fo_composite_tasks(sub_tasks):
     st.idx_curr = 1
     st.space_des = BoxSpace(-0.5, 2., shape=3)
     assert st.space_des == BoxSpace(-0.5, 2., shape=3)
+
+
+@pytest.mark.parametrize(
+    'condition_fcn', [lambda x: np.linalg.norm(x - np.array([0.5, 0.5, 0.5])) < 0.01]
+)
+@pytest.mark.parametrize(
+    'is_success_condition', [
+        [True, False]
+    ], ids=['isc_true', 'isc_false']
+)
+def test_condition_only_task(envspec_432, condition_fcn, is_success_condition):
+    # cot = ConditionOnlyTask(envspec_432, condition_fcn, is_success_condition)
+    # cot.reset(envspec_432)
+
+    state = np.array([0., 0., 0.5])
+    # assert not cot.has_failed(state)
+    # assert not cot.has_succeeded(state)
+    #
+    # state = np.array([0.5, 0.5, 0.5])
+    # if cot.is_success_condition:
+    #     assert not cot.has_failed(state)
+    #     assert cot.has_succeeded(state)
+    # else:
+    #     assert cot.has_failed(state)
+    #     assert not cot.has_succeeded(state)
