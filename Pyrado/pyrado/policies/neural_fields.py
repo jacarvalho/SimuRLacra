@@ -23,10 +23,10 @@ class NFPolicy(RecurrentPolicy):
                  spec: EnvSpec,
                  dt: float,
                  hidden_size: int,
-                 conv_out_channels: int,
-                 conv_kernel_size: int,
                  activation_nonlin: Callable,
                  obs_layer: [nn.Module, Policy] = None,
+                 conv_out_channels: int = 1,
+                 conv_kernel_size: int = None,
                  conv_padding_mode: str = 'circular',
                  tau_init: float = 1.,
                  tau_learnable: bool = True,
@@ -53,13 +53,17 @@ class NFPolicy(RecurrentPolicy):
         if not isinstance(hidden_size, int):
             raise pyrado.TypeErr(given=hidden_size, expected_type=int)
         if hidden_size < 2:
-            raise pyrado.ValueErr(given=hidden_size, g_constraint='15735c')
+            raise pyrado.ValueErr(given=hidden_size, g_constraint='1')
+        if conv_kernel_size is None:
+            conv_kernel_size = hidden_size
         if not conv_kernel_size%2 == 1:
             print_cbt(f'Made kernel size {conv_kernel_size} odd (to {conv_kernel_size + 1}) for shape-conserving'
                       f'padding.', 'y')
             conv_kernel_size = conv_kernel_size + 1
         if conv_padding_mode not in ['circular', 'reflected', 'zeros']:
             raise pyrado.ValueErr(given=conv_padding_mode, eq_constraint='circular, reflected, or zeros')
+        if not callable(activation_nonlin):
+            raise pyrado.TypeErr(given=activation_nonlin, expected_type=Callable)
 
         super().__init__(spec, use_cuda)
 
@@ -68,9 +72,6 @@ class NFPolicy(RecurrentPolicy):
         self._input_size = spec.obs_space.flat_dim  # observations include goal distance, prediction error, ect.
         self._hidden_size = hidden_size  # number of potential neurons
         self._num_recurrent_layers = 1
-        if not callable(activation_nonlin):
-            if activation_nonlin is not None and not len(activation_nonlin) == spec.act_space.flat_dim:
-                raise pyrado.ShapeErr(given=activation_nonlin, expected_match=spec.act_space.shape)
         self._activation_nonlin = activation_nonlin
 
         # Create the RNN's layers
