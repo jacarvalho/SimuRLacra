@@ -75,11 +75,6 @@ pip install git+https://github.com/Xfel/init-args-serializer.git@master argparse
 ```
 Any warnings from VPython can be safely ignored.
 
-> Alternatively, you could use the provided yml-file
->```
->conda env create -f Pyrado/environment.yml
->```
-
  _Infrastructure dependent_: install libraries system-wide  
 Parts of this framework create Python bindings of [Rcs](https://github.com/HRI-EU/Rcs) called RcsPySim. Running Rcs requires several libraries which can be installed (__requires sudo rights__) via
 ```
