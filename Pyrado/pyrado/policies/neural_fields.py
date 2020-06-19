@@ -88,7 +88,8 @@ class NFPolicy(RecurrentPolicy):
         self._potentials = to.zeros(self._hidden_size)
         self._init_potentials = to.zeros_like(self._potentials)
         self._potentials_max = 100.  # clip potentials symmetrically
-        self._stimuli = to.zeros_like(self._potentials)
+        self._stimuli_internal = to.zeros_like(self._potentials)
+        self._stimuli_external = to.zeros_like(self._potentials)
 
         # Potential dynamics's time constant
         self._tau_learnable = tau_learnable
@@ -113,9 +114,20 @@ class NFPolicy(RecurrentPolicy):
         return self._potentials
 
     @property
-    def stimuli(self) -> to.Tensor:
-        """ Get the neurons' (external) stimuli. This is used for recording during a rollout """
-        return self._stimuli
+    def stimuli_external(self) -> to.Tensor:
+        """
+        Get the neurons' external stimuli, resulting from the current observations.
+        This is used for recording during a rollout.
+        """
+        return self._stimuli_external
+
+    @property
+    def stimuli_internal(self) -> to.Tensor:
+        """
+        Get the neurons' internal stimuli, resulting from the previous activations of the neurons.
+        This is used for recording during a rollout.
+        """
+        return self._stimuli_internal
 
     @property
     def tau(self) -> to.Tensor:
@@ -184,24 +196,24 @@ class NFPolicy(RecurrentPolicy):
         # ----------------
 
         # Combine the current inputs
-        stimulus_obs = self.obs_layer(obs)
+        self._stimuli_external = self.obs_layer(obs)
 
         # Pass the previous potentials through a nonlinearity
         potentials_conv = self._activation_nonlin(potentials)
 
         # Reshape and convolve
         b = batch_size if batch_size is not None else 1
-        stimulus_pot = self.conv_layer(potentials_conv.view(b, 1, self._hidden_size))
-        stimulus_pot = to.sum(stimulus_pot, dim=1)  # TODO do multiple out channels makes sense if just summed up?
+        self._stimuli_internal = self.conv_layer(potentials_conv.view(b, 1, self._hidden_size))
+        self._stimuli_internal = to.sum(self._stimuli_internal, dim=1)  # TODO do multiple out channels makes sense if just summed up?
+        self._stimuli_internal = self._stimuli_internal.squeeze()
 
         # Combine the different output channels of the convolution
         # stimulus_pot = self.post_conv_layer(stimulus_pot)
 
-        assert stimulus_obs.shape == stimulus_pot.squeeze().shape
-        self._stimuli = stimulus_obs + stimulus_pot.squeeze()
+        assert self._stimuli_external.shape == self._stimuli_internal.shape
 
         # Potential dynamics forward integration
-        potentials = potentials + self._dt*self.potentials_dot(self._stimuli)
+        potentials = potentials + self._dt*self.potentials_dot(self._stimuli_external + self._stimuli_internal)
 
         # Compute the actions from the potentials
         act = self._activation_nonlin(potentials)

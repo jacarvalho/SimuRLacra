@@ -223,50 +223,65 @@ def plot_potentials(ro: StepSequence, layout: str = 'joint'):
     :param ro: input rollout
     :param layout: group jointly (default), or create a separate sub-figure for each plot
     """
-    if hasattr(ro, 'actions') and hasattr(ro, 'potentials') and hasattr(ro, 'stimuli'):
+    if (hasattr(ro, 'actions') and hasattr(ro, 'potentials') and
+        hasattr(ro, 'stimuli_external') and hasattr(ro, 'stimuli_internal')):
         # Use recorded time stamps if possible
         t = ro.env_infos.get('t', np.arange(0, ro.length)) if hasattr(ro, 'env_infos') else np.arange(0, ro.length)
         num_pot = ro.potentials.shape[1]  # number of neurons with potential
         num_act = ro.actions.shape[1]
+        colors_pot = plt.cm.plasma(np.linspace(0, 1, num_pot))
+        colors_act = plt.cm.plasma(np.linspace(0, 1, num_act))
 
         if layout == 'separate':
-            fig = plt.figure(figsize=(12, 8))
-            gs = fig.add_gridspec(nrows=num_pot, ncols=3)
+            fig = plt.figure(figsize=(16, 10))
+            gs = fig.add_gridspec(nrows=num_pot, ncols=4)
             for i in range(num_pot):
                 ax0 = fig.add_subplot(gs[i, 0])
-                ax0.plot(t, ro.stimuli[:, i], label=rf'$s_{i}$', c=f'C{i%10}')
-                ax0.legend()
-                ax1 = fig.add_subplot(gs[i, 1], sharex=ax0)
-                ax1.plot(t, ro.potentials[:, i], label=rf'$p_{i}$', c=f'C{i%10}')
-                ax1.legend()
+                ax0.plot(t, ro.stimuli_external[:, i], label=rf'$s_{{ext,{i}}}$', c=colors_pot[i])
+                ax1 = fig.add_subplot(gs[i, 1])
+                ax1.plot(t, ro.stimuli_internal[:, i], label=rf'$s_{{int,{i}}}$', c=colors_pot[i])
+                ax2 = fig.add_subplot(gs[i, 2], sharex=ax0)
+                ax2.plot(t, ro.potentials[:, i], label=rf'$p_{{{i}}}$', c=colors_pot[i])
                 if i < num_act:  # could have more potentials than actions
-                    ax2 = fig.add_subplot(gs[i, 2], sharex=ax0)
-                    ax2.plot(t, ro.actions[:, i], label=rf'$a_{i}$', c=f'C{i%10}')
-                    ax2.legend()
+                    ax3 = fig.add_subplot(gs[i, 3], sharex=ax0)
+                    ax3.plot(t, ro.actions[:, i], label=rf'$a_{{{i}}}$', c=colors_act[i])
 
                 if i == 0:
-                    ax0.set_title('Stimuli over time')
-                    ax1.set_title('Potentials over time')
-                    ax2.set_title('Actions over time')
+                    ax0.set_title(f'{ro.stimuli_external.shape[1]} External stimuli over time')
+                    ax1.set_title(f'{ro.stimuli_internal.shape[1]} Internal stimuli over time')
+                    ax2.set_title(f'{ro.potentials.shape[1]} Potentials over time')
+                    ax3.set_title(f'{ro.actions.shape[1]} Actions over time')
+
+            # for a in fig.get_axes():
+            #     a.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+
+            plt.subplots_adjust(hspace=.5)
+            plt.subplots_adjust(wspace=.8)
 
         elif layout == 'joint':
-            _, axs = plt.subplots(nrows=3, ncols=1, sharex=True, figsize=(8, 12))
+            fig, axs = plt.subplots(nrows=4, ncols=1, sharex=True, figsize=(8, 12))
 
             for i in range(num_pot):
-                axs[0].plot(t, ro.stimuli[:, i], label=rf'$s_{i}$', c=f'C{i%10}')
-                axs[1].plot(t, ro.potentials[:, i], label=rf'$p_{i}$', c=f'C{i%10}')
+                axs[0].plot(t, ro.stimuli_external[:, i], label=rf'$s_{{ext,{i}}}$', c=colors_pot[i])
+                axs[1].plot(t, ro.stimuli_internal[:, i], label=rf'$s_{{int,{i}}}$', c=colors_pot[i])
+                axs[2].plot(t, ro.potentials[:, i], label=rf'$p_{{{i}}}$', c=colors_pot[i])
 
             for i in range(num_act):
-                axs[2].plot(t, ro.actions[:, i], label=rf'$a_{i}$', c=f'C{i%10}')
+                axs[3].plot(t, ro.actions[:, i], label=rf'$a_{{{i}}}$', c=colors_act[i])
 
-            for a in axs:
-                a.legend()
-            axs[0].set_title('Stimuli over time')
-            axs[1].set_title('Potentials over time')
-            axs[2].set_title('Actions over time')
+            axs[0].set_title(f'{ro.stimuli_external.shape[1]} External stimuli over time')
+            axs[1].set_title(f'{ro.stimuli_internal.shape[1]} Internal stimuli over time')
+            axs[2].set_title(f'{ro.potentials.shape[1]} Potentials over time')
+            axs[3].set_title(f'{ro.actions.shape[1]} Actions over time')
 
-        # plt.subplots_adjust(hspace=.2)
-        # plt.subplots_adjust(wspace=.3)
+            # for a in fig.get_axes():
+            #     a.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+
+            plt.subplots_adjust(wspace=.8)
+
+        else:
+            raise pyrado.ValueErr(given=layout, eq_constraint='joint or separate')
+
         plt.show()
 
 
