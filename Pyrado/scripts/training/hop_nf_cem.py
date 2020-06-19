@@ -21,9 +21,10 @@ if __name__ == '__main__':
 
     # Policy
     policy_hparam = dict(
-        hidden_size=10,
+        hidden_size=20,
         conv_out_channels=1,
-        conv_kernel_size=3,
+        conv_kernel_size=9,
+        conv_padding_mode='reflected',
         activation_nonlin=to.tanh,
         tau_init=1.,
         tau_learnable=True,
@@ -34,7 +35,7 @@ if __name__ == '__main__':
     algo_hparam = dict(
         max_iter=500,
         pop_size=200,
-        num_rollouts=1,
+        num_rollouts=4,
         num_is_samples=10,
         expl_std_init=1.,
         expl_std_min=0.02,

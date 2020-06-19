@@ -24,7 +24,7 @@ if __name__ == '__main__':
     policy_hparam = dict(
         hidden_size=6,
         conv_out_channels=1,
-        conv_kernel_size=3,
+        conv_kernel_size=2,
         conv_padding_mode='circular',
         activation_nonlin=to.tanh,
         tau_init=1.,
@@ -38,13 +38,13 @@ if __name__ == '__main__':
         pop_size=100,
         num_rollouts=4,
         num_is_samples=10,
-        expl_std_init=1.,
+        expl_std_init=0.5,
         expl_std_min=0.02,
-        extra_expl_std_init=1.,
-        extra_expl_decay_iter=20,
+        extra_expl_std_init=0.5,
+        extra_expl_decay_iter=10,
         full_cov=False,
         symm_sampling=False,
-        num_sampler_envs=1,
+        num_sampler_envs=6,
     )
     algo = CEM(ex_dir, env, policy, **algo_hparam)
 

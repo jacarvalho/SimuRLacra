@@ -6,14 +6,14 @@ import torch as to
 import pyrado
 from pyrado.algorithms.hc import HCNormal
 from pyrado.environment_wrappers.observation_normalization import ObsNormWrapper
-from pyrado.environments.rcspysim.planar_3_link import Planar3LinkIKSim
+from pyrado.environments.rcspysim.planar_3_link import Planar3LinkIKSim, Planar3LinkTASim
 from pyrado.logger.experiment import setup_experiment, save_list_of_dicts_to_yaml
 from pyrado.policies.neural_fields import NFPolicy
 
 
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
-    ex_dir = setup_experiment(Planar3LinkIKSim.name, f'nf-{HCNormal.name}', '', seed=1001)
+    ex_dir = setup_experiment(Planar3LinkTASim.name, f'nf-{HCNormal.name}', '', seed=1001)
 
     # Environment
     env_hparams = dict(
@@ -31,24 +31,24 @@ if __name__ == '__main__':
         observePredictedCollisionCost=False,
         observeManipulabilityIndex=False,
         observeCurrentManipulability=True,
-        observeGoalDistance=False,
+        observeGoalDistance=True,
         observeDynamicalSystemDiscrepancy=False,
     )
-    env = Planar3LinkIKSim(**env_hparams)
-    # eub = {
-    #     'GD_DS0': 2.,
-    #     'GD_DS1': 2.,
-    #     'GD_DS2': 2.,
-    # }
-    # env = ObsNormWrapper(env, explicit_ub=eub)
+    env = Planar3LinkTASim(**env_hparams)
+    eub = {
+        'GD_DS0': 2.,
+        'GD_DS1': 2.,
+        'GD_DS2': 2.,
+    }
+    env = ObsNormWrapper(env, explicit_ub=eub)
 
     # Policy
     policy_hparam = dict(
-        hidden_size=20,
+        hidden_size=5,
         conv_out_channels=1,
-        conv_kernel_size=4,
+        conv_kernel_size=5,
         conv_padding_mode='circular',
-        activation_nonlin=to.tanh,
+        activation_nonlin=to.sigmoid,
         tau_init=1.,
         tau_learnable=True,
     )
@@ -61,7 +61,7 @@ if __name__ == '__main__':
         expl_factor=1.1,
         num_rollouts=1,
         expl_std_init=0.5,
-        num_sampler_envs=1,
+        num_sampler_envs=8,
     )
     algo = HCNormal(ex_dir, env, policy, **algo_hparam)
 
