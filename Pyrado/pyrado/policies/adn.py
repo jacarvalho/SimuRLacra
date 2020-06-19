@@ -192,7 +192,8 @@ class ADNPolicy(RecurrentPolicy):
         self._potentials = to.zeros(self._hidden_size)
         self._init_potentials = to.zeros_like(self._potentials)
         self._potentials_max = 100.  # clip potentials symmetrically
-        self._stimuli = to.zeros_like(self._potentials)
+        self._stimuli_external = to.zeros_like(self._potentials)
+        self._stimuli_internal = to.zeros_like(self._potentials)
 
         # Potential dynamics
         # time constant
@@ -245,9 +246,20 @@ class ADNPolicy(RecurrentPolicy):
         return self._potentials
 
     @property
-    def stimuli(self) -> to.Tensor:
-        """ Get the neurons' (external) stimuli. This is used for recording during a rollout """
-        return self._stimuli
+    def stimuli_external(self) -> to.Tensor:
+        """
+        Get the neurons' external stimuli, resulting from the current observations.
+        This is used for recording during a rollout.
+        """
+        return self._stimuli_external
+
+    @property
+    def stimuli_internal(self) -> to.Tensor:
+        """
+        Get the neurons' internal stimuli, resulting from the previous activations of the neurons.
+        This is used for recording during a rollout.
+        """
+        return self._stimuli_internal
 
     @property
     def tau(self) -> to.Tensor:
@@ -352,12 +364,11 @@ class ADNPolicy(RecurrentPolicy):
         # ----------------
 
         # Combine the current input and the hidden variables from the last step
-        stimulus_obs = self.obs_layer(obs)
-        stimulus_prev_act = self.prev_act_layer(prev_act)
-        self._stimuli = stimulus_obs + stimulus_prev_act
+        self._stimuli_external = self.obs_layer(obs)
+        self._stimuli_internal = self.prev_act_layer(prev_act)
 
         # Potential dynamics forward integration
-        potentials = potentials + self._dt*self.potentials_dot(self._stimuli)
+        potentials = potentials + self._dt*self.potentials_dot(self._stimuli_external + self._stimuli_internal)
 
         # Optionally scale the potentials
         act = self.scaling_layer(potentials) if self.scaling_layer is not None else potentials

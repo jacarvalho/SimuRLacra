@@ -74,8 +74,9 @@ def rollout(env: Env,
         hidden_hist = []
     # If an ExplStrat is passed use the policy property, if a Policy is passed use it directly
     if isinstance(getattr(policy, 'policy', policy), (ADNPolicy, NFPolicy)):
-        potentials_hist = []
-        stimuli_hist = []
+        pot_hist = []
+        stim_ext_hist = []
+        stim_int_hist = []
     elif isinstance(getattr(policy, 'policy', policy), TwoHeadedPolicy):
         head_2_hist = []
     if record_dts:
@@ -196,8 +197,9 @@ def rollout(env: Env,
             hidden = hidden_next
         # If an ExplStrat is passed use the policy property, if a Policy is passed use it directly
         if isinstance(getattr(policy, 'policy', policy), (ADNPolicy, NFPolicy)):
-            potentials_hist.append(getattr(policy, 'policy', policy).potentials.detach().numpy())
-            stimuli_hist.append(getattr(policy, 'policy', policy).stimuli.detach().numpy())
+            pot_hist.append(getattr(policy, 'policy', policy).potentials.detach().numpy())
+            stim_ext_hist.append(getattr(policy, 'policy', policy).stimuli_external.detach().numpy())
+            stim_int_hist.append(getattr(policy, 'policy', policy).stimuli_internal.detach().numpy())
         elif isinstance(getattr(policy, 'policy', policy), TwoHeadedPolicy):
             head_2_hist.append(head_2_to)
 
@@ -255,8 +257,9 @@ def rollout(env: Env,
     if policy.is_recurrent:
         res.add_data('hidden_states', hidden_hist)
     if isinstance(getattr(policy, 'policy', policy), (ADNPolicy, NFPolicy)):
-        res.add_data('potentials', potentials_hist)
-        res.add_data('stimuli', stimuli_hist)
+        res.add_data('potentials', pot_hist)
+        res.add_data('stimuli_external', stim_ext_hist)
+        res.add_data('stimuli_internal', stim_int_hist)
     elif isinstance(getattr(policy, 'policy', policy), TwoHeadedPolicy):
         res.add_data('head_2', head_2_hist)
     if record_dts:
