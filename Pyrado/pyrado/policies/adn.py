@@ -168,15 +168,15 @@ class ADNPolicy(RecurrentPolicy):
         super().__init__(spec, use_cuda)
         if not isinstance(dt, (float, int)):
             raise pyrado.TypeErr(given=dt, expected_type=float)
+        if not callable(output_nonlin):
+            if output_nonlin is not None and not len(output_nonlin) == spec.act_space.flat_dim:
+                raise pyrado.ShapeErr(given=output_nonlin, expected_match=spec.act_space.shape)
 
         # Store inputs
         self._dt = to.tensor([dt], dtype=to.get_default_dtype())
         self._input_size = spec.obs_space.flat_dim  # observations include goal distance, prediction error, ect.
         self._hidden_size = spec.act_space.flat_dim  # hidden_size = output_size = num actions
         self._num_recurrent_layers = 1
-        if not callable(output_nonlin):
-            if output_nonlin is not None and not len(output_nonlin) == spec.act_space.flat_dim:
-                raise pyrado.ShapeErr(given=output_nonlin, expected_match=spec.act_space.shape)
         self._output_nonlin = output_nonlin
         self._potentials_dot_fcn = potentials_dyn_fcn
 
