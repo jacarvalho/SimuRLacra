@@ -28,7 +28,6 @@ jobs:
           sudo mkdir /home/user/
           sudo mkdir /home/user/SimuRLacra
           sudo ln -s $COVPATH /home/user/SimuRLacra
-          sudo ./test-reporter-latest-linux-amd64 after-build -t coverage.py -p ./Pyrado
       - uses: codecov/codecov-action@v1
         with:
           file: coverage.xml # optional
