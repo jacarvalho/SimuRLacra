@@ -38,7 +38,6 @@ dependencies:
   - joblib=0.15.1=py_0
   - kiwisolver=1.2.0=py37h99015e2_0
   - krb5=1.17.1=h2fd8d38_0
-  - ld_impl_linux-64=2.34=h53a641e_5
   - libblas=3.8.0=16_openblas
   - libcblas=3.8.0=16_openblas
   - libcurl=7.69.1=hf7181ac_0
