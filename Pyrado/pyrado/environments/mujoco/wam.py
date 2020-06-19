@@ -222,10 +222,11 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
             return MaskedTask(self.spec, task, idcs)
 
         else:
-            state_des = np.array([0., -0.8566, 1.164])
+            # If we do not use copy(), state_des is a reference to passed body and updates automatically at each step
+            state_des = self.sim.data.get_site_xpos('cup_goal')  # this is a reference
             rew_fcn = ExpQuadrErrRewFcn(
                 Q=task_args.get('Q', np.diag([1e1, 1e5, 2e1])),  # distance ball - cup; shouldn't move in y-direction
-                R=task_args.get('R', np.diag([1e-2, 1e-2, 1e-2, 1e-3, 1e-3, 1e-3]))  # desired joint angles and velocities
+                R=task_args.get('R', np.diag([1e-1, 1e-1, 1e-1, 1e-2, 1e-2, 1e-2]))  # desired joint angles and velocities
             )
             task = DesStateTask(spec, state_des, rew_fcn)
 
