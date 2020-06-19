@@ -172,7 +172,7 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         # Set the angle of the first rope segment relative to the cup bottom plate
         self.init_qpos[7] = -0.21
         # The initial position of the ball in cartesian coordinates
-        init_ball_pos = np.array([0., -0.8566, 0.85391])
+        init_ball_pos = np.array([0.828, 0., 1.131])
         init_state = np.concatenate([self.init_qpos, self.init_qvel, init_ball_pos])
         if self.fixed_initial_state:
             self._init_space = SingularStateSpace(init_state)
