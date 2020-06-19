@@ -55,9 +55,10 @@ class NFPolicy(RecurrentPolicy):
         if hidden_size < 2:
             raise pyrado.ValueErr(given=hidden_size, g_constraint='15735c')
         if not conv_kernel_size%2 == 1:
-            print_cbt(f'Made kernel size {conv_kernel_size} odd {conv_kernel_size + 1} for automated padding.', 'y')
+            print_cbt(f'Made kernel size {conv_kernel_size} odd (to {conv_kernel_size + 1}) for shape-conserving'
+                      f'padding.', 'y')
             conv_kernel_size = conv_kernel_size + 1
-        if not conv_padding_mode in ['circular', 'reflected', 'zeros']:
+        if conv_padding_mode not in ['circular', 'reflected', 'zeros']:
             raise pyrado.ValueErr(given=conv_padding_mode, eq_constraint='circular, reflected, or zeros')
 
         super().__init__(spec, use_cuda)
@@ -74,12 +75,12 @@ class NFPolicy(RecurrentPolicy):
 
         # Create the RNN's layers
         self.obs_layer = nn.Linear(self._input_size, self._hidden_size, bias=True) if obs_layer is None else obs_layer
+        padding = conv_kernel_size//2 if conv_padding_mode != 'circular' else conv_kernel_size - 1
         self.conv_layer = nn.Conv1d(
             in_channels=1,  # treat potentials as a time series of values (convolutions is over the "time" axis)
             out_channels=conv_out_channels,
-            kernel_size=conv_kernel_size, stride=1,
-            padding=conv_kernel_size//2 if conv_padding_mode != 'circular' else (conv_kernel_size + 1)//2,
-            padding_mode=conv_padding_mode, dilation=1, groups=1, bias=False
+            kernel_size=conv_kernel_size, padding=padding, bias=False,
+            stride=1, padding_mode=conv_padding_mode, dilation=1, groups=1  # defaults
         )
         # self.post_conv_layer = nn.Linear(conv_out_channels, spec.act_space.flat_dim, bias=False)
         self.act_layer = nn.Linear(self._hidden_size, spec.act_space.flat_dim, bias=False)
@@ -210,7 +211,8 @@ class NFPolicy(RecurrentPolicy):
         # Combine the different output channels of the convolution
         # stimulus_pot = self.post_conv_layer(stimulus_pot)
 
-        assert self._stimuli_external.shape == self._stimuli_internal.shape
+        if not self._stimuli_external.shape == self._stimuli_internal.shape:
+            raise pyrado.ShapeErr(given=self._stimuli_internal, expected_match=self._stimuli_external)
 
         # Potential dynamics forward integration
         potentials = potentials + self._dt*self.potentials_dot(self._stimuli_external + self._stimuli_internal)

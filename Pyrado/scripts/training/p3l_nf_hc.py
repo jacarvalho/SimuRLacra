@@ -44,12 +44,13 @@ if __name__ == '__main__':
 
     # Policy
     policy_hparam = dict(
-        hidden_size=6,
+        hidden_size=20,
         conv_out_channels=1,
-        conv_kernel_size=1,
+        conv_kernel_size=4,
+        conv_padding_mode='circular',
+        activation_nonlin=to.tanh,
         tau_init=1.,
         tau_learnable=True,
-        activation_nonlin=to.sigmoid,
     )
     policy = NFPolicy(spec=env.spec, dt=env.dt, **policy_hparam)
 
@@ -59,8 +60,8 @@ if __name__ == '__main__':
         pop_size=policy.num_param,
         expl_factor=1.1,
         num_rollouts=1,
-        expl_std_init=1.0,
-        num_sampler_envs=4,
+        expl_std_init=0.5,
+        num_sampler_envs=1,
     )
     algo = HCNormal(ex_dir, env, policy, **algo_hparam)
 
