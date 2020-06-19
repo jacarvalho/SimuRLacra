@@ -13,8 +13,8 @@
 ## Leave this if you want to use a GPU per job. Remove it if you do not need it.
 ##SBATCH -C avx
 ##SBATCH --mem-per-cpu=2000
-#SBATCH -o /home/muratore/Software/SimuRLacra/remotelaunch/slurm_launcher_pyrado/%A_%a-out.txt
-#SBATCH -e /home/muratore/Software/SimuRLacra/remotelaunch/slurm_launcher_pyrado/%A_%a-err.txt
+#SBATCH -o /home/muratore/Software/SimuRLacra/remotelaunch/slurm_launcher_logs/%A_%a-out.txt
+#SBATCH -e /home/muratore/Software/SimuRLacra/remotelaunch/slurm_launcher_logs/%A_%a-err.txt
 ###############################################################################
 
 # Your PROGRAM call starts here
