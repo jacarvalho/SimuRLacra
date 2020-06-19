@@ -179,9 +179,9 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         else:
             # Add plus/minus one degree to each motor joint and the first rope segment joint
             init_state_up = init_state.copy()
-            init_state_up[:8] += 1 * np.pi / 180
+            init_state_up[:8] += 1*np.pi/180
             init_state_lo = init_state.copy()
-            init_state_lo[:8] -= 1 * np.pi / 180
+            init_state_lo[:8] -= 1*np.pi/180
             self._init_space = BoxSpace(init_state_lo, init_state_up)
 
         # State space
@@ -191,7 +191,7 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
 
         # Action space (PD controller on 3 joint positions and velocities)
         act_up = np.array([1.985, np.pi, np.pi/2, 10*np.pi, 10*np.pi, 10*np.pi])
-        act_lo = np.array([-1.985, -0.9, -np.pi/2, -10 * np.pi, -10 * np.pi, -10 * np.pi])
+        act_lo = np.array([-1.985, -0.9, -np.pi/2, -10*np.pi, -10*np.pi, -10*np.pi])
         self._act_space = BoxSpace(act_lo, act_up,  # [rad, rad, rad, rad/s, rad/s, rad/s]
                                    labels=[r'$q_{1,des}$', r'$q_{3,des}$', r'$q_{5,des}$',
                                            r'$\dot{q}_{1,des}$', r'$\dot{q}_{3,des}$', r'$\dot{q}_{5,des}$'])
@@ -224,8 +224,8 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         else:
             state_des = np.array([0., -0.8566, 1.164])
             rew_fcn = ExpQuadrErrRewFcn(
-                Q=task_args.get('Q', 2e1*np.eye(3)),  # distance ball - cup
-                R=task_args.get('R', np.diag([1e0, 1e0, 1e0, 1e-1, 1e-1, 1e-1]))  # desired joint angles and velocities
+                Q=task_args.get('Q', np.diag([1e1, 1e5, 2e1])),  # distance ball - cup; shouldn't move in y-direction
+                R=task_args.get('R', np.diag([1e-2, 1e-2, 1e-2, 1e-3, 1e-3, 1e-3]))  # desired joint angles and velocities
             )
             task = DesStateTask(spec, state_des, rew_fcn)
 
@@ -246,7 +246,7 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
             xml_model = xml_model.replace('[pos_mesh]', str(0.055 - (cup_scale - 1.)*0.023))
             xml_model = xml_model.replace('[pos_goal]', str(0.1165 + (cup_scale - 1.)*0.0385))
             xml_model = xml_model.replace('[size_cup]', str(cup_scale*0.038))
-            xml_model = xml_model.replace('[size_cup_inner]', str(cup_scale * 0.03))
+            xml_model = xml_model.replace('[size_cup_inner]', str(cup_scale*0.03))
 
         if rope_length is not None:
             # The rope consists of 29 capsules
