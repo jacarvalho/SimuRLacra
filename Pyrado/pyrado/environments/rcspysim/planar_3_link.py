@@ -9,6 +9,7 @@ from pyrado.environments.rcspysim.base import RcsSim
 from pyrado.spaces.singular import SingularStateSpace
 from pyrado.tasks.base import Task
 from pyrado.tasks.masked import MaskedTask
+from pyrado.tasks.predefined import create_check_all_boundaries_task
 from pyrado.tasks.utils import proximity_succeeded
 from pyrado.tasks.final_reward import FinalRewTask, FinalRewMode
 from pyrado.tasks.desired_state import DesStateTask
@@ -136,39 +137,12 @@ class Planar3LinkSim(RcsSim, Serializable):
             SequentialTasks([subtask_1p, subtask_3, subtask_2p], hold_rew_when_done=True, verbose=True),
             mode=FinalRewMode(always_positive=True), factor=2e3
         )
+        masked_task = MaskedTask(self.spec, task, idcs)
 
-        # subtask_11 = FinalRewTask(
-        #     DesStateTask(spec, state_des1, ExpQuadrErrRewFcn(Q, R), success_fcn),
-        #     mode=FinalRewMode(time_dependent=True)
-        # )
-        # subtask_21 = FinalRewTask(
-        #     DesStateTask(spec, state_des2, ExpQuadrErrRewFcn(Q, R), success_fcn),
-        #     mode=FinalRewMode(time_dependent=True)
-        # )
-        # subtask_12 = FinalRewTask(
-        #     DesStateTask(spec, state_des1, ExpQuadrErrRewFcn(Q, R), success_fcn),
-        #     mode=FinalRewMode(time_dependent=True)
-        # )
-        # subtask_22 = FinalRewTask(
-        #     DesStateTask(spec, state_des2, ExpQuadrErrRewFcn(Q, R), success_fcn),
-        #     mode=FinalRewMode(time_dependent=True)
-        # )
-        # subtask_13 = FinalRewTask(
-        #     DesStateTask(spec, state_des1, ExpQuadrErrRewFcn(Q, R), success_fcn),
-        #     mode=FinalRewMode(time_dependent=True)
-        # )
-        # subtask_23 = FinalRewTask(
-        #     DesStateTask(spec, state_des2, ExpQuadrErrRewFcn(Q, R), success_fcn),
-        #     mode=FinalRewMode(time_dependent=True)
-        # )
-        # task = FinalRewTask(
-        #     SequentialTasks([subtask_11, subtask_21, subtask_12, subtask_22, subtask_13, subtask_23],
-        #                     hold_rew_when_done=True, verbose=True),
-        #     mode=FinalRewMode(time_dependent=True),
-        # )
+        task_check_bounds = create_check_all_boundaries_task(self.spec, penalty=1e3)
 
-        # Return the masked tasks
-        return MaskedTask(self.spec, task, idcs)
+        # Return the masked task and and additional task that ends the episode if the unmasked state is out of bound
+        return ParallelTasks([masked_task, task_check_bounds])
 
 
 class Planar3LinkIKSim(Planar3LinkSim, Serializable):
