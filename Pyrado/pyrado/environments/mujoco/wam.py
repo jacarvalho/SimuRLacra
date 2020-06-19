@@ -179,9 +179,9 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         else:
             # Add plus/minus one degree to each motor joint and the first rope segment joint
             init_state_up = init_state.copy()
-            init_state_up[:8] += 1*np.pi/180
+            init_state_up[:7] += np.array([0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5]) * np.pi/180
             init_state_lo = init_state.copy()
-            init_state_lo[:8] -= 1*np.pi/180
+            init_state_lo[:7] -= np.array([0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5]) * np.pi/180
             self._init_space = BoxSpace(init_state_lo, init_state_up)
 
         # State space
@@ -225,7 +225,7 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
             # If we do not use copy(), state_des is a reference to passed body and updates automatically at each step
             state_des = self.sim.data.get_site_xpos('cup_goal')  # this is a reference
             rew_fcn = ExpQuadrErrRewFcn(
-                Q=task_args.get('Q', np.diag([1e1, 1e5, 2e1])),  # distance ball - cup; shouldn't move in y-direction
+                Q=task_args.get('Q', np.diag([1e1, 1e2, 2e1])),  # distance ball - cup; shouldn't move in y-direction
                 R=task_args.get('R', np.diag([1e-1, 1e-1, 1e-1, 1e-2, 1e-2, 1e-2]))  # desired joint angles and velocities
             )
             task = DesStateTask(spec, state_des, rew_fcn)
@@ -292,7 +292,7 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
 
         # Update task's desired state
         state_des = np.zeros_like(self.state)  # needs to be of same dimension as self.state since it is masked later
-        state_des[-3:] = self.sim.data.get_body_xpos('B0').copy()
+        state_des[-3:] = self.sim.data.get_site_xpos('cup_goal').copy()
         if isinstance(self._task.wrapped_task, DesStateTask):
             # In case of a continous reward task
             self._task.state_des = state_des
