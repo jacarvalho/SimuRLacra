@@ -1,30 +1,29 @@
 """
-Train an agent to solve the Box Shelving task task using Activation Dynamics Networks and Cross-Entropy Method.
+Train an agent to solve the Half-Cheetah task using Neural Fields and Natural Evolution Strategies.
 """
-import numpy as np
 import torch as to
 
-from pyrado.algorithms.cem import CEM
+from pyrado.algorithms.nes import NES
 from pyrado.environment_wrappers.action_normalization import ActNormWrapper
-from pyrado.environments.pysim.one_mass_oscillator import OneMassOscillatorSim
+from pyrado.environments.mujoco.openai_hopper import HopperSim
 from pyrado.logger.experiment import setup_experiment, save_list_of_dicts_to_yaml
 from pyrado.policies.neural_fields import NFPolicy
 
 
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
-    ex_dir = setup_experiment(OneMassOscillatorSim.name, f'nf-{CEM.name}', 'const-lin', seed=1001)
+    ex_dir = setup_experiment(HopperSim.name, f'nf-{NES.name}', 'lin', seed=1002)
 
     # Environment
-    env_hparams = dict(dt=1/50., max_steps=200)
-    env = OneMassOscillatorSim(**env_hparams, state_des=np.array([0.5, 0]))
-    # env = ActNormWrapper(env)
+    env_hparams = dict()
+    env = HopperSim(**env_hparams)
+    env = ActNormWrapper(env)
 
     # Policy
     policy_hparam = dict(
-        hidden_size=10,
+        hidden_size=3,
         conv_out_channels=1,
-        conv_kernel_size=10,
+        conv_kernel_size=3,
         conv_padding_mode='circular',
         activation_nonlin=to.tanh,
         tau_init=1.,
@@ -34,19 +33,17 @@ if __name__ == '__main__':
 
     # Algorithm
     algo_hparam = dict(
-        max_iter=500,
+        max_iter=10000,
         pop_size=100,
         num_rollouts=4,
-        num_is_samples=10,
-        expl_std_init=0.5,
-        expl_std_min=0.02,
-        extra_expl_std_init=0.5,
-        extra_expl_decay_iter=10,
-        full_cov=False,
+        eta_mean=2.,
+        eta_std=None,
+        expl_std_init=2.0,
         symm_sampling=False,
+        transform_returns=True,
         num_sampler_envs=6,
     )
-    algo = CEM(ex_dir, env, policy, **algo_hparam)
+    algo = NES(ex_dir, env, policy, **algo_hparam)
 
     # Save the hyper-parameters
     save_list_of_dicts_to_yaml([
@@ -57,4 +54,4 @@ if __name__ == '__main__':
     )
 
     # Jeeeha
-    algo.train(snapshot_mode='latest', seed=ex_dir.seed)
+    algo.train(seed=ex_dir.seed)
