@@ -56,7 +56,7 @@ def create_goal_dist_distvel_task(env_spec: EnvSpec,
 
 
 def create_check_all_boundaries_task(env_spec: EnvSpec, penalty: float) -> FinalRewTask:
-    # Check every limit (nut just of a subspace of the state state
+    # Check every limit (nut just of a subspace of the state state as it could happen when using a MaskedTask)
     return FinalRewTask(
         DesStateTask(env_spec, np.zeros(env_spec.state_space.shape), ZeroPerStepRewFcn(), never_succeeded),
         FinalRewMode(always_negative=True), factor=penalty
