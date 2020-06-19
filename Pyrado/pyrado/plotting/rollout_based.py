@@ -55,20 +55,21 @@ def plot_observations_actions_rewards(ro: StepSequence):
         fig, axs = plt.subplots(dim_obs + dim_act + 1, 1, figsize=(8, 12))
         fig.suptitle('Observations, Actions, and Reward over Time')
         plt.subplots_adjust(hspace=.5)
+        colors = plt.cm.tab20(np.linspace(0, 1, dim_obs if dim_obs > dim_act else dim_act))
 
         # Observations (without the last time step)
         for i in range(dim_obs):
-            axs[i].plot(t, ro.observations[:-1, i], label=_get_obs_label(ro, i), c=f'C{i%10}')
+            axs[i].plot(t, ro.observations[:-1, i], label=_get_obs_label(ro, i), c=colors[i])
             axs[i].legend()
 
         # Actions
         for i in range(dim_act):
-            axs[i + dim_obs].plot(t, ro.actions[:, i], label=_get_act_label(ro, i), c=f'C{i%10}')
+            axs[i + dim_obs].plot(t, ro.actions[:, i], label=_get_act_label(ro, i), c=colors[i])
             axs[i + dim_obs].legend()
         # action_labels = env.unwrapped.action_space.labels; label=action_labels[0]
 
         # Rewards
-        axs[-1].plot(t, ro.rewards, label='reward')
+        axs[-1].plot(t, ro.rewards, label='reward', c='k')
         axs[-1].legend()
         plt.show()
 
@@ -99,6 +100,7 @@ def plot_observations(ro: StepSequence, idcs_sel: Sequence[int] = None):
         fig, axs = plt.subplots(nrows=num_rows, ncols=num_cols, figsize=(num_cols*5, num_rows*3))
         fig.suptitle('Observations over Time')
         plt.subplots_adjust(hspace=.5)
+        colors = plt.cm.tab20(np.linspace(0, 1, dim_obs))
 
         if len(dim_obs) == 1:
             axs.plot(t, ro.observations[:-1, dim_obs[0]], label=_get_obs_label(ro, dim_obs[0]))
@@ -109,7 +111,7 @@ def plot_observations(ro: StepSequence, idcs_sel: Sequence[int] = None):
                     if j + i*num_cols < len(dim_obs):
                         # Omit the last observation for simplicity
                         axs[i, j].plot(t, ro.observations[:-1, j + i*num_cols],
-                                       label=_get_obs_label(ro, j + i*num_cols), c=f'C{i%10}')
+                                       label=_get_obs_label(ro, j + i*num_cols), c=colors[j + i*num_cols])
                         axs[i, j].legend()
                     else:
                         # We might create more subplots than there are observations
@@ -147,6 +149,7 @@ def plot_features(ro: StepSequence, policy: Policy):
         fig, axs = plt.subplots(nrows=num_rows, ncols=num_cols, figsize=(num_cols*5, num_rows*3))
         fig.suptitle('Feature values over Time')
         plt.subplots_adjust(hspace=.5)
+        colors = plt.cm.tab20(np.linspace(0, 1, dim_feat))
 
         if len(dim_feat) == 1:
             axs.plot(t, feat_vals[:-1, dim_feat[0]], label=_get_obs_label(ro, dim_feat[0]))
@@ -157,7 +160,7 @@ def plot_features(ro: StepSequence, policy: Policy):
                     if j + i*num_cols < len(dim_feat):
                         # Omit the last observation for simplicity
                         axs[i, j].plot(t, feat_vals[:-1, j + i*num_cols],
-                                       label=f'$\phi_{j + i*num_cols}$', c=f'C{i%10}')
+                                       label=rf'$\phi_{j + i*num_cols}$', c=colors[j + i*num_cols])
                         axs[i, j].legend()
                     else:
                         # We might create more subplots than there are observations
@@ -180,6 +183,7 @@ def plot_actions(ro: StepSequence, env: Env = None):
         fig, axs = plt.subplots(dim_act, figsize=(8, 12))
         fig.suptitle('Actions over Time')
         plt.subplots_adjust(hspace=.5)
+        colors = plt.cm.tab20(np.linspace(0, 1, dim_act))
 
         if env is not None:
             act_space_unnorm = remove_env(env, ActNormWrapper).act_space
@@ -193,7 +197,7 @@ def plot_actions(ro: StepSequence, env: Env = None):
         else:
 
             for i in range(dim_act):
-                axs[i].plot(t, ro.actions[:, i], label=_get_act_label(ro, i), c=f'C{i%10}')
+                axs[i].plot(t, ro.actions[:, i], label=_get_act_label(ro, i), c=colors[i])
                 if env is not None:
                     axs[i].plot(t, act_clipped[:, i], label=_get_act_label(ro, i) + ' (clipped)', c='k', ls='--')
                 axs[i].legend()
@@ -212,7 +216,7 @@ def plot_rewards(ro: StepSequence):
 
         fig, ax = plt.subplots(1)
         fig.suptitle('Reward over Time')
-        ax.plot(t, ro.rewards)
+        ax.plot(t, ro.rewards, c='k')
         plt.show()
 
 
@@ -229,8 +233,8 @@ def plot_potentials(ro: StepSequence, layout: str = 'joint'):
         t = ro.env_infos.get('t', np.arange(0, ro.length)) if hasattr(ro, 'env_infos') else np.arange(0, ro.length)
         num_pot = ro.potentials.shape[1]  # number of neurons with potential
         num_act = ro.actions.shape[1]
-        colors_pot = plt.cm.plasma(np.linspace(0, 1, num_pot))
-        colors_act = plt.cm.plasma(np.linspace(0, 1, num_act))
+        colors_pot = plt.cm.tab20(np.linspace(0, 1, num_pot))
+        colors_act = plt.cm.tab20(np.linspace(0, 1, num_act))
 
         if layout == 'separate':
             fig = plt.figure(figsize=(16, 10))
