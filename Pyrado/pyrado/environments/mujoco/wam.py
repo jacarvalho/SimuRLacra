@@ -232,7 +232,7 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
             # Wrap the masked DesStateTask to add a bonus for the best state in the rollout
             return BestStateFinalRewTask(
                 MaskedTask(self.spec, task, idcs),
-                max_steps=self.max_steps, factor=task_args.get('factor', 1.)
+                max_steps=self.max_steps, factor=task_args.get('final_factor', 1.)
             )
 
     def _adapt_model_file(self, xml_model: str, domain_param: dict) -> str:

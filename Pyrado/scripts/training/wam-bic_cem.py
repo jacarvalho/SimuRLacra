@@ -17,12 +17,12 @@ from pyrado.policies.environment_specific import DualRBFLinearPolicy
 
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
-    ex_dir = setup_experiment(WAMBallInCupSim.name, CEM.name, '', seed=101)
+    ex_dir = setup_experiment(WAMBallInCupSim.name, CEM.name, '', seed=1001)
 
     # Environment
     env_hparams = dict(
         max_steps=1750,
-        task_args=dict(factor=0.1)
+        task_args=dict(final_factor=0.05)
     )
     env = WAMBallInCupSim(**env_hparams)
 
@@ -46,13 +46,13 @@ if __name__ == '__main__':
         pop_size=200,
         num_rollouts=1,
         num_is_samples=10,
-        expl_std_init=np.pi/6,
+        expl_std_init=np.pi/2,
         expl_std_min=0.02,
-        extra_expl_std_init=np.pi/6,
+        extra_expl_std_init=np.pi/2,
         extra_expl_decay_iter=10,
         full_cov=False,
         symm_sampling=False,
-        num_sampler_envs=4,
+        num_sampler_envs=8,
     )
     algo = CEM(ex_dir, env, policy, **algo_hparam)
 

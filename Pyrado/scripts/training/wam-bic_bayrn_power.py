@@ -21,7 +21,7 @@ if __name__ == '__main__':
     # Environments
     env_hparams = dict(
         max_steps=1500,
-        task_args=dict(factor=0.05)
+        task_args=dict(final_factor=0.05)
     )
     env_sim = WAMBallInCupSim(**env_hparams)
     env_sim = DomainRandWrapperLive(env_sim, get_zero_var_randomizer(env_sim))
