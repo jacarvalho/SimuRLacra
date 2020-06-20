@@ -1,4 +1,6 @@
 from abc import ABC, abstractmethod
+from typing import Callable
+
 import torch as to
 import torch.nn as nn
 import torch.nn.utils.convert_parameters as cp
@@ -179,7 +181,7 @@ class TracedPolicyWrapper(nn.Module):
 
 
 class ScaleLayer(nn.Module):
-    """ Layer which scales the output of the previous layer using a learnable scaling factor """
+    """ Layer which scales the output of the input using a learnable scaling factor """
 
     def __init__(self, in_features: int, init_weight: float = 1.):
         """
@@ -189,15 +191,15 @@ class ScaleLayer(nn.Module):
         :param init_weight: initial scaling factor
         """
         super().__init__()
-        self.weight = nn.Parameter(init_weight * to.ones(in_features, dtype=to.get_default_dtype()), requires_grad=True)
+        self.weight = nn.Parameter(init_weight*to.ones(in_features, dtype=to.get_default_dtype()), requires_grad=True)
 
     def forward(self, inp: to.Tensor) -> to.Tensor:
         # Element-wise product
-        return inp * self.weight
+        return inp*self.weight
 
 
 class PositiveScaleLayer(nn.Module):
-    """ Layer which scales (strictly positive) the output of the previous layer using a learnable scaling factor """
+    """ Layer which scales (strictly positive) the input using a learnable scaling factor """
 
     def __init__(self, in_features: int, init_weight: float = 1.):
         """
@@ -210,9 +212,38 @@ class PositiveScaleLayer(nn.Module):
             raise pyrado.ValueErr(given=init_weight, g_constraint='0')
 
         super().__init__()
-        self.log_weight = nn.Parameter(to.log(init_weight * to.ones(in_features, dtype=to.get_default_dtype())),
+        self.log_weight = nn.Parameter(to.log(init_weight*to.ones(in_features, dtype=to.get_default_dtype())),
                                        requires_grad=True)
 
     def forward(self, inp: to.Tensor) -> to.Tensor:
         # Element-wise product
-        return inp * to.exp(self.log_weight)
+        return inp*to.exp(self.log_weight)
+
+
+class IndiNonlinLayer(nn.Module):
+    """
+    Layer subtracts a bias from the input, multiplies the result with a strictly positive sacaling factor, and then
+    applies the provided nonlinearity. The scaling and the bias are learnable parameters.
+    """
+
+    def __init__(self, in_features: int, nonlin: Callable, init_weight: float = 1., init_bias: float = 0.):
+        """
+        Constructor
+
+        :param in_features: size of each input sample
+        :param nonlin: nonlinearity
+        :param init_weight: initial scaling factor
+        :param init_bias: initial bias
+        """
+        if not init_weight > 0:
+            raise pyrado.ValueErr(given=init_weight, g_constraint='0')
+
+        super().__init__()
+        self._nonlin = nonlin
+        self.log_weight = nn.Parameter(to.log(init_weight*to.ones(in_features, dtype=to.get_default_dtype())),
+                                       requires_grad=True)
+        self.bias = nn.Parameter(init_bias*to.ones(in_features, dtype=to.get_default_dtype()), requires_grad=True)
+
+    def forward(self, inp: to.Tensor) -> to.Tensor:
+        # y = f_nlin( w * (x-b) )
+        return self._nonlin(to.exp(self.log_weight)*(inp - self.bias))

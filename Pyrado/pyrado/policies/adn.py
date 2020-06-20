@@ -286,7 +286,7 @@ class ADNPolicy(RecurrentPolicy):
         """
         Compute the derivative of the neurons' potentials per time step.
 
-        :param stimuli: sum of external stimuli at the current point in time
+        :param stimuli: sum of external and internal stimuli at the current point in time
         :return: time derivative of the potentials
         """
         return self._potentials_dot_fcn(self._potentials, stimuli, self.tau, kappa=self.kappa, capacity=self.capacity)
@@ -370,7 +370,7 @@ class ADNPolicy(RecurrentPolicy):
         # Potential dynamics forward integration
         potentials = potentials + self._dt*self.potentials_dot(self._stimuli_external + self._stimuli_internal)
 
-        # Optionally scale the potentials
+        # Optionally scale the potentials (individually)
         act = self.scaling_layer(potentials) if self.scaling_layer is not None else potentials
 
         # Pass the potentials through a nonlinearity

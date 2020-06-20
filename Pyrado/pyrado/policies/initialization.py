@@ -5,7 +5,7 @@ from math import sqrt
 from warnings import warn
 
 import pyrado
-from pyrado.policies.base import PositiveScaleLayer, ScaleLayer
+from pyrado.policies.base import ScaleLayer, PositiveScaleLayer, IndiNonlinLayer
 
 
 def init_param(m, **kwargs):
@@ -89,5 +89,10 @@ def init_param(m, **kwargs):
         m.weight.data.fill_(1.)
 
     elif isinstance(m, PositiveScaleLayer):
-        # Initialize all weights to 0
+        # Initialize all weights to 1
         m.log_weight.data.fill_(0.)
+
+    elif isinstance(m, IndiNonlinLayer):
+        # Initialize all weights to 1 and all biases to 0
+        m.log_weight.data.fill_(0.)
+        m.bias.data.fill_(0.)
