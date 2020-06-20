@@ -4,7 +4,7 @@ from typing import Callable
 
 import pyrado
 from pyrado.utils.data_types import EnvSpec
-from pyrado.policies.base import Policy
+from pyrado.policies.base import Policy, PositiveScaleLayer, IndiNonlinLayer
 from pyrado.policies.base_recurrent import RecurrentPolicy
 from pyrado.policies.initialization import init_param
 from pyrado.utils.input_output import print_cbt
@@ -23,8 +23,8 @@ class NFPolicy(RecurrentPolicy):
                  spec: EnvSpec,
                  dt: float,
                  hidden_size: int,
-                 activation_nonlin: Callable,
                  obs_layer: [nn.Module, Policy] = None,
+                 activation_nonlin: Callable = to.sigmoid,
                  conv_out_channels: int = 1,
                  conv_kernel_size: int = None,
                  conv_padding_mode: str = 'circular',
@@ -38,11 +38,11 @@ class NFPolicy(RecurrentPolicy):
         :param spec: environment specification
         :param dt: time step size
         :param hidden_size: number of neurons with potential
-        :param conv_out_channels: number of filter for the 1-dim convolution along the potential-based neurons
-        :param conv_kernel_size: size of the kernel for the 1-dim convolution along the potential-based neurons
-        :param activation_nonlin: nonlinearity to compute the activations from the potential levels
         :param obs_layer: specify a custom PyTorch Module;
                           by default (`None`) a linear layer with biases is used
+        :param activation_nonlin: nonlinearity to compute the activations from the potential levels
+        :param conv_out_channels: number of filter for the 1-dim convolution along the potential-based neurons
+        :param conv_kernel_size: size of the kernel for the 1-dim convolution along the potential-based neurons
         :param tau_init: initial value for the shared time constant of the potentials
         :param tau_learnable: flag to determine if the time constant is a learnable parameter or a fixed tensor
         :param init_param_kwargs: additional keyword arguments for the policy parameter initialization
@@ -84,6 +84,7 @@ class NFPolicy(RecurrentPolicy):
             stride=1, padding_mode=conv_padding_mode, dilation=1, groups=1  # defaults
         )
         # self.post_conv_layer = nn.Linear(conv_out_channels, spec.act_space.flat_dim, bias=False)
+        self.nonlin_layer = IndiNonlinLayer(self._hidden_size, nonlin=to.sigmoid)
         self.act_layer = nn.Linear(self._hidden_size, spec.act_space.flat_dim, bias=False)
 
         # Call custom initialization function after PyTorch network parameter initialization
@@ -140,7 +141,7 @@ class NFPolicy(RecurrentPolicy):
         """
         Compute the derivative of the neurons' potentials per time step.
 
-        :param stimuli: sum of external stimuli at the current point in time
+        :param stimuli: sum of external and internal stimuli at the current point in time
         :return: time derivative of the potentials
         """
         if not all(self.tau > 0):
@@ -153,6 +154,7 @@ class NFPolicy(RecurrentPolicy):
             init_param(self.obs_layer, **kwargs)
             init_param(self.conv_layer, **kwargs)
             # init_param(self.post_conv_layer, **kwargs)
+            init_param(self.nonlin_layer, **kwargs)
             init_param(self.act_layer, **kwargs)
 
             # Initialize time constant if modifiable
@@ -188,7 +190,7 @@ class NFPolicy(RecurrentPolicy):
 
         # Don't track the gradient through the potentials
         potentials = potentials.detach()
-        self._potentials = potentials
+        self._potentials = potentials.clone()
 
         # Clip the potentials, and save them for later use
         potentials = potentials.clamp(min=-self._potentials_max, max=self._potentials_max)
@@ -200,12 +202,12 @@ class NFPolicy(RecurrentPolicy):
         # Combine the current inputs
         self._stimuli_external = self.obs_layer(obs)
 
-        # Pass the previous potentials through a nonlinearity
-        potentials_conv = self._activation_nonlin(potentials)
+        # Scale the potentials, subtract a bias, and pass them through a nonlinearity
+        activations_prev = self.nonlin_layer(potentials)
 
         # Reshape and convolve
         b = batch_size if batch_size is not None else 1
-        self._stimuli_internal = self.conv_layer(potentials_conv.view(b, 1, self._hidden_size))
+        self._stimuli_internal = self.conv_layer(activations_prev.view(b, 1, self._hidden_size))
         self._stimuli_internal = to.sum(self._stimuli_internal, dim=1)  # TODO do multiple out channels makes sense if just summed up?
         self._stimuli_internal = self._stimuli_internal.squeeze()
 
@@ -218,14 +220,11 @@ class NFPolicy(RecurrentPolicy):
         # Potential dynamics forward integration
         potentials = potentials + self._dt*self.potentials_dot(self._stimuli_external + self._stimuli_internal)
 
-        # Compute the actions from the potentials
-        act = self._activation_nonlin(potentials)
-        act = self.act_layer(act)
+        # Scale the potentials, subtract a bias, and pass them through a nonlinearity
+        activations = self.nonlin_layer(potentials)
 
-        # # Since we want that this kind of Policy only returns activations in [0, 1] or in [-1, 1],
-        # # we clip the actions right here
-        # if self._output_nonlin is not to.sigmoid or self._output_nonlin is not to.tanh:
-        #     act = act.clamp(min=-1., max=1.)
+        # Compute the actions from the activations
+        act = self.act_layer(activations)
 
         # Pack hidden state
         hidden_out = self._pack_hidden(potentials, batch_size)
