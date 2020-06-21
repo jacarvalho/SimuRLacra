@@ -20,7 +20,7 @@ class HalfCheetahSim(MujocoSimEnv, Serializable):
 
     name: str = 'cth'
 
-    def __init__(self, frame_skip: int = 5, max_steps: int = 1000, task_args: [dict, None] = None):
+    def __init__(self, frame_skip: int = 5, max_steps: int = 800, task_args: [dict, None] = None):
         """
         Constructor
 
@@ -36,13 +36,6 @@ class HalfCheetahSim(MujocoSimEnv, Serializable):
 
     @classmethod
     def get_nominal_domain_param(cls) -> dict:
-        """
-        Get the nominal a.k.a. default domain parameters.
-
-        .. seealso::
-            http://www.mujoco.org/book/XMLreference.html#geom
-            http://www.mujoco.org/book/computation.html#coContact
-        """
         return dict(
             total_mass=14,
             tangential_friction_coeff=0.4,
