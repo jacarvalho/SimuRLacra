@@ -160,7 +160,8 @@ def render_policy_params(policy: Policy,
                 ax.yaxis.set_major_locator(ticker.NullLocator())
                 ax.set_xticklabels(ensure_no_subscript(env_spec.obs_space.labels))
                 ax.yaxis.set_minor_formatter(ticker.NullFormatter())
-            elif name in ['obs_layer.bias', 'conv_layer.weight']:
+            elif name in ['_log_tau', 'obs_layer.bias', 'conv_layer.weight',
+                          'nonlin_layer.log_weight', 'nonlin_layer.bias']:
                 ax.xaxis.set_major_locator(ticker.NullLocator())
                 ax.yaxis.set_major_locator(ticker.NullLocator())
                 ax.xaxis.set_minor_formatter(ticker.NullFormatter())
@@ -170,11 +171,6 @@ def render_policy_params(policy: Policy,
                 ax.set_yticks(np.arange(env_spec.act_space.flat_dim))
                 ax.xaxis.set_minor_formatter(ticker.NullFormatter())
                 ax.set_yticklabels(ensure_math_mode(env_spec.act_space.labels))
-            elif name in ['_log_tau']:
-                ax.xaxis.set_major_locator(ticker.NullLocator())
-                ax.yaxis.set_major_locator(ticker.NullLocator())
-                ax.xaxis.set_minor_formatter(ticker.NullFormatter())
-                ax.yaxis.set_minor_formatter(ticker.NullFormatter())
             else:
                 ax.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
                 ax.yaxis.set_major_locator(ticker.MaxNLocator(integer=True))

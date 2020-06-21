@@ -84,7 +84,7 @@ class NFPolicy(RecurrentPolicy):
             stride=1, padding_mode=conv_padding_mode, dilation=1, groups=1  # defaults
         )
         # self.post_conv_layer = nn.Linear(conv_out_channels, spec.act_space.flat_dim, bias=False)
-        self.nonlin_layer = IndiNonlinLayer(self._hidden_size, nonlin=to.sigmoid)
+        self.nonlin_layer = IndiNonlinLayer(self._hidden_size, nonlin=activation_nonlin)
         self.act_layer = nn.Linear(self._hidden_size, spec.act_space.flat_dim, bias=False)
 
         # Call custom initialization function after PyTorch network parameter initialization
