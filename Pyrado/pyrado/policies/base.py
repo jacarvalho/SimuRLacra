@@ -226,12 +226,18 @@ class IndiNonlinLayer(nn.Module):
     applies the provided nonlinearity. The scaling and the bias are learnable parameters.
     """
 
-    def __init__(self, in_features: int, nonlin: Callable, init_weight: float = 1., init_bias: float = 0.):
+    def __init__(self,
+                 in_features: int,
+                 nonlin: Callable,
+                 bias: bool,
+                 init_weight: float = 1.,
+                 init_bias: float = 0.):
         """
         Constructor
 
         :param in_features: size of each input sample
         :param nonlin: nonlinearity
+        :param bias: if `True`, a learnable bias is subtracted, else no bias is used
         :param init_weight: initial scaling factor
         :param init_bias: initial bias
         """
@@ -242,8 +248,15 @@ class IndiNonlinLayer(nn.Module):
         self._nonlin = nonlin
         self.log_weight = nn.Parameter(to.log(init_weight*to.ones(in_features, dtype=to.get_default_dtype())),
                                        requires_grad=True)
-        self.bias = nn.Parameter(init_bias*to.ones(in_features, dtype=to.get_default_dtype()), requires_grad=True)
+        if bias:
+            self.bias = nn.Parameter(init_bias*to.ones(in_features, dtype=to.get_default_dtype()), requires_grad=True)
+        else:
+            self.bias = None
 
     def forward(self, inp: to.Tensor) -> to.Tensor:
-        # y = f_nlin( w * (x-b) )
-        return self._nonlin(to.exp(self.log_weight)*(inp - self.bias))
+        if self.bias is None:
+            # y = f_nlin( w * x )
+            return self._nonlin(to.exp(self.log_weight)*inp)
+        else:
+            # y = f_nlin( w * (x-b) )
+            return self._nonlin(to.exp(self.log_weight)*(inp - self.bias))

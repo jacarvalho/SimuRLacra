@@ -93,6 +93,9 @@ def init_param(m, **kwargs):
         m.log_weight.data.fill_(0.)
 
     elif isinstance(m, IndiNonlinLayer):
-        # Initialize all weights to 1 and all biases to 0
+        # Initialize all weights to 1 and all biases (if they exist) to 0
         m.log_weight.data.fill_(0.)
-        m.bias.data.fill_(0.)
+        if m.bias is None:
+            pass
+        else:
+            m.bias.data.fill_(0.)
