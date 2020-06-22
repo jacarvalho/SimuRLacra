@@ -87,17 +87,7 @@ def init_param(m, **kwargs):
                     param.data[m.hidden_size:m.hidden_size*2].fill_(1)
 
     elif isinstance(m, nn.Conv1d):
-        if kwargs.get('symm', False):
-            if not m.in_channels == 1:
-                raise pyrado.ShapeErr(msg='Symmetric weights are only implemented for the case of 1 input channel!')
-            # Get the default number of weights of shape out_channels x in_channels x kernel_size
-            half_kernel_size = ceil(m.weight.shape[2]/2)  # ks = 4 --> 2, ks = 5 --> 3
-            new_weight_init = to.randn(m.weight.shape[0], half_kernel_size)
-            new_weight = nn.Parameter(new_weight_init, requires_grad=True)
-            symm_weight = to.zeros_like(m.weight)
-            symm_weight[:, 0, :half_kernel_size] = new_weight
-            symm_weight[:, 0, half_kernel_size:] = to.flip(new_weight, (1,))[:, 1:]  # flip columns left-right
-            m.weight = symm_weight
+        raise NotImplementedError
 
     elif isinstance(m, ScaleLayer):
         # Initialize all weights to 1

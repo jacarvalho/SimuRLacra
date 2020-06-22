@@ -1,5 +1,9 @@
 import torch as to
 import torch.nn as nn
+import torch.nn.functional as F
+from math import ceil, sqrt
+from torch.nn.modules.conv import _ConvNd
+from torch.nn.modules.utils import _single
 from typing import Callable
 
 import pyrado
@@ -8,6 +12,60 @@ from pyrado.policies.base import Policy, PositiveScaleLayer, IndiNonlinLayer
 from pyrado.policies.base_recurrent import RecurrentPolicy
 from pyrado.policies.initialization import init_param
 from pyrado.utils.input_output import print_cbt
+
+
+class MirrConv1d(_ConvNd):
+    """ Overriding `Conv1d` module implementation from PyTorch 1.4  """
+
+    def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0, dilation=1, groups=1, bias=True,
+                 padding_mode='zeros'):
+        # Same as in Pytorch 1.4
+        kernel_size = _single(kernel_size)
+        stride = _single(stride)
+        padding = _single(padding)
+        dilation = _single(dilation)
+        super().__init__(in_channels, out_channels, kernel_size, stride, padding, dilation, False, _single(0), groups,
+                         bias, padding_mode)
+
+        # Catch case I didn't consider
+        if not in_channels == 1:
+            raise pyrado.ShapeErr(msg='Symmetric weights are only implemented for the case of 1 input channel!')
+
+        # Memorize PyTorch's weight shape (channels x in_channels x kernel_size) for later reconstruction
+        self.orig_weight_shape = self.weight.shape
+
+        # Get number of kernel elements we later want to use for mirroring
+        self.half_kernel_size = ceil(self.weight.shape[2]/2)  # kernel_size = 4 --> 2, kernel_size = 5 --> 3
+
+        # Initialize the weights values the same way PyTorch does
+        new_weight_init = to.zeros(self.weight.shape[0], self.half_kernel_size)  # TODO
+        nn.init.kaiming_uniform_(new_weight_init, a=sqrt(5))
+
+        # Overwrite the weight attribute (transposed is False by default for the Conv1d module and we don't use it here)
+        self.weight = nn.Parameter(new_weight_init, requires_grad=True)
+
+    def forward(self, input):
+        # Reconstruct symmetric weights for convolution (original size)
+        mirr_weight = to.zeros(self.orig_weight_shape)
+        mirr_weight.fill_(pyrado.inf)  # TODO not necessary
+        mirr_weight[:, 0, :self.half_kernel_size] = self.weight
+        if self.orig_weight_shape[2]%2 == 1:
+            # Odd kernel size for convolution
+            mirr_weight[:, 0, self.half_kernel_size:] = to.flip(self.weight, (1,))[:, 1:]  # flip columns left-right
+        else:
+            # Even kernel size for convolution
+            mirr_weight[:, 0, self.half_kernel_size:] = to.flip(self.weight, (1,))  # flip columns left-right
+
+        # Check that we did not forget  # TODO not necessary
+        if to.any(to.isinf(mirr_weight)):
+            raise RuntimeError
+
+        # Run though the same function as the original PyTorch implementation, but with mirrored kernel
+        if self.padding_mode == 'circular':
+            expanded_padding = ((self.padding[0] + 1) // 2, self.padding[0] // 2)
+            return F.conv1d(F.pad(input, expanded_padding, mode='circular'), mirr_weight, self.bias, self.stride,
+                            _single(0), self.dilation, self.groups)
+        return F.conv1d(input, mirr_weight, self.bias, self.stride, self.padding, self.dilation, self.groups)
 
 
 class NFPolicy(RecurrentPolicy):
@@ -152,6 +210,8 @@ class NFPolicy(RecurrentPolicy):
         if init_values is None:
             # Initialize RNN layers
             init_param(self.obs_layer, **kwargs)
+            # self.obs_layer.weight.data /= 100.
+            # self.obs_layer.bias.data /= 100.
             init_param(self.conv_layer, **kwargs)
             # init_param(self.post_conv_layer, **kwargs)
             init_param(self.nonlin_layer, **kwargs)
