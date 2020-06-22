@@ -29,7 +29,7 @@ class ParallelTasks(Task):
 
             `hold_rew_when_done=True` only makes sense for positive rewards.
         """
-        self._tasks = deepcopy(tasks)
+        self._tasks = tasks
         self.succeeded_tasks = np.full(len(self), False, dtype=bool)
         self.failed_tasks = np.full(len(self), False, dtype=bool)
         self.hold_rew_when_done = hold_rew_when_done

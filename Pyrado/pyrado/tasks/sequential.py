@@ -29,7 +29,7 @@ class SequentialTasks(Task):
         .. note::
             `hold_rew_when_done=True` only makes sense for positive rewards.
         """
-        self._tasks = deepcopy(tasks)
+        self._tasks = tasks
         self._idx_curr = start_idx
         self.succeeded_tasks = np.full(len(self), False, dtype=bool)
         self.failed_tasks = np.full(len(self), False, dtype=bool)
