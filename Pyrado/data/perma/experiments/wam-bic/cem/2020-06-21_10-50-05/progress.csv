@@ -1,0 +1,2 @@
+iteration,curr policy return,max return,median return,avg return,std return,avg rollout len,min mag policy param,max mag policy param,median imp samp return,min imp samp return,min expl strat std,avg expl strat std,max expl strat std,expl strat entropy
+0,620.4444044193278,721.6036299020307,454.7011623512967,465.6707486086686,123.41999475600481,1444.22,-0.05710392611872819,1.1632276163185313,679.0259883999072,670.6922078185341,0.09968828884325404,0.1461417231763446,0.17847042949941466,-16.019672894226133
