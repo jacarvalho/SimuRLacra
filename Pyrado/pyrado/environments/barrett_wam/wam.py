@@ -35,7 +35,7 @@ class WAMBallInCupReal(Env):
         :param dt: sampling time interval
         :param max_steps: maximum number of time steps
         :param ip: IP address of the PC controlling the Barrett WAM
-        :param poses_des: desired joint poses as N x 3 ndarray, where N is the number of steps in the trajectory
+        :param poses_des: desired joint poses as num_steps x 3 ndarray
         """
         # Call the base class constructor to initialize fundamental members
         super().__init__(dt, max_steps)
@@ -81,7 +81,7 @@ class WAMBallInCupReal(Env):
         return self._task
 
     def _create_task(self, task_args: dict) -> Task:
-        # The wrapped task acts as a dummy and carries the FinalRewTask s
+        # The wrapped task acts as a dummy and carries the FinalRewTask
         return FinalRewTask(GoallessTask(self.spec, ZeroPerStepRewFcn()), mode=FinalRewMode(user_input=True))
 
     def _create_spaces(self):
@@ -89,9 +89,9 @@ class WAMBallInCupReal(Env):
         self._state_space = BoxSpace(np.array([0.]), np.array([1.]))
 
         # Action space (PD controller on 3 joint positions and velocities)
-        max_act = np.array([np.pi, np.pi, np.pi,  # [rad, rad, rad, ...
-                            10*np.pi, 10*np.pi, 10*np.pi])  # ... rad/s, rad/s, rad/s]
-        self._act_space = BoxSpace(-max_act, max_act,
+        act_up = np.array([1.985, np.pi, np.pi/2, 10*np.pi, 10*np.pi, 10*np.pi])
+        act_lo = np.array([-1.985, -0.9, -np.pi/2, -10*np.pi, -10*np.pi, -10*np.pi])
+        self._act_space = BoxSpace(act_lo, act_up,  # [rad, rad, rad, rad/s, rad/s, rad/s]
                                    labels=[r'$q_{1,des}$', r'$q_{3,des}$', r'$q_{5,des}$',
                                            r'$\dot{q}_{1,des}$', r'$\dot{q}_{3,des}$', r'$\dot{q}_{5,des}$'])
 
