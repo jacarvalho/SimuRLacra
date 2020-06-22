@@ -12,8 +12,10 @@ from pyrado.spaces.box import BoxSpace
 from pyrado.tasks.condition_only import ConditionOnlyTask
 from pyrado.tasks.desired_state import DesStateTask
 from pyrado.tasks.final_reward import BestStateFinalRewTask, FinalRewTask, FinalRewMode
+from pyrado.tasks.goalless import GoallessTask
 from pyrado.tasks.masked import MaskedTask
 from pyrado.tasks.reward_functions import ZeroPerStepRewFcn, ExpQuadrErrRewFcn
+from pyrado.tasks.sequential import SequentialTasks
 from pyrado.utils.data_types import EnvSpec
 from pyrado.utils.input_output import print_cbt
 
@@ -180,9 +182,9 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         else:
             # Add plus/minus one degree to each motor joint and the first rope segment joint
             init_state_up = init_state.copy()
-            init_state_up[:7] += np.array([0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5]) * np.pi/180
+            init_state_up[:7] += np.array([0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5])*np.pi/180
             init_state_lo = init_state.copy()
-            init_state_lo[:7] -= np.array([0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5]) * np.pi/180
+            init_state_lo[:7] -= np.array([0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5])*np.pi/180
             self._init_space = BoxSpace(init_state_lo, init_state_up)
 
         # State space
@@ -219,10 +221,18 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
 
         if task_args.get('sparse_rew_fcn', False):
             # Binary final reward task
-            task = FinalRewTask(
+            main_task = FinalRewTask(
                 ConditionOnlyTask(spec, condition_fcn=self.check_ball_in_cup, is_success_condition=True),
                 mode=FinalRewMode(always_positive=True), factor=1
             )
+            # Yield -1 on fail after the main task ist done (successfully or not)
+            dont_fail_after_succ_task = FinalRewTask(
+                GoallessTask(spec, ZeroPerStepRewFcn()),
+                mode=FinalRewMode(always_negative=True), factor=1
+            )
+
+            # Augment the binary task with an endless dummy task, to avoid early stopping of the
+            task = SequentialTasks((main_task, dont_fail_after_succ_task))
 
             return MaskedTask(self.spec, task, idcs)
 
@@ -340,7 +350,7 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
 
         return False
 
-    def check_ball_in_cup(self, verbose: bool = False):
+    def check_ball_in_cup(self, *args, verbose: bool = False):
         """
         Check if the ball is in the cup.
 
@@ -364,7 +374,7 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
             c2 = body2_name == 'ball' and contact.geom1 == cup_inner_id
             if c1 or c2:
                 if verbose:
-                    print_cbt(f'Timestep {self.curr_step}: Ball is in the cup.', 'y')
+                    print_cbt(f'The ball is in the cup at time step {self.curr_step}.', 'y')
                 return True
 
         return False
