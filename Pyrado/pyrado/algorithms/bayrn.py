@@ -64,7 +64,8 @@ class BayRn(Algorithm, ABC):
                  thold_succ_subroutine: float = -pyrado.inf,
                  warmstart: bool = True,
                  policy_param_init: to.Tensor = None,
-                 valuefcn_param_init: to.Tensor = None):
+                 valuefcn_param_init: to.Tensor = None,
+                 subroutine_snapshot_mode: str = 'best'):
         """
         Constructor
 
@@ -97,6 +98,7 @@ class BayRn(Algorithm, ABC):
                           effect for initial policies and can be overruled by passing init policy params explicitly.
         :param policy_param_init: initial policy parameter values for the subroutine, set `None` to be random
         :param valuefcn_param_init: initial value function parameter values for the subroutine, set `None` to be random
+        :param subroutine_snapshot_mode: snapshot mode for saving during training of the subroutine
         """
         assert isinstance(env_sim, MetaDomainRandWrapper)
         assert isinstance(subroutine, Algorithm)
@@ -125,6 +127,7 @@ class BayRn(Algorithm, ABC):
         self.warmstart = warmstart
         self.num_eval_rollouts_real = num_eval_rollouts_real
         self.num_eval_rollouts_sim = num_eval_rollouts_sim
+        self.subroutine_snapshot_mode = subroutine_snapshot_mode
         self.thold_succ = to.tensor([thold_succ])
         self.thold_succ_subroutine = to.tensor([thold_succ_subroutine])
         self.max_subroutine_rep = 3  # number of tries to exceed thold_succ_subroutine during training in simulation
@@ -183,7 +186,7 @@ class BayRn(Algorithm, ABC):
             print_cbt(f'Initialized the new solution with the results from iteration {self._curr_iter - 1}', 'y')
 
         # Train a policy in simulation using the subroutine
-        self._subroutine.train(snapshot_mode='best', meta_info=dict(prefix=prefix))
+        self._subroutine.train(snapshot_mode=self.subroutine_snapshot_mode, meta_info=dict(prefix=prefix))
 
         # Return the estimated return of the trained policy in simulation
         avg_ret_sim = self.eval_policy(
@@ -561,7 +564,8 @@ class BayRn(Algorithm, ABC):
                             num_restarts: int,
                             num_samples: int,
                             policy_param_init: to.Tensor = None,
-                            valuefcn_param_init: to.Tensor = None) -> Policy:
+                            valuefcn_param_init: to.Tensor = None,
+                            subroutine_snapshot_mode: str = 'best') -> Policy:
         """
         Train a policy based on the maximizer of the posterior mean.
 
@@ -572,6 +576,7 @@ class BayRn(Algorithm, ABC):
         :param num_samples: number of samples for the optimization of the acquisition function
         :param policy_param_init: initial policy parameter values for the subroutine, set `None` to be random
         :param valuefcn_param_init: initial value function parameter values for the subroutine, set `None` to be random
+        :param subroutine_snapshot_mode: snapshot mode for saving during training of the subroutine
         :return: the final BayRn policy
         """
         # Load the required data
@@ -598,5 +603,5 @@ class BayRn(Algorithm, ABC):
         else:
             print_cbt('Learning the argmax solution given an initialization', 'y')
 
-        subroutine.train(snapshot_mode='best')  # meta_info=dict(prefix='final')
+        subroutine.train(snapshot_mode=subroutine_snapshot_mode)
         return subroutine.policy
