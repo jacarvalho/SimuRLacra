@@ -1,6 +1,5 @@
 """
-Plot a trajectory recorded on the real Barrett WAM and compare it to a simulation, which either starts from the same
-initial pose (default) or from a state randomly sampled init state space.
+Plot a trajectory recorded on the real Barrett WAM and compare it to a simulation, starting from the same initial pose.
 """
 import os.path as osp
 import numpy as np
@@ -46,10 +45,9 @@ if __name__ == '__main__':
     # Fix seed for reproducibility
     pyrado.set_seed(args.seed)
 
-    # Either sample a random initial state, or use the recorded initial state from the real system
+    # Use the recorded initial state from the real system
     init_state = env.init_space.sample_uniform()
-    if not args.random_init_state:
-        init_state[:7] = qpos_real[0, :]
+    init_state[:7] = qpos_real[0, :]
 
     # Do rollout in simulation
     ro = rollout(env, policy, eval=True, render_mode=RenderMode(video=False), reset_kwargs=dict(init_state=init_state))
