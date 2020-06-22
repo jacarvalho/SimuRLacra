@@ -87,7 +87,8 @@ def init_param(m, **kwargs):
                     param.data[m.hidden_size:m.hidden_size*2].fill_(1)
 
     elif isinstance(m, nn.Conv1d):
-        raise NotImplementedError
+        # Not implemented
+        pass
 
     elif isinstance(m, ScaleLayer):
         # Initialize all weights to 1
