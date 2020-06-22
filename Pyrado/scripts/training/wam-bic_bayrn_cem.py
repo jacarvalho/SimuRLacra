@@ -1,6 +1,7 @@
 """
 Train an agent to solve the WAM Ball-in-cup environment using Bayesian Domain Randomization.
 """
+import numpy as np
 import os.path as osp
 import torch as to
 
@@ -8,6 +9,7 @@ import pyrado
 from pyrado.algorithms.cem import CEM
 from pyrado.domain_randomization.default_randomizers import get_zero_var_randomizer, get_default_domain_param_map_wambic
 from pyrado.environment_wrappers.domain_randomization import DomainRandWrapperLive, MetaDomainRandWrapper
+from pyrado.environments.barrett_wam.wam import WAMBallInCupReal
 from pyrado.environments.mujoco.wam import WAMBallInCupSim
 from pyrado.algorithms.bayrn import BayRn
 from pyrado.logger.experiment import setup_experiment, save_list_of_dicts_to_yaml
@@ -16,11 +18,13 @@ from pyrado.policies.environment_specific import DualRBFLinearPolicy
 
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
-    ex_dir = setup_experiment(WAMBallInCupSim.name, f'{BayRn.name}_{CEM.name}-sim2sim', 'dr_cs_rl', seed=111)
+    ex_dir = setup_experiment(WAMBallInCupSim.name, f'{BayRn.name}_{CEM.name}', 'dr_rl_jd', seed=111)
+    # ex_dir = setup_experiment(WAMBallInCupSim.name, f'{BayRn.name}_{CEM.name}-sim2sim', 'dr_rl_jd', seed=111)
 
     # Environments
     env_hparams = dict(
         max_steps=1500,
+        fixed_initial_state=False,
         task_args=dict(final_factor=0.05)
     )
     env_sim = WAMBallInCupSim(**env_hparams)
@@ -28,42 +32,44 @@ if __name__ == '__main__':
     dp_map = get_default_domain_param_map_wambic()
     env_sim = MetaDomainRandWrapper(env_sim, dp_map)
 
-    env_real = WAMBallInCupSim(**env_hparams)
+    env_real = WAMBallInCupReal(ip=None)
+    # env_real = WAMBallInCupReal(**env_hparams)
 
     # Policy
     policy_hparam = dict(
-        rbf_hparam=dict(num_feat_per_dim=8, bounds=(0., 1.), scale=None),
+        rbf_hparam=dict(num_feat_per_dim=9, bounds=(0., 1.), scale=None),
         dim_mask=2
     )
     policy = DualRBFLinearPolicy(env_sim.spec, **policy_hparam)
+    policy_init = to.load(osp.join(pyrado.EXP_DIR, WAMBallInCupSim.name, CEM.name,
+                                   # '2020-06-08_13-04-04--dr_cs_rl--swingfrombelow',
+                                   # '2020-06-08_13-04-04--dr-cs-rl_firstupthendown',
+                                   '2020-06-22_10-41-26--catchbelow', 'policy.pt'))
 
     # Subroutine
     subroutine_hparam = dict(
-        max_iter=20,
-        pop_size=100,
+        max_iter=25,
+        pop_size=10,
         num_rollouts=50,
         num_is_samples=10,
-        expl_std_init=0.5,
+        expl_std_init=np.pi/6,
         expl_std_min=0.02,
-        extra_expl_std_init=0.5,
+        extra_expl_std_init=np.pi/6,
         extra_expl_decay_iter=10,
         full_cov=False,
         symm_sampling=False,
-        num_sampler_envs=8,
+        num_sampler_envs=32,
     )
     cem = CEM(ex_dir, env_sim, policy, **subroutine_hparam)
 
     # Set the boundaries for the GP
     dp_nom = WAMBallInCupSim.get_nominal_domain_param()
     bounds = to.tensor(
-        [[0.7*dp_nom['cup_scale'], dp_nom['cup_scale']/100, 0.8*dp_nom['rope_length'], dp_nom['rope_length']/100],
-         [1.3*dp_nom['cup_scale'], dp_nom['cup_scale']/20, 1.2*dp_nom['rope_length'], dp_nom['rope_length']/10]]
+        # [[0.7*dp_nom['cup_scale'], dp_nom['cup_scale']/100, 0.8*dp_nom['rope_length'], dp_nom['rope_length']/100],
+        #  [1.3*dp_nom['cup_scale'], dp_nom['cup_scale']/20, 1.2*dp_nom['rope_length'], dp_nom['rope_length']/10]]
+        [[0.9*dp_nom['rope_length'], dp_nom['rope_length']/100, 0.5*dp_nom['joint_damping'], dp_nom['joint_damping']/100],
+         [1.1*dp_nom['rope_length'], dp_nom['rope_length']/10, 2*dp_nom['joint_damping'], dp_nom['joint_damping']/10]]
     )
-
-    policy_init = to.load(osp.join(pyrado.EXP_DIR, WAMBallInCupSim.name, cem.name,
-                                   # '2020-06-08_13-04-04--dr_cs_rl--swingfrombelow',
-                                   '2020-06-08_13-04-04--dr-cs-rl_firstupthendown',
-                                   'policy.pt'))
 
     # Algorithm
     bayrn_hparam = dict(

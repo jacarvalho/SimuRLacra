@@ -1,5 +1,6 @@
 import numpy as np
 import robcom_python as robcom
+from init_args_serializer import Serializable
 
 import pyrado
 from pyrado.environments.base import Env
@@ -13,7 +14,7 @@ from pyrado.utils.data_types import RenderMode
 from pyrado.utils.input_output import print_cbt
 
 
-class WAMBallInCupReal(Env):
+class WAMBallInCupReal(Env, Serializable):
     """
     Class for the real Barrett WAM
 
@@ -27,23 +28,26 @@ class WAMBallInCupReal(Env):
     def __init__(self,
                  dt: float = 1/500.,
                  max_steps: int = pyrado.inf,
-                 ip: str = '192.168.2.2',
+                 ip: [str, None] = '192.168.2.2',
                  poses_des: [np.ndarray, None] = None):
         """
         Constructor
 
         :param dt: sampling time interval
         :param max_steps: maximum number of time steps
-        :param ip: IP address of the PC controlling the Barrett WAM
+        :param ip: IP address of the PC controlling the Barrett WAM, pass `None` to skip connecting
         :param poses_des: desired joint poses as num_steps x 3 ndarray
         """
+        Serializable._init(self, locals())
+
         # Call the base class constructor to initialize fundamental members
         super().__init__(dt, max_steps)
 
         # Create the robcom client and connect to it
         self._client = robcom.Client()
-        self._client.start(ip, 2013)  # IP address and port
-        print_cbt('Connected to the Barret WAM client.', 'c', bright=True)
+        if ip is not None:
+            self._client.start(ip, 2013)  # IP address and port
+            print_cbt('Connected to the Barret WAM client.', 'c', bright=True)
         self._gt = None  # Goto command
 
         # Desired joint position for the initial state
