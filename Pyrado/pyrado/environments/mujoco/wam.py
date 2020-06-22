@@ -27,6 +27,7 @@ class WAMSim(MujocoSimEnv, Serializable):
 
     .. seealso::
         https://github.com/jhu-lcsr/barrett_model
+        http://www.mujoco.org/book/XMLreference.html (e.g. for joint damping)
     """
 
     name: str = 'wam'
@@ -152,10 +153,10 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
     @classmethod
     def get_nominal_domain_param(cls) -> dict:
         return dict(
-            cup_scale=1.,  # scaling factor for the radius of the cup
-            rope_length=0.3,  # length of the rope [previously: 0.3103]
-            ball_mass=0.021,  # mass of the ball
-            joint_damping=0.2,  # damping of motor joints
+            cup_scale=1.,  # scaling factor for the radius of the cup [-]
+            rope_length=0.3,  # length of the rope [m] (previously 0.3103)
+            ball_mass=0.021,  # mass of the ball [kg]
+            joint_damping=0.05,  # damping of motor joints [N/s] (default value is small)
         )
 
     def _create_spaces(self):
