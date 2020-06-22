@@ -179,8 +179,10 @@ Credits to Pascal Klink, Kai Plöger, and OpenAI
                       <geom name="cup_geom18" class="cup_geom" mesh="cup18"/>
                       <!-- cup_inner defines the inner space of the cup;  gap: arbitrary large value to generate "inactive" contacts -->
                       <geom name="cup_inner" pos="0 0.01 [pos_goal]" euler="-1.57 0 0" type="cylinder" size="[size_cup_inner] 0.04" group="3" gap="1000" rgba="0.9 1 0 1"/>
-                      <site name="cup_goal" pos="0 0.05 [pos_goal]" size="1e-5" />
-                      <site name="cup_goal_final" pos="0 -0.025 [pos_goal]" size="1e-5" />
+                      <!-- This goal site defines the upper rim center of the cup -->
+                      <!-- <site name="cup_goal" pos="0 0.05 [pos_goal]" size="1e-5"/> -->
+                      <!-- This goal site defines the bottom center of the cup -->
+                      <site name="cup_goal" pos="0 -0.01 [pos_goal]" size="1e-5"/>
 
                       <body name="B0" pos="0 -0.045 [pos_goal]" quat="0.707107 0 0 -0.707107">
                         <inertial pos="0 0 0" quat="0.707107 0 0.707107 0" mass="7.4927e-05" diaginertia="5.87e-10 5.87e-10 3.74635e-11" />
