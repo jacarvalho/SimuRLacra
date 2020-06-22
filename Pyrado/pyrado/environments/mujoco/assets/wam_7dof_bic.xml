@@ -91,17 +91,17 @@ Credits to Pascal Klink, Kai Plöger, and OpenAI
     <light directional="false" diffuse=".2 .2 .2" specular="0 0 0" pos="0 0 5" dir="0 0 -1" castshadow="false"/>
     <light mode="targetbodycom" target="wam/base_link" directional="false" diffuse="2 2 2" specular="0.3 0.3 0.3" pos="0 0 4.0" dir="0 0 -1"/>
     <geom name="floor" pos="0 0 0" size="2 2 .25" type="plane" material="matplane" condim="3" solref="0.001 1."/>
-<!--    <geom class="x_axis"/>-->
-<!--    <geom class="y_axis"/>-->
-<!--    <geom class="z_axis"/>-->
+    <!--<geom class="x_axis"/>-->
+    <!--<geom class="y_axis"/>-->
+    <!--<geom class="z_axis"/>-->
 
     <body name="wam/base_link" pos="0 0 .84" euler="0 0 1.57">
       <inertial pos="6.93764e-06 0.0542887 0.076438" quat="0.496481 0.503509 -0.503703 0.496255" mass="27.5544" diaginertia="0.432537 0.318732 0.219528"/>
       <geom class="viz" mesh="base_link_fine" euler="0 0 -1.57"/>
       <geom class="col" mesh="base_link_convex" euler="0 0 -1.57"/>
-<!--      <geom class="x_axis"/>-->
-<!--      <geom class="y_axis"/>-->
-<!--      <geom class="z_axis"/>-->
+      <!--<geom class="x_axis"/>-->
+      <!--<geom class="y_axis"/>-->
+      <!--<geom class="z_axis"/>-->
 
       <body name="wam/shoulder_yaw_link" pos="0 0 0.160" euler="0 0 -1.57">
         <inertial pos="-0.00443422 -0.00066489 -0.12189039" mass="10.76768767" fullinertia="0.50739925 0.46298222 0.11328369 0.00012485 -0.00213041 0.00068555"/>
@@ -152,9 +152,9 @@ Credits to Pascal Klink, Kai Plöger, and OpenAI
                     <inertial pos="-0.00007974 -0.00323552 -0.00016313" mass="0.06864753" fullinertia="0.00003773 0.00007408 0.00003806 0.00000000 -0.00000019 0.00000000"/>
                     <joint name="wam/palm_yaw_joint" range="-2.7 2.7"/>
                     <geom class="viz" mesh="wrist_palm_link_fine" pos="0 0 -0.06"/>
-<!--                    <geom class="x_axis"/>-->
-<!--                    <geom class="y_axis"/>-->
-<!--                    <geom class="z_axis"/>-->
+                    <!--<geom class="x_axis"/>-->
+                    <!--<geom class="y_axis"/>-->
+                    <!--<geom class="z_axis"/>-->
 
                     <body name="cup" pos="0 0 0" quat="-0.000203673 0 0 1">
                       <inertial pos="-3.75236e-10 8.27811e-05 0.0947015" quat="0.999945 -0.0104888 0 0" mass="0.132" diaginertia="0.000285643 0.000270485 9.65696e-05"/>
@@ -168,10 +168,10 @@ Credits to Pascal Klink, Kai Plöger, and OpenAI
                       <geom name="cup_geom8" class="cup_geom" mesh="cup8"/>
                       <geom name="cup_geom9" class="cup_geom" mesh="cup9"/>
                       <geom name="cup_geom10" class="cup_geom" mesh="cup10"/>
-<!--                      <geom name="cup_geom11" class="cup_geom" mesh="cup11"/>-->
-<!--                      <geom name="cup_geom12" class="cup_geom" mesh="cup12"/>-->
-<!--                      <geom name="cup_geom13" class="cup_geom" mesh="cup13"/>-->
-<!--                      <geom name="cup_geom14" class="cup_geom" mesh="cup14" />-->
+                      <!--<geom name="cup_geom11" class="cup_geom" mesh="cup11"/>-->
+                      <!--<geom name="cup_geom12" class="cup_geom" mesh="cup12"/>-->
+                      <!--<geom name="cup_geom13" class="cup_geom" mesh="cup13"/>-->
+                      <!--<geom name="cup_geom14" class="cup_geom" mesh="cup14" />-->
                       <geom name="cup_base" class="cup_geom" pos="0 -0.035 [pos_goal]" type="cylinder" size="[size_cup] 0.0045"/>
                       <geom name="cup_geom15" class="cup_geom" mesh="cup15"/>
                       <geom name="cup_geom16" class="cup_geom" mesh="cup16"/>
