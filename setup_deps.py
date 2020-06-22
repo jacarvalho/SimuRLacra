@@ -410,7 +410,7 @@ def setup_pytorch_based():
     sp.check_call([sys.executable, "-m", "pip", "install", "-U", "--no-deps", "pyro-ppl"])
 
 
-def setup_cppsctp():
+def _setup_cppsctp():
     # Get it all GitLab
     if not osp.exists(cppsctp_dir):
         mkdir_p(cppsctp_dir)
@@ -426,16 +426,6 @@ def setup_cppsctp():
 
 
 def setup_sl():
-    # Get it all GitLab
-    if not osp.exists(sl_dir):
-        mkdir_p(sl_dir)
-        sp.check_call(["git", "clone", sl_git_repo, sl_dir])
-
-    # Create relative build dir
-    sl_build_dir = osp.join(sl_dir, "build")
-    if not osp.exists(sl_build_dir):
-        mkdir_p(sl_build_dir)
-
     # Install dependencies (copied from https://git.ias.informatik.tu-darmstadt.de/robcom-2/robcom-2.0/-/wikis/usage)
     required_packages_sl = [
         "libsctp-dev",
@@ -456,11 +446,27 @@ def setup_sl():
     else:
         print("Dependencies have NOT been installed.")
 
+    # Set up custom IAS dependency
+    _setup_cppsctp()
+
+    # Get it all GitLab
+    if not osp.exists(sl_dir):
+        mkdir_p(sl_dir)
+        sp.check_call(["git", "clone", sl_git_repo, sl_dir])
+
+    # Create relative build dir
+    sl_build_dir = osp.join(sl_dir, "build")
+    if not osp.exists(sl_build_dir):
+        mkdir_p(sl_build_dir)
+
     # Build it
     buildCMakeProject(sl_dir, sl_build_dir, cmakeVars=sl_cmake_vars)
 
 
 def setup_robcom():
+    # Set up dependency
+    _setup_cppsctp()
+
     # Get it all GitLab
     if not osp.exists(robcom_dir):
         mkdir_p(robcom_dir)

@@ -32,8 +32,8 @@ if __name__ == '__main__':
     dp_map = get_default_domain_param_map_wambic()
     env_sim = MetaDomainRandWrapper(env_sim, dp_map)
 
-    env_real = WAMBallInCupReal(ip=None)
-    # env_real = WAMBallInCupReal(**env_hparams)
+    # env_real = WAMBallInCupReal(ip=None)
+    env_real = WAMBallInCupSim(**env_hparams)
 
     # Policy
     policy_hparam = dict(
@@ -48,7 +48,7 @@ if __name__ == '__main__':
 
     # Subroutine
     subroutine_hparam = dict(
-        max_iter=25,
+        max_iter=30,
         pop_size=10,
         num_rollouts=50,
         num_is_samples=10,
@@ -82,6 +82,7 @@ if __name__ == '__main__':
         num_eval_rollouts_real=100 if isinstance(env_real, WAMBallInCupSim) else 5,
         num_eval_rollouts_sim=100,
         policy_param_init=policy_init.param_values.data,
+        subroutine_snapshot_mode='latest'
     )
 
     # Save the environments and the hyper-parameters (do it before the init routine of BDR)
