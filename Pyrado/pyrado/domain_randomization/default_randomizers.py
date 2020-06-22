@@ -374,8 +374,11 @@ def get_default_randomizer_wambic() -> DomainRandomizer:
     from pyrado.environments.mujoco.wam import WAMBallInCupSim
     dp_nom = WAMBallInCupSim.get_nominal_domain_param()
     return DomainRandomizer(
-        NormalDomainParam(name='cup_scale', mean=dp_nom['cup_scale'], std=dp_nom['cup_scale']/5, clip_lo=0.6),  # ball needs to fit into the cup
-        NormalDomainParam(name='rope_length', mean=dp_nom['rope_length'], std=dp_nom['rope_length']/10, clip_lo=0.2),  # rope won't be less then 10cm shorter
+        # Ball needs to fit into the cup
+        NormalDomainParam(name='cup_scale', mean=dp_nom['cup_scale'], std=dp_nom['cup_scale']/5, clip_lo=0.65),
+        # Rope won't be more than 5cm off
+        NormalDomainParam(name='rope_length', mean=dp_nom['rope_length'], std=dp_nom['rope_length']/10,
+                          clip_lo=0.25, clip_up=0.35),
     )
 
 
