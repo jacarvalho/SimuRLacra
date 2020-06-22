@@ -8,18 +8,23 @@ from typing import Callable
 
 import pyrado
 from pyrado.utils.data_types import EnvSpec
-from pyrado.policies.base import Policy, PositiveScaleLayer, IndiNonlinLayer
+from pyrado.policies.base import Policy, IndiNonlinLayer
 from pyrado.policies.base_recurrent import RecurrentPolicy
 from pyrado.policies.initialization import init_param
 from pyrado.utils.input_output import print_cbt
 
 
 class MirrConv1d(_ConvNd):
-    """ Overriding `Conv1d` module implementation from PyTorch 1.4  """
+    """
+    Overriding `Conv1d` module implementation from PyTorch 1.4 to re-use parts of the convolution weights by mirroring
+    the first half of the kernel (along the columns). This way we can save (close to) half of the parameters, under
+    the assumption that we have a kernel that obeys this kind of symmetry.
+    The biases are left unchanged.
+    """
 
     def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0, dilation=1, groups=1, bias=True,
                  padding_mode='zeros'):
-        # Same as in Pytorch 1.4
+        # Same as in PyTorch 1.4
         kernel_size = _single(kernel_size)
         stride = _single(stride)
         padding = _single(padding)
@@ -27,45 +32,47 @@ class MirrConv1d(_ConvNd):
         super().__init__(in_channels, out_channels, kernel_size, stride, padding, dilation, False, _single(0), groups,
                          bias, padding_mode)
 
-        # Catch case I didn't consider
-        if not in_channels == 1:
-            raise pyrado.ShapeErr(msg='Symmetric weights are only implemented for the case of 1 input channel!')
-
-        # Memorize PyTorch's weight shape (channels x in_channels x kernel_size) for later reconstruction
+        # Memorize PyTorch's weight shape (out_channels x in_channels x kernel_size) for later reconstruction
         self.orig_weight_shape = self.weight.shape
 
         # Get number of kernel elements we later want to use for mirroring
         self.half_kernel_size = ceil(self.weight.shape[2]/2)  # kernel_size = 4 --> 2, kernel_size = 5 --> 3
 
         # Initialize the weights values the same way PyTorch does
-        new_weight_init = to.zeros(self.weight.shape[0], self.half_kernel_size)  # TODO
+        new_weight_init = to.zeros(self.orig_weight_shape[0], self.orig_weight_shape[1], self.half_kernel_size)
         nn.init.kaiming_uniform_(new_weight_init, a=sqrt(5))
 
         # Overwrite the weight attribute (transposed is False by default for the Conv1d module and we don't use it here)
         self.weight = nn.Parameter(new_weight_init, requires_grad=True)
 
-    def forward(self, input):
+    def forward(self, inp: to.Tensor) -> to.Tensor:
         # Reconstruct symmetric weights for convolution (original size)
-        mirr_weight = to.zeros(self.orig_weight_shape)
-        mirr_weight.fill_(pyrado.inf)  # TODO not necessary
-        mirr_weight[:, 0, :self.half_kernel_size] = self.weight
-        if self.orig_weight_shape[2]%2 == 1:
-            # Odd kernel size for convolution
-            mirr_weight[:, 0, self.half_kernel_size:] = to.flip(self.weight, (1,))[:, 1:]  # flip columns left-right
-        else:
-            # Even kernel size for convolution
-            mirr_weight[:, 0, self.half_kernel_size:] = to.flip(self.weight, (1,))  # flip columns left-right
+        mirr_weight = to.empty(self.orig_weight_shape)
+        # mirr_weight.fill_(pyrado.inf)  # only for testing
 
-        # Check that we did not forget  # TODO not necessary
-        if to.any(to.isinf(mirr_weight)):
-            raise RuntimeError
+        # Loop over input channels
+        for i in range(self.orig_weight_shape[1]):
+            # Fill first half
+            mirr_weight[:, i, :self.half_kernel_size] = self.weight[:, i, :]
+
+            # Fill second half (flip columns left-right)
+            if self.orig_weight_shape[2]%2 == 1:
+                # Odd kernel size for convolution, don't flip the last column
+                mirr_weight[:, i, self.half_kernel_size:] = to.flip(self.weight[:, i, :], (1,))[:, 1:]
+            else:
+                # Even kernel size for convolution, flip all columns
+                mirr_weight[:, i, self.half_kernel_size:] = to.flip(self.weight[:, i, :], (1,))
+
+        # Only for testing
+        # if to.any(to.isinf(mirr_weight)):
+        #     raise RuntimeError
 
         # Run though the same function as the original PyTorch implementation, but with mirrored kernel
         if self.padding_mode == 'circular':
             expanded_padding = ((self.padding[0] + 1) // 2, self.padding[0] // 2)
-            return F.conv1d(F.pad(input, expanded_padding, mode='circular'), mirr_weight, self.bias, self.stride,
+            return F.conv1d(F.pad(inp, expanded_padding, mode='circular'), mirr_weight, self.bias, self.stride,
                             _single(0), self.dilation, self.groups)
-        return F.conv1d(input, mirr_weight, self.bias, self.stride, self.padding, self.dilation, self.groups)
+        return F.conv1d(inp, mirr_weight, self.bias, self.stride, self.padding, self.dilation, self.groups)
 
 
 class NFPolicy(RecurrentPolicy):
@@ -83,6 +90,7 @@ class NFPolicy(RecurrentPolicy):
                  hidden_size: int,
                  obs_layer: [nn.Module, Policy] = None,
                  activation_nonlin: Callable = to.sigmoid,
+                 mirrored_conv_weights: bool = True,
                  conv_out_channels: int = 1,
                  conv_kernel_size: int = None,
                  conv_padding_mode: str = 'circular',
@@ -99,6 +107,7 @@ class NFPolicy(RecurrentPolicy):
         :param obs_layer: specify a custom PyTorch Module;
                           by default (`None`) a linear layer with biases is used
         :param activation_nonlin: nonlinearity to compute the activations from the potential levels
+        :param mirrored_conv_weights: re-use weights for the second half of the kernel to create a "symmetric" kernel
         :param conv_out_channels: number of filter for the 1-dim convolution along the potential-based neurons
         :param conv_kernel_size: size of the kernel for the 1-dim convolution along the potential-based neurons
         :param tau_init: initial value for the shared time constant of the potentials
@@ -135,7 +144,8 @@ class NFPolicy(RecurrentPolicy):
         # Create the RNN's layers
         self.obs_layer = nn.Linear(self._input_size, self._hidden_size, bias=True) if obs_layer is None else obs_layer
         padding = conv_kernel_size//2 if conv_padding_mode != 'circular' else conv_kernel_size - 1
-        self.conv_layer = nn.Conv1d(
+        conv1d_class = MirrConv1d if mirrored_conv_weights else nn.Conv1d
+        self.conv_layer = conv1d_class(
             in_channels=1,  # treat potentials as a time series of values (convolutions is over the "time" axis)
             out_channels=conv_out_channels,
             kernel_size=conv_kernel_size, padding=padding, bias=False,
