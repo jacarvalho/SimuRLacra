@@ -186,8 +186,12 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
 
         # State space
         state_shape = init_state.shape
-        max_state = np.full(state_shape, pyrado.inf)
-        self._state_space = BoxSpace(-max_state, max_state)
+        state_up = np.full(state_shape, pyrado.inf)
+        state_lo = np.full(state_shape, -pyrado.inf)
+        # Ensure that joint limits of the arm are not reached (up to 5 degree)
+        state_up[:7] = np.array([2.6, 1.985, 2.8, 3.14159, 1.25, 1.5707, 2.7]) - 5*np.pi/180
+        state_lo[:7] = np.array([-2.6, -1.985, -2.8, -0.9, -4.55, -1.5707, -2.7]) + 5*np.pi/180
+        self._state_space = BoxSpace(state_lo, state_up)
 
         # Action space (PD controller on 3 joint positions and velocities)
         act_up = np.array([1.985, np.pi, np.pi/2, 10*np.pi, 10*np.pi, 10*np.pi])
