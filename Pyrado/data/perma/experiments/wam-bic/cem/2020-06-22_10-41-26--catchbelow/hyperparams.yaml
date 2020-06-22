@@ -1,0 +1,26 @@
+env:
+  max_steps: 1750
+  task_args:
+    final_factor: 0.05
+seed: 1001
+policy:
+  dim_mask: 2
+  rbf_hparam:
+    bounds: !!python/tuple
+    - 0.0
+    - 1.0
+    num_feat_per_dim: 9
+    scale: None
+algo:
+  expl_std_init: 0.5235987755982988
+  expl_std_min: 0.02
+  extra_expl_decay_iter: 1
+  extra_expl_std_init: 0
+  full_cov: false
+  max_iter: 50
+  num_is_samples: 10
+  num_rollouts: 1
+  num_sampler_envs: 8
+  pop_size: 200
+  symm_sampling: false
+algo_name: cem
