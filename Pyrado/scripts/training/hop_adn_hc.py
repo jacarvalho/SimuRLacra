@@ -30,7 +30,7 @@ if __name__ == '__main__':
         kappa_learnable=True,
         capacity_learnable=False,
         output_nonlin=to.tanh,
-        potentials_dyn_fcn=pd_capacity_21_abs,
+        potentials_dyn_fcn=pd_cubic,
         scaling_layer=False,
     )
     policy = ADNPolicy(spec=env.spec, dt=env.dt, **policy_hparam)
@@ -41,8 +41,8 @@ if __name__ == '__main__':
         pop_size=10*policy.num_param,
         expl_factor=1.05,
         num_rollouts=4,
-        expl_std_init=0.2,
-        num_sampler_envs=8,
+        expl_std_init=2.,
+        num_sampler_envs=4,
     )
     algo = HCNormal(ex_dir, env, policy, **algo_hparam)
 

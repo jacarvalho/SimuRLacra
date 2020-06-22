@@ -1,49 +1,50 @@
 """
-Train an agent to solve the Hopper environment using Neural Fields and Cross-Entropy Method.
+Train an agent to solve the Half-Cheetah environment using Neural Fields and Cross-Entropy Method.
 """
 import torch as to
 
 from pyrado.algorithms.cem import CEM
 from pyrado.environment_wrappers.action_normalization import ActNormWrapper
-from pyrado.environments.mujoco.openai_hopper import HopperSim
+from pyrado.environments.mujoco.openai_half_cheetah import HalfCheetahSim
 from pyrado.logger.experiment import setup_experiment, save_list_of_dicts_to_yaml
 from pyrado.policies.neural_fields import NFPolicy
 
 
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
-    ex_dir = setup_experiment(HopperSim.name, f'nf-{CEM.name}', 'lin', seed=1001)
+    ex_dir = setup_experiment(HalfCheetahSim.name, f'nf-{CEM.name}', 'lin', seed=1001)
 
     # Environment
     env_hparams = dict()
-    env = HopperSim(**env_hparams)
-    env = ActNormWrapper(env)
+    env = HalfCheetahSim()
+    # env = ActNormWrapper(env)
 
     # Policy
     policy_hparam = dict(
-        hidden_size=3,
+        hidden_size=5,
         conv_out_channels=1,
-        conv_kernel_size=3,
+        conv_kernel_size=5,
         conv_padding_mode='circular',
         activation_nonlin=to.sigmoid,
         tau_init=1e-1,
         tau_learnable=True,
+        init_param_kwargs=dict(symm=True)
     )
     policy = NFPolicy(spec=env.spec, dt=env.dt, **policy_hparam)
 
     # Algorithm
     algo_hparam = dict(
-        max_iter=500,
-        pop_size=200,
-        num_rollouts=4,
-        num_is_samples=10,
-        expl_std_init=2.,
+        max_iter=100,
+        pop_size=policy.num_param,
+        num_rollouts=1,
+        num_is_samples=policy.num_param//10,
+        expl_std_init=1.,
         expl_std_min=0.02,
-        extra_expl_std_init=2.,
+        extra_expl_std_init=1.,
         extra_expl_decay_iter=10,
         full_cov=False,
         symm_sampling=False,
-        num_sampler_envs=4,
+        num_sampler_envs=1,
     )
     algo = CEM(ex_dir, env, policy, **algo_hparam)
 

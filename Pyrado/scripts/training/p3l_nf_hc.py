@@ -3,7 +3,6 @@ Train an agent to solve the Planar-3-Link task using Neural fields and Hill Clim
 """
 import torch as to
 
-import pyrado
 from pyrado.algorithms.hc import HCNormal
 from pyrado.environment_wrappers.observation_normalization import ObsNormWrapper
 from pyrado.environments.rcspysim.planar_3_link import Planar3LinkIKSim, Planar3LinkTASim
@@ -49,19 +48,19 @@ if __name__ == '__main__':
         conv_kernel_size=5,
         conv_padding_mode='circular',
         activation_nonlin=to.sigmoid,
-        tau_init=1.,
+        tau_init=1e-1,
         tau_learnable=True,
     )
     policy = NFPolicy(spec=env.spec, dt=env.dt, **policy_hparam)
 
     # Algorithm
     algo_hparam = dict(
-        max_iter=200,
-        pop_size=policy.num_param,
+        max_iter=100,
+        pop_size=2*policy.num_param,
         expl_factor=1.1,
         num_rollouts=1,
         expl_std_init=0.5,
-        num_sampler_envs=8,
+        num_sampler_envs=4,
     )
     algo = HCNormal(ex_dir, env, policy, **algo_hparam)
 

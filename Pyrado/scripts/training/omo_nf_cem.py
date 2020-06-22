@@ -22,22 +22,22 @@ if __name__ == '__main__':
 
     # Policy
     policy_hparam = dict(
-        hidden_size=10,
+        hidden_size=5,
         conv_out_channels=1,
-        conv_kernel_size=10,
+        conv_kernel_size=5,
         conv_padding_mode='circular',
         activation_nonlin=to.tanh,
-        tau_init=1.,
+        tau_init=1e-1,
         tau_learnable=True,
     )
     policy = NFPolicy(spec=env.spec, dt=env.dt, **policy_hparam)
 
     # Algorithm
     algo_hparam = dict(
-        max_iter=500,
-        pop_size=100,
-        num_rollouts=4,
-        num_is_samples=10,
+        max_iter=50,
+        pop_size=2*policy.num_param,
+        num_rollouts=2,
+        num_is_samples=2*policy.num_param//10,
         expl_std_init=0.5,
         expl_std_min=0.02,
         extra_expl_std_init=0.5,
