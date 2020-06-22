@@ -155,6 +155,18 @@ rcspysim_cmake_vars = {
 # Pyrado
 pyrado_dir = osp.join(project_dir, "Pyrado")
 
+# Robcom & SL
+cppsctp_git_repo = "https://git.ias.informatik.tu-darmstadt.de/robcom/cppsctp.git"
+sl_git_repo = "https://git.ias.informatik.tu-darmstadt.de/sl/sl.git"
+robcom_git_repo = "https://git.ias.informatik.tu-darmstadt.de/robcom-2/robcom-2.0.git"
+
+ias_dir = osp.join(dependency_dir, "ias")
+cppsctp_dir = osp.join(dependency_dir, "ias", "cppsctp")
+sl_dir = osp.join(dependency_dir, "ias", "sl")
+robcom_dir = osp.join(dependency_dir, "ias", "robcom")
+
+cppsctp_cmake_vars = {"IAS_DIR": ias_dir}
+sl_cmake_vars = {"IAS_DIR": ias_dir, "BUILD_barrett": "ON"}
 
 # ======= #
 # HELPERS #
@@ -396,6 +408,68 @@ def setup_pytorch_based():
     sp.check_call([sys.executable, "-m", "pip", "install", "-U", "--no-deps", "gpytorch"])
     sp.check_call([sys.executable, "-m", "pip", "install", "-U", "--no-deps", "botorch"])
     sp.check_call([sys.executable, "-m", "pip", "install", "-U", "--no-deps", "pyro-ppl"])
+
+
+def setup_cppsctp():
+    # Get it all GitLab
+    if not osp.exists(cppsctp_dir):
+        mkdir_p(cppsctp_dir)
+        sp.check_call(["git", "clone", cppsctp_git_repo, cppsctp_dir])
+
+    # Create relative build dir
+    cppsctp_build_dir = osp.join(cppsctp_dir, "build")
+    if not osp.exists(cppsctp_build_dir):
+        mkdir_p(cppsctp_dir)
+
+    # Build it
+    buildCMakeProject(cppsctp_dir, cppsctp_build_dir, cmakeVars=cppsctp_cmake_vars)
+
+
+def setup_sl():
+    # Get it all GitLab
+    if not osp.exists(sl_dir):
+        mkdir_p(sl_dir)
+        sp.check_call(["git", "clone", sl_git_repo, sl_dir])
+
+    # Create relative build dir
+    sl_build_dir = osp.join(sl_dir, "build")
+    if not osp.exists(sl_build_dir):
+        mkdir_p(sl_build_dir)
+
+    # Install dependencies (copied from https://git.ias.informatik.tu-darmstadt.de/robcom-2/robcom-2.0/-/wikis/usage)
+    required_packages_sl = [
+        "libsctp-dev",
+        "libncurses5-dev",
+        "libreadline6-dev",
+        "freeglut3-dev",
+        "libxmu-dev",
+        "cmake-curses-gui",
+        "libedit-dev",
+        "clang",
+        "xterm"
+    ]
+    user_input = input(f"You are about to install SL which depends on the following libraries\n{required_packages_sl}\n"
+                       f"Do you really want this? [y / n] ")
+    if user_input.lower() == "y":
+        sp.check_call(["sudo", "apt-get", "install", "-y"] + required_packages_sl)
+        print("Dependencies have been installed.")
+    else:
+        print("Dependencies have NOT been installed.")
+
+    # Build it
+    buildCMakeProject(sl_dir, sl_build_dir, cmakeVars=sl_cmake_vars)
+
+
+def setup_robcom():
+    # Get it all GitLab
+    if not osp.exists(robcom_dir):
+        mkdir_p(robcom_dir)
+        sp.check_call(["git", "clone", robcom_git_repo, robcom_dir])
+
+    # Install it suing it's setup script
+    env = os.environ.copy()
+    env.update(env_vars)
+    sp.check_call([sys.executable, "setup.py", "install", "--user"], cwd=robcom_dir, env=env)
 
 
 def setup_separate_pytorch():
