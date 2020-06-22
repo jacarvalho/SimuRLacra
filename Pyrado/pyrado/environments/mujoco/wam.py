@@ -162,10 +162,6 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         )
 
     def _create_spaces(self):
-        # Torque space
-        max_torque = np.array([150.0, 125.0, 40.0, 60.0, 5.0, 5.0, 2.0])
-        self._torque_space = BoxSpace(-max_torque, max_torque)
-
         # Initial state space
         # Set the actual stable initial position. This position would be reached after some time using the internal
         # PD controller to stabilize at self.init_pose_des
@@ -195,6 +191,10 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         state_up[:7] = np.array([2.6, 1.985, 2.8, 3.14159, 1.25, 1.5707, 2.7]) - 5*np.pi/180
         state_lo[:7] = np.array([-2.6, -1.985, -2.8, -0.9, -4.55, -1.5707, -2.7]) + 5*np.pi/180
         self._state_space = BoxSpace(state_lo, state_up)
+
+        # Torque space
+        max_torque = np.array([150.0, 125.0, 40.0, 60.0, 5.0, 5.0, 2.0])
+        self._torque_space = BoxSpace(-max_torque, max_torque)
 
         # Action space (PD controller on 3 joint positions and velocities)
         act_up = np.array([1.985, np.pi, np.pi/2, 10*np.pi, 10*np.pi, 10*np.pi])
