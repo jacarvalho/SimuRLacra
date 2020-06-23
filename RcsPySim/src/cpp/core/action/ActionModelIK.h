@@ -67,38 +67,42 @@ namespace Rcs
         
         /*! Compute IK solution from desired task space state.
          *
-         * @param[out] q_des     resulting desired joint positions.
-         * @param[out] q_dot_des resulting desired joint velocities.
-         * @param[out] T_des     resulting desired joint torques.
-         * @param[in]  x_des     desired task space state.
-         * @param[in]  dt        timestep since the last call.
+         * @param[out] q_des     resulting desired joint positions
+         * @param[out] q_dot_des resulting desired joint velocities
+         * @param[out] T_des     resulting desired joint torques
+         * @param[in]  x_des     desired task space state
+         * @param[in]  dt        time step since the last call
          */
         void computeIK(MatNd* q_des, MatNd* q_dot_des, MatNd* T_des, const MatNd* x_des, double dt);
         
         /*! Compute IK solution from desired task space velocity.
          *
-         * @param[out] q_des     resulting desired joint positions.
-         * @param[out] q_dot_des resulting desired joint velocities.
-         * @param[out] T_des     resulting desired joint torques.
-         * @param[in]  x_dot_des desired task space velocity.
-         * @param[in]  dt        timestep since the last call.
+         * @param[out] q_des     resulting desired joint positions
+         * @param[out] q_dot_des resulting desired joint velocities
+         * @param[out] T_des     resulting desired joint torques
+         * @param[in]  x_dot_des desired task space velocity
+         * @param[in]  dt        time step since the last call
          */
         void computeIKVel(MatNd* q_des, MatNd* q_dot_des, MatNd* T_des, const MatNd* x_dot_des, double dt);
         
-        // desired state graph. owned by the controller.
+        // Desired state graph (owned by the controller)
         RcsGraph* desiredGraph;
         
-        // Collision model used for collision gradient. Can't put it into the controller because that one has no setter
+        // Collision model used for collision gradient. Can't put it into the controller because that one has no setter.
         RcsCollisionMdl* collisionMdl;
     
     private:
-        // we friend AMIKGeneric so it can check whether the solver has been initialized.
+        // We friend AMIKGeneric so it can check whether the solver has been initialized
         friend class AMIKGeneric;
         
-        // Holder for the IK tasks. owned.
+        //! Holder for the IK tasks (owned)
         ControllerBase* controller;
-        // IK solver. owned.
+        //! IK solver (owned)
         IkSolverRMR* solver;
+        //! Scaling factor for the nullspace gradiend
+        double alpha = 1e-4;
+        //! Regularization factor for the task space weighting
+        double lambda = 1e-6;
         
         // Temporary data storage for the IK
         MatNd* dx_des;
@@ -123,7 +127,7 @@ namespace Rcs
     {
     public:
         using ActionModelIK::ActionModelIK;
-        // expose addTask
+        // Expose addTask
         using ActionModelIK::addTask;
         
         virtual ActionModel* clone(RcsGraph* newGraph) const;

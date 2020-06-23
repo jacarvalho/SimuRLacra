@@ -25,7 +25,7 @@ rcsenv.addResourcePath(osp.join(rcsenv.RCSPYSIM_CONFIG_PATH, 'Planar3Link'))
 class Planar3LinkSim(RcsSim, Serializable):
     """ Base class for the Planar 3-link environments simulated in Rcs using the Vortex or Bullet physics engine """
 
-    def __init__(self, task_args: dict, max_dist_force: float = None, position_mps: bool = None, **kwargs):
+    def __init__(self, task_args: dict, max_dist_force: float = None, position_mps: bool = True, **kwargs):
         """
         Constructor
 
@@ -37,6 +37,7 @@ class Planar3LinkSim(RcsSim, Serializable):
         :param position_mps: `True` if the MPs are defined on position level, `False` if defined on velocity level,
                              only matters if `actionModelType='activation'`
         :param kwargs: keyword arguments forwarded to `RcsSim`
+                       collisionConfig: specification of the Rcs CollisionModel
         """
         Serializable._init(self, locals())
 
@@ -83,9 +84,6 @@ class Planar3LinkSim(RcsSim, Serializable):
         return NotImplementedError
 
     def _create_task(self, task_args: dict) -> Task:
-        # Define the task including the reward function
-        mps = task_args.get('mps')
-
         # Define the indices for selection. This needs to match the observations' names in RcsPySim.
         idcs = ['Effector_X', 'Effector_Z']
 
@@ -106,7 +104,7 @@ class Planar3LinkSim(RcsSim, Serializable):
 
         success_fcn = functools.partial(proximity_succeeded, thold_dist=7.5e-2, dims=[0, 1])  # min distance = 7cm
         Q = np.diag([1e0, 1e0])
-        R = 5e-2*np.eye(len(mps))
+        R = 5e-2*np.eye(spec.act_space.flat_dim)
 
         # Create the tasks
         subtask_11 = FinalRewTask(
@@ -174,13 +172,10 @@ class Planar3LinkSim(RcsSim, Serializable):
         return MaskedTask(self.spec, task, idcs)
 
 
-class Planar3LinkIKSim(Planar3LinkSim, Serializable):
-    """
-    Planar 3-link robot environment controlled by setting the joint angles, i.e. the agent has to learn the
-    inverse kinematics of the 3-link robot
-    """
+class Planar3LinkJointCtrlSim(Planar3LinkSim, Serializable):
+    """ Planar 3-link robot controlled by directly setting the joint angles """
 
-    name: str = 'p3l-ik'
+    name: str = 'p3l-jt'
 
     def __init__(self, state_des: np.ndarray = None, **kwargs):
         """
@@ -195,21 +190,39 @@ class Planar3LinkIKSim(Planar3LinkSim, Serializable):
         super().__init__(task_args=dict(state_des=state_des), actionModelType='joint_pos', **kwargs)
 
 
+class Planar3LinkIKSim(Planar3LinkSim, Serializable):
+    """ Planar 3-link robot environment controlled by setting the input to an Rcs IK-based controller """
+
+    name: str = 'p3l-ik'
+
+    def __init__(self, state_des: np.ndarray = None, **kwargs):
+        """
+        Constructor
+
+        :param state_des: desired state for the task
+        :param kwargs: keyword arguments forwarded to `RcsSim`
+                       checkJointLimits: bool = False,
+                       collisionAvoidanceIK: bool = True,
+        """
+        Serializable._init(self, locals())
+
+        # Forward to the Planar3LinkSim's constructor, specifying the characteristic action model
+        super().__init__(task_args=dict(state_des=state_des), actionModelType='ik', position_mps=True, **kwargs)
+
+
 class Planar3LinkTASim(Planar3LinkSim, Serializable):
-    """ Planar 3-link robot environment controlled by setting the task activation of a Rcs control task """
+    """ Planar 3-link robot controlled by setting the task activation of a Rcs control task """
 
     name: str = 'p3l-ta'
 
     def __init__(self,
                  mps: Sequence[dict] = None,
-                 collision_config: dict = None,
                  position_mps: bool = True,
                  **kwargs):
         """
         Constructor
 
         :param mps: movement primitives holding the dynamical systems and the goal states
-        :param collision_config: specification of the Rcs `CollisionModel`
         :param position_mps: if `True` use movement primitives specified on position-level, if `False` velocity-level
         :param kwargs: keyword arguments which are available for all task-based `RcsSim`
                        taskCombinationMethod: str = 'mean',  # 'sum', 'mean',  'product', or 'softmax'

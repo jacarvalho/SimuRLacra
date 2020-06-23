@@ -51,12 +51,26 @@ protected:
     {
         std::string actionModelType = "activation";
         properties->getProperty(actionModelType, "actionModelType");
-        
-        if (actionModelType == "activation")
+
+        // Common for the action models
+        RcsBody* effector = RcsGraph_getBodyByName(graph, "Effector");
+        RCHECK(effector);
+
+        if (actionModelType == "ik")
+        {
+            // Create the action model
+            auto amIK = new AMIKGeneric(graph);
+
+            // Define velocity level Rcs tasks
+            amIK->addTask(new TaskVelocity1D("Xd", graph, effector, nullptr, nullptr));
+            amIK->addTask(new TaskVelocity1D("Zd", graph, effector, nullptr, nullptr));
+            amIK->addTask(new TaskOmega1D("Bd", graph, effector, nullptr, nullptr));
+
+            return amIK;
+        }
+        else if (actionModelType == "activation")
         {
             // Obtain the inner action model
-            RcsBody* effector = RcsGraph_getBodyByName(graph, "Effector");
-            RCHECK(effector);
             std::unique_ptr<AMIKGeneric> innerAM(new AMIKGeneric(graph));
             innerAM->addTask(new TaskVelocity1D("Xd", graph, effector, nullptr, nullptr));
             innerAM->addTask(new TaskVelocity1D("Zd", graph, effector, nullptr, nullptr));
