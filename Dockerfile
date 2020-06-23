@@ -30,7 +30,6 @@ COPY --chown=user:user . SimuRLacra
 
 WORKDIR /home/user/SimuRLacra
 RUN bash setup_env.sh
-RUN conda init bash
 SHELL ["conda", "run", "-n", "pyrado", "/bin/bash", "-c"]
 
 RUN echo "export PATH=/home/user/miniconda3/bin:$PATH" >> ~/.bashrc
@@ -40,7 +39,7 @@ RUN python setup_deps.py dep_libraries -j4
 #RUN python setup_deps.py all --use-cuda -j4
 
 #RUN conda install pytorch torchvision
-RUN conda install pytorch torchvision cudatoolkit=10.1 -c pytorch
+RUN conda install pytorch cudatoolkit=10.1 -c pytorch
 
 RUN python setup_deps.py separate_pytorch -j4
 RUN python setup_deps.py pytorch_based -j4
