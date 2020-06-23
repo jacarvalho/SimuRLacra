@@ -379,6 +379,9 @@ def get_default_randomizer_wambic() -> DomainRandomizer:
         # Rope won't be more than 5cm off
         NormalDomainParam(name='rope_length', mean=dp_nom['rope_length'], std=dp_nom['rope_length']/10,
                           clip_lo=0.25, clip_up=0.35),
+        NormalDomainParam(name='ball_mass', mean=dp_nom['ball_mass'], std=dp_nom['ball_mass']/20, clip_lo=1e-2),
+        UniformDomainParam(name='joint_damping', mean=dp_nom['joint_damping'], halfspan=dp_nom['joint_damping']/2,
+                           clip_lo=0.),
     )
 
 
@@ -444,4 +447,8 @@ def get_default_domain_param_map_wambic() -> Dict[int, Tuple[str, str]]:
         1: ('cup_scale', 'std'),
         2: ('rope_length', 'mean'),
         3: ('rope_length', 'std'),
+        4: ('ball_mass', 'mean'),
+        5: ('ball_mass', 'std'),
+        6: ('joint_damping', 'mean'),
+        7: ('joint_damping', 'halspan'),
     }
