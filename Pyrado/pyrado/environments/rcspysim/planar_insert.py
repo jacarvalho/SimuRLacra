@@ -42,52 +42,36 @@ def create_insert_task(env_spec: EnvSpec, state_des: np.ndarray, rew_fcn: RewFcn
 
 
 class PlanarInsertSim(RcsSim, Serializable):
-    """ Planar 5- or 6-link robot environment controlled by setting the task activation of a Rcs control task """
+    """
+    Planar 5- or 6-link robot environment where the task is to push the wedge-shaped end-effector through a small gap
+    """
 
-    name: str = 'pi'
+    def __init__(self, task_args: dict, collision_config: dict = None, max_dist_force: float = None, **kwargs):
 
-    def __init__(self,
-                 mpsXdZdBd: Sequence[dict] = None,
-                 collision_config: dict = None,
-                 max_dist_force: float = None,
-                 state_des: np.ndarray = None,
-                 **kwargs):
         """
         Constructor
 
-        :param mpsXdZdBd: movement primitives for the cartesian x and z velocity and the angular velocity around y-axis
-        :param collision_config: specification of the Rcs CollisionModel
-        :param state_des: desired state for the task
+        .. note::
+            This constructor should only be called via the subclasses.
+
+        :param task_args: arguments for the task construction
+        :param max_dist_force: maximum disturbance force, set to None (default) for no disturbance
         :param kwargs: keyword arguments forwarded to `RcsSim`
-                       graphFileName: str = 'gPlanarInsert5Link.xml' or 'gPlanarInsert6Link.xml'
-                       taskCombinationMethod: str = 'mean',  # 'sum', 'mean',  'product', or 'softmax'
-                       checkJointLimits: bool = False,
-                       collisionAvoidanceIK: bool = True,
-                       observeForceTorque: bool = True,
-                       observePredictedCollisionCost: bool = False,
-                       observeManipulabilityIndex: bool = False,
-                       observeCurrentManipulability: bool = True,
-                       observeGoalDistance: bool = False,
-                       observeDynamicalSystemDiscrepancy: bool = False,
+                       collisionConfig: specification of the Rcs CollisionModel
         """
         Serializable._init(self, locals())
 
-        # Define the movement primitives
-        dt = kwargs.get('dt', 0.01)  # 100 Hz is the default
-        if mpsXdZdBd is None:
-            mpsXdZdBd = [
-                # Xd
-                {'function': 'lin', 'errorDynamics': 2., 'goal': dt*0.1},  # [m/s]
-                {'function': 'lin', 'errorDynamics': 2., 'goal': -dt*0.1},  # [m/s]
-                # Zd
-                {'function': 'lin', 'errorDynamics': 2., 'goal': dt*0.1},  # [m/s]
-                {'function': 'lin', 'errorDynamics': 2., 'goal': -dt*0.1},  # [m/s]
-                # Bd
-                {'function': 'lin', 'errorDynamics': 2., 'goal': dt*10./180*np.pi},  # [rad/s]
-                {'function': 'lin', 'errorDynamics': 2., 'goal': -dt*10./180*np.pi},  # [rad/s]
-            ]
+        # Forward to the RcsSim's constructor, nothing more needs to be done here
+        RcsSim.__init__(
+            self,
+            envType='PlanarInsert',
+            physicsConfigFile='pPlanarInsert.xml',
+            task_args=task_args,
+            collisionConfig=collision_config,
+            **kwargs
+        )
 
-        if collision_config is None:
+        if kwargs.get('collisionConfig', None) is None:
             collision_config = {
                 'pairs': [
                     {'body1': 'Effector', 'body2': 'Link3'},
@@ -99,18 +83,8 @@ class PlanarInsertSim(RcsSim, Serializable):
                 ],
                 'threshold': 0.05
             }
-
-        # Forward to the RcsSim's constructor, nothing more needs to be done here
-        RcsSim.__init__(
-            self,
-            envType='PlanarInsert',
-            physicsConfigFile='pPlanarInsert.xml',
-            task_args=dict(state_des=state_des),
-            actionModelType='activation',
-            tasks=mpsXdZdBd,
-            collisionConfig=collision_config,
-            **kwargs
-        )
+        else:
+            collision_config = kwargs.get('collisionConfig')
 
         # Initial state space definition
         init_state = np.array([-40, 30, 30, 30, -30])/180*np.pi  # [rad, rad, rad]
@@ -158,3 +132,80 @@ class PlanarInsertSim(RcsSim, Serializable):
         angle = np.random.uniform(-np.pi, np.pi)
         force = np.random.uniform(0, self._max_dist_force)
         return np.array([force*np.sin(angle), 0, force*np.cos(angle)])
+
+
+class PlanarInsertIKSim(PlanarInsertSim, Serializable):
+    """ Planar 5- or 6-link robot environment controlled by  setting the input to an Rcs IK-based controller """
+
+    name: str = 'pi-ik'
+
+    def __init__(self, state_des: np.ndarray = None, **kwargs):
+        """
+        Constructor
+
+        :param state_des: desired state for the task, pass `None` to use the default goal
+        :param kwargs: keyword arguments forwarded to `RcsSim`
+                       graphFileName: str = 'gPlanarInsert5Link.xml' or 'gPlanarInsert6Link.xml'
+                       checkJointLimits: bool = False,
+                       collisionAvoidanceIK: bool = True,
+                       observeForceTorque: bool = True,
+                       observePredictedCollisionCost: bool = False,
+                       observeManipulabilityIndex: bool = False,
+                       observeCurrentManipulability: bool = True,
+                       observeGoalDistance: bool = False,
+                       observeDynamicalSystemDiscrepancy: bool = False,
+        """
+        Serializable._init(self, locals())
+
+        # Forward to the PlanarInsertSim's constructor, nothing more needs to be done here
+        PlanarInsertSim.__init__(self, task_args=dict(state_des=state_des), actionModelType='ik', **kwargs)
+        
+
+class PlanarInsertTASim(PlanarInsertSim, Serializable):
+    """ Planar 5- or 6-link robot environment controlled by setting the task activation of a Rcs control task """
+
+    name: str = 'pi-ta'
+
+    def __init__(self, mps: Sequence[dict] = None, state_des: np.ndarray = None, **kwargs):
+        """
+        Constructor
+
+        :param mps: movement primitives for the cartesian x and z velocity and the angular velocity around y-axis
+        :param state_des: desired state for the task, pass `None` to use the default goal
+        :param kwargs: keyword arguments forwarded to `RcsSim`
+                       graphFileName: str = 'gPlanarInsert5Link.xml' or 'gPlanarInsert6Link.xml'
+                       taskCombinationMethod: str = 'mean',  # 'sum', 'mean',  'product', or 'softmax'
+                       checkJointLimits: bool = False,
+                       collisionAvoidanceIK: bool = True,
+                       observeForceTorque: bool = True,
+                       observePredictedCollisionCost: bool = False,
+                       observeManipulabilityIndex: bool = False,
+                       observeCurrentManipulability: bool = True,
+                       observeGoalDistance: bool = False,
+                       observeDynamicalSystemDiscrepancy: bool = False,
+        """
+        Serializable._init(self, locals())
+
+        # Define the movement primitives
+        dt = kwargs.get('dt', 0.01)  # 100 Hz is the default
+        if mps is None:
+            mps = [
+                # Xd
+                {'function': 'lin', 'errorDynamics': 2., 'goal': dt*0.1},  # [m/s]
+                {'function': 'lin', 'errorDynamics': 2., 'goal': -dt*0.1},  # [m/s]
+                # Zd
+                {'function': 'lin', 'errorDynamics': 2., 'goal': dt*0.1},  # [m/s]
+                {'function': 'lin', 'errorDynamics': 2., 'goal': -dt*0.1},  # [m/s]
+                # Bd
+                {'function': 'lin', 'errorDynamics': 2., 'goal': dt*10./180*np.pi},  # [rad/s]
+                {'function': 'lin', 'errorDynamics': 2., 'goal': -dt*10./180*np.pi},  # [rad/s]
+            ]
+
+        # Forward to the PlanarInsertSim's constructor, nothing more needs to be done here
+        PlanarInsertSim.__init__(
+            self,
+            task_args=dict(state_des=state_des),
+            actionModelType='activation',
+            tasks=mps,
+            **kwargs
+        )
