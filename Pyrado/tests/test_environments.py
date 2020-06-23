@@ -26,8 +26,9 @@ from tests.conftest import m_needs_bullet, m_needs_mujoco, m_needs_vortex
         lazy_fixture('default_qq'),
         lazy_fixture('default_qcpst'),
         lazy_fixture('default_qcpsu'),
-        pytest.param(lazy_fixture('default_p3l_bt'), marks=m_needs_bullet),
-        pytest.param(lazy_fixture('default_p3l_vx'), marks=m_needs_vortex),
+        pytest.param(lazy_fixture('default_p3l_ik_bt'), marks=m_needs_bullet),
+        pytest.param(lazy_fixture('default_p3l_ta_bt'), marks=m_needs_bullet),
+        pytest.param(lazy_fixture('default_p3l_ta_vx'), marks=m_needs_vortex),
         pytest.param(lazy_fixture('default_bop2d_bt'), marks=m_needs_bullet),
         pytest.param(lazy_fixture('default_bop2d_vx'), marks=m_needs_vortex),
         pytest.param(lazy_fixture('default_bop5d_bt'), marks=m_needs_bullet),
@@ -37,8 +38,9 @@ from tests.conftest import m_needs_bullet, m_needs_mujoco, m_needs_vortex
         pytest.param(lazy_fixture('default_cth'), marks=m_needs_mujoco),
         pytest.param(lazy_fixture('default_hop'), marks=m_needs_mujoco),
         pytest.param(lazy_fixture('default_wambic'), marks=m_needs_mujoco),
-    ], ids=['cata', 'rosen', 'bob', 'omo', 'pend', 'qbb', 'qq', 'qcp-st', 'qcp-su', 'default_p3l_bt', 'default_p3l_vx',
-            'bop2d_bt', 'bop2d_vx', 'bop5d_bt', 'bop5d_vx', 'bspos_bt', 'bspos_vx', 'cth', 'hop', 'wam-bic']
+    ], ids=['cata', 'rosen', 'bob', 'omo', 'pend', 'qbb', 'qq', 'qcp-st', 'qcp-su', 'p3l_ik_bt', 'p3l_ta_bt',
+            'p3l_ta_vx', 'bop2d_bt', 'bop2d_vx', 'bop5d_bt', 'bop5d_vx', 'bspos_bt', 'bspos_vx', 'cth', 'hop',
+            'wam-bic']
 )
 def test_rollout(env):
     assert isinstance(env, SimEnv)
@@ -67,8 +69,9 @@ def test_rollout(env):
         lazy_fixture('default_qq'),
         lazy_fixture('default_qcpst'),
         lazy_fixture('default_qcpsu'),
-        pytest.param(lazy_fixture('default_p3l_bt'), marks=m_needs_bullet),
-        pytest.param(lazy_fixture('default_p3l_vx'), marks=m_needs_vortex),
+        pytest.param(lazy_fixture('default_p3l_ik_bt'), marks=m_needs_bullet),
+        pytest.param(lazy_fixture('default_p3l_ta_bt'), marks=m_needs_bullet),
+        pytest.param(lazy_fixture('default_p3l_ta_vx'), marks=m_needs_vortex),
         pytest.param(lazy_fixture('default_bop2d_bt'), marks=m_needs_bullet),
         pytest.param(lazy_fixture('default_bop2d_vx'), marks=m_needs_vortex),
         pytest.param(lazy_fixture('default_bop5d_bt'), marks=m_needs_bullet),
@@ -78,8 +81,9 @@ def test_rollout(env):
         pytest.param(lazy_fixture('default_cth'), marks=m_needs_mujoco),
         pytest.param(lazy_fixture('default_hop'), marks=m_needs_mujoco),
         pytest.param(lazy_fixture('default_wambic'), marks=m_needs_mujoco),
-    ], ids=['cata', 'rosen', 'bob', 'omo', 'pend', 'qbb', 'qq', 'qcp-st', 'qcp-su', 'default_p3l_bt', 'default_p3l_vx',
-            'bop2d_bt', 'bop2d_vx', 'bop5d_bt', 'bop5d_vx', 'bspos_bt', 'bspos_vx', 'cth', 'hop', 'wam-bic']
+    ], ids=['cata', 'rosen', 'bob', 'omo', 'pend', 'qbb', 'qq', 'qcp-st', 'qcp-su', 'p3l_ik_bt', 'p3l_ta_bt',
+            'p3l_ta_vx', 'bop2d_bt', 'bop2d_vx', 'bop5d_bt', 'bop5d_vx', 'bspos_bt', 'bspos_vx', 'cth', 'hop',
+            'wam-bic']
 )
 def test_init_spaces(env):
     assert isinstance(env, SimEnv)
@@ -103,8 +107,9 @@ def test_init_spaces(env):
         lazy_fixture('default_qq'),
         lazy_fixture('default_qcpst'),
         lazy_fixture('default_qcpsu'),
-        pytest.param(lazy_fixture('default_p3l_bt'), marks=m_needs_bullet),
-        pytest.param(lazy_fixture('default_p3l_vx'), marks=m_needs_vortex),
+        pytest.param(lazy_fixture('default_p3l_ik_bt'), marks=m_needs_bullet),
+        pytest.param(lazy_fixture('default_p3l_ta_bt'), marks=m_needs_bullet),
+        pytest.param(lazy_fixture('default_p3l_ta_vx'), marks=m_needs_vortex),
         pytest.param(lazy_fixture('default_bop2d_bt'), marks=m_needs_bullet),
         pytest.param(lazy_fixture('default_bop2d_vx'), marks=m_needs_vortex),
         pytest.param(lazy_fixture('default_bop5d_bt'), marks=m_needs_bullet),
@@ -114,8 +119,9 @@ def test_init_spaces(env):
         pytest.param(lazy_fixture('default_cth'), marks=m_needs_mujoco),
         pytest.param(lazy_fixture('default_hop'), marks=m_needs_mujoco),
         pytest.param(lazy_fixture('default_wambic'), marks=m_needs_mujoco),
-    ], ids=['cata', 'rosen', 'bob', 'omo', 'pend', 'qbb', 'qq', 'qcp-st', 'qcp-su', 'default_p3l_bt', 'default_p3l_vx',
-            'bop2d_bt', 'bop2d_vx', 'bop5d_bt', 'bop5d_vx', 'bspos_bt', 'bspos_vx', 'cth', 'hop', 'wam-bic']
+    ], ids=['cata', 'rosen', 'bob', 'omo', 'pend', 'qbb', 'qq', 'qcp-st', 'qcp-su', 'p3l_ik_bt', 'p3l_ta_bt',
+            'p3l_ta_vx', 'bop2d_bt', 'bop2d_vx', 'bop5d_bt', 'bop5d_vx', 'bspos_bt', 'bspos_vx', 'cth', 'hop',
+            'wam-bic']
 )
 def test_reset(env):
     assert isinstance(env, SimEnv)
@@ -168,18 +174,21 @@ def test_vpython_animations(env):
 @pytest.mark.visualization
 @pytest.mark.parametrize(
     'env', [
-        pytest.param(lazy_fixture('default_p3l_bt'), marks=m_needs_bullet),
-        pytest.param(lazy_fixture('default_p3l_vx'), marks=m_needs_vortex),
-        pytest.param(lazy_fixture('default_pi_6l_bt'), marks=m_needs_bullet),
-        pytest.param(lazy_fixture('default_pi_5l_vx'), marks=m_needs_vortex),
+        pytest.param(lazy_fixture('default_p3l_ik_bt'), marks=m_needs_bullet),
+        pytest.param(lazy_fixture('default_p3l_ta_bt'), marks=m_needs_bullet),
+        pytest.param(lazy_fixture('default_p3l_ta_vx'), marks=m_needs_vortex),
+        pytest.param(lazy_fixture('default_pi_ik_6l_vx'), marks=m_needs_vortex),
+        pytest.param(lazy_fixture('default_pi_ik_5l_bt'), marks=m_needs_bullet),
+        pytest.param(lazy_fixture('default_pi_ta_6l_bt'), marks=m_needs_bullet),
+        pytest.param(lazy_fixture('default_pi_ta_5l_vx'), marks=m_needs_vortex),
         pytest.param(lazy_fixture('default_bop2d_bt'), marks=m_needs_bullet),
         pytest.param(lazy_fixture('default_bop2d_vx'), marks=m_needs_vortex),
         pytest.param(lazy_fixture('default_bop5d_bt'), marks=m_needs_bullet),
         pytest.param(lazy_fixture('default_bop5d_vx'), marks=m_needs_vortex),
         pytest.param(lazy_fixture('default_bspos_bt'), marks=m_needs_bullet),
         pytest.param(lazy_fixture('default_bspos_vx'), marks=m_needs_vortex),
-    ], ids=['p3l_bt', 'p3l_vx', 'pi_6l_bt', 'pi_5l_vx', 'bop2d_bt', 'bop2d_vx', 'bop5d_bt', 'bop5d_vx',
-            'bspos_bt', 'bspos_vx']
+    ], ids=['p3l_ik_bt', 'p3l_ta_bt', 'p3l_ta_vx', 'pi_ik_6l_vx', 'pi_ik_5l_bt', 'pi_ta_6l_bt', 'pi_ta_5l_vx',
+            'bop2d_bt', 'bop2d_vx', 'bop5d_bt', 'bop5d_vx', 'bspos_bt', 'bspos_vx']
 )
 def test_rcspysim_animations(env):
     assert isinstance(env, SimEnv)

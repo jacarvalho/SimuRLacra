@@ -37,6 +37,7 @@ class Planar3LinkSim(RcsSim, Serializable):
         :param position_mps: `True` if the MPs are defined on position level, `False` if defined on velocity level,
                              only matters if `actionModelType='activation'`
         :param kwargs: keyword arguments forwarded to `RcsSim`
+                       collisionConfig: specification of the Rcs CollisionModel
         """
         Serializable._init(self, locals())
 
@@ -216,14 +217,12 @@ class Planar3LinkTASim(Planar3LinkSim, Serializable):
 
     def __init__(self,
                  mps: Sequence[dict] = None,
-                 collision_config: dict = None,
                  position_mps: bool = True,
                  **kwargs):
         """
         Constructor
 
         :param mps: movement primitives holding the dynamical systems and the goal states
-        :param collision_config: specification of the Rcs `CollisionModel`
         :param position_mps: if `True` use movement primitives specified on position-level, if `False` velocity-level
         :param kwargs: keyword arguments which are available for all task-based `RcsSim`
                        taskCombinationMethod: str = 'mean',  # 'sum', 'mean',  'product', or 'softmax'
