@@ -29,7 +29,7 @@ RUN conda update conda \
 COPY --chown=user:user . SimuRLacra
 
 WORKDIR /home/user/SimuRLacra
-RUN conda env create -f Pyrado/environment.yml
+RUN bash setup_env.sh
 RUN conda init bash
 SHELL ["conda", "run", "-n", "pyrado", "/bin/bash", "-c"]
 
