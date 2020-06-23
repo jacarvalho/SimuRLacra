@@ -8,7 +8,7 @@ import torch as to
 import rcsenv
 import pyrado
 from pyrado.environment_wrappers.observation_normalization import ObsNormWrapper
-from pyrado.environments.rcspysim.planar_3_link import Planar3LinkIKSim, Planar3LinkTASim
+from pyrado.environments.rcspysim.planar_3_link import Planar3LinkJointCtrlSim, Planar3LinkIKSim, Planar3LinkTASim
 from pyrado.domain_randomization.utils import print_domain_params
 from pyrado.plotting.rollout_based import plot_adn_data, plot_rewards
 from pyrado.policies.adn import ADNPolicy, pd_cubic
@@ -22,7 +22,7 @@ rcsenv.setLogLevel(0)
 
 def joint_control_variant(dt, max_steps, max_dist_force, physics_engine):
     # Set up environment
-    env = Planar3LinkIKSim(
+    env = Planar3LinkJointCtrlSim(
         physicsEngine=physics_engine,
         dt=dt,
         max_steps=max_steps,
@@ -35,6 +35,28 @@ def joint_control_variant(dt, max_steps, max_dist_force, physics_engine):
     def policy_fcn(t: float):
         return [0.1, 0.1,  # same as init config
                 0.1 + 45./180.*math.pi*math.sin(2.*math.pi*0.2*t)]  # oscillation in last link
+
+    policy = TimePolicy(env.spec, policy_fcn, dt)
+
+    # Simulate
+    return rollout(env, policy, render_mode=RenderMode(video=True), stop_on_done=True)
+
+
+def ik_control_variant(dt, max_steps, max_dist_force, physics_engine):
+    # Set up environment
+    env = Planar3LinkIKSim(
+        physicsEngine=physics_engine,
+        dt=dt,
+        max_steps=max_steps,
+        max_dist_force=max_dist_force,
+        checkJointLimits=True,
+    )
+    print_domain_params(env.domain_param)
+
+    # Set up policy
+    def policy_fcn(t: float):
+        return [0.3 + 0.2*math.sin(2.*math.pi*0.2*t),
+                1.1]
 
     policy = TimePolicy(env.spec, policy_fcn, dt)
 
@@ -160,7 +182,7 @@ def adn_variant(dt, max_steps, max_dist_force, physics_engine, normalize_obs=Tru
 
 if __name__ == '__main__':
     # Choose setup
-    setup_type = 'activation'  # joint, activation, manual, adn
+    setup_type = 'ik'  # joint, ik, activation, manual, adn
     common_hparam = dict(
         dt=0.01,
         max_steps=1200,
@@ -170,6 +192,8 @@ if __name__ == '__main__':
 
     if setup_type == 'joint':
         ro = joint_control_variant(**common_hparam)
+    elif setup_type == 'ik':
+        ro = ik_control_variant(**common_hparam)
     elif setup_type == 'activation':
         ro = task_activation_variant(**common_hparam)
         plot_rewards(ro)
@@ -179,4 +203,4 @@ if __name__ == '__main__':
     elif setup_type == 'adn':
         ro = adn_variant(**common_hparam, normalize_obs=True, obsnorm_cpp=False)
     else:
-        raise pyrado.ValueErr(given=setup_type, eq_constraint="'joint', 'activation', 'manual', 'adn'")
+        raise pyrado.ValueErr(given=setup_type, eq_constraint="'joint', 'ik', 'activation', 'manual', 'adn'")
