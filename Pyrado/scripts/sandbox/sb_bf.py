@@ -6,7 +6,7 @@ import pyrado
 from pyrado.domain_randomization.domain_parameter import UniformDomainParam
 from pyrado.domain_randomization.domain_randomizer import DomainRandomizer
 from pyrado.environment_wrappers.domain_randomization import DomainRandWrapperLive
-from pyrado.environments.rcspysim.box_flipping import BoxFlippingVelMPsSim, BoxFlippingPosMPsSim
+from pyrado.environments.rcspysim.box_flipping import BoxFlippingVelMPsSim, BoxFlippingPosMPsSim, BoxFlippingIKSim
 from pyrado.policies.dummy import IdlePolicy
 from pyrado.policies.time import TimePolicy
 from pyrado.sampling.rollout import rollout, after_rollout_query
@@ -38,25 +38,31 @@ def create_idle_setup(physicsEngine, graphFileName, dt, max_steps, ref_frame, ch
     return env, policy
 
 
-def create_position_mps_setup(physicsEngine, graphFileName, dt, max_steps, ref_frame, checkJointLimits):
-    # def policy(t: float):
-    #     if t < 3.1:
-    #         return [0, 0, 0, 0,
-    #                 0, 0, 0, 0, 1]
-    #     elif t <= 4.5:
-    #         return [0, 0, 0, 0,
-    #                 0, 0, 0, 0, 1]
-    #     else:
-    #         return [0, 0, 0, 0,
-    #                 0, 0, 0, 0, 1]
-    def policy(t: float):
-        if t <= 5:
-            return [0.2, 0, 0, 0,
-                    0, 1]
-        else:
-            return [-0.1, 0, 0, 0,
-                    0.1, 1.]
+def create_ik_setup(physicsEngine, graphFileName, dt, max_steps, ref_frame, checkJointLimits):
+    # Set up environment
+    env = BoxFlippingIKSim(
+        usePhysicsNode=True,
+        physicsEngine=physicsEngine,
+        graphFileName=graphFileName,
+        dt=dt,
+        max_steps=max_steps,
+        ref_frame=ref_frame,
+        collisionConfig={'file': 'collisionModel.xml'},
+        checkJointLimits=checkJointLimits,
+    )
 
+    # Set up policy
+    def policy(t: float):
+        # return [0.1, 0.05, 0.1,  # left Y, Z, dist
+        #         -0.1, 0.05, 0.1]  # right X, Y, dist
+        return [0.0, 0.05,  # left Y, Z
+                -0.1, 0.05]  # right X, Y
+    policy = TimePolicy(env.spec, policy, dt)
+
+    return env, policy
+
+
+def create_position_mps_setup(physicsEngine, graphFileName, dt, max_steps, ref_frame, checkJointLimits):
     # Set up environment
     env = BoxFlippingPosMPsSim(
         usePhysicsNode=True,
@@ -81,23 +87,29 @@ def create_position_mps_setup(physicsEngine, graphFileName, dt, max_steps, ref_f
     )
 
     # Set up policy
+    # def policy(t: float):
+    #     if t < 3.1:
+    #         return [0, 0, 0, 0,
+    #                 0, 0, 0, 0, 1]
+    #     elif t <= 4.5:
+    #         return [0, 0, 0, 0,
+    #                 0, 0, 0, 0, 1]
+    #     else:
+    #         return [0, 0, 0, 0,
+    #                 0, 0, 0, 0, 1]
+    def policy(t: float):
+        if t <= 5:
+            return [0.2, 0, 0, 0,
+                    0, 1]
+        else:
+            return [-0.1, 0, 0, 0,
+                    0.1, 1.]
     policy = TimePolicy(env.spec, policy, dt)
 
     return env, policy
 
 
 def create_velocity_mps_setup(physicsEngine, graphFileName, dt, max_steps, ref_frame, checkJointLimits):
-    def policy(t: float):
-        if t < 2.5:
-            return [.8, 0., 0., 0.,
-                    0, 0, 0, 0]
-        elif t <= 3.:
-            return [0.2, 0., .8, 0.,
-                    0, 0, 0, 0]
-        else:
-            return [0., 0.15, 0., 0.,
-                    0, 0, 0, 0]
-
     # Set up environment
     env = BoxFlippingVelMPsSim(
         usePhysicsNode=True,
@@ -121,6 +133,16 @@ def create_velocity_mps_setup(physicsEngine, graphFileName, dt, max_steps, ref_f
     )
 
     # Set up policy
+    def policy(t: float):
+        if t < 2.5:
+            return [.8, 0., 0., 0.,
+                    0, 0, 0, 0]
+        elif t <= 3.:
+            return [0.2, 0., .8, 0.,
+                    0, 0, 0, 0]
+        else:
+            return [0., 0.15, 0., 0.,
+                    0, 0, 0, 0]
     policy = TimePolicy(env.spec, policy, dt)
 
     return env, policy
@@ -128,7 +150,7 @@ def create_velocity_mps_setup(physicsEngine, graphFileName, dt, max_steps, ref_f
 
 if __name__ == '__main__':
     # Choose setup
-    setup_type = 'pos'  # idle, pos, or vel
+    setup_type = 'ik'  # idle, ik, pos, or vel
     physicsEngine = 'Bullet'  # Bullet or Vortex
     graphFileName = 'gBoxFlipping_posCtrl.xml'  # gBoxFlipping_posCtrl.xml or gBoxFlipping_trqCtrl.xml
     dt = 1/100.
@@ -139,6 +161,8 @@ if __name__ == '__main__':
 
     if setup_type == 'idle':
         env, policy = create_idle_setup(physicsEngine, graphFileName, dt, max_steps, ref_frame, checkJointLimits)
+    elif setup_type == 'ik':
+        env, policy = create_ik_setup(physicsEngine, graphFileName, dt, max_steps, ref_frame, checkJointLimits)
     elif setup_type == 'pos':
         env, policy = create_position_mps_setup(physicsEngine, graphFileName, dt, max_steps, ref_frame,
                                                 checkJointLimits)

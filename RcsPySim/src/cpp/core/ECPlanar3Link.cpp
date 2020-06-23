@@ -50,6 +50,10 @@ protected:
     {
         std::string actionModelType = "joint_pos";
         properties->getProperty(actionModelType, "actionModelType");
+
+        // Common for the action models
+        RcsBody* effector = RcsGraph_getBodyByName(graph, "Effector");
+        RCHECK(effector);
         
         if (actionModelType == "joint_pos")
         {
@@ -64,8 +68,6 @@ protected:
         {
             // Create the action model
             auto amIK = new AMIKGeneric(graph);
-            RcsBody* effector = RcsGraph_getBodyByName(graph, "Effector");
-            RCHECK(effector);
 
             // Check if the MPs are defined on position or task level
             if (properties->getPropertyBool("positionTasks", true))
@@ -84,8 +86,6 @@ protected:
         else if (actionModelType == "activation")
         {
             // Obtain the inner action model
-            RcsBody* effector = RcsGraph_getBodyByName(graph, "Effector");
-            RCHECK(effector);
             std::unique_ptr<AMIKGeneric> innerAM(new AMIKGeneric(graph));
             
             // Check if the MPs are defined on position or task level
