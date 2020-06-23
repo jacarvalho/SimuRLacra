@@ -45,12 +45,18 @@ if __name__ == '__main__':
     # Fix seed for reproducibility
     pyrado.set_seed(args.seed)
 
-    # Do the rollout and save the trajectories
-    ro = rollout(env, policy, eval=True, render_mode=RenderMode(video=True),
+    # Do the rollout
+    ro = rollout(env, policy, eval=True, render_mode=RenderMode(video=args.animation),
                  reset_kwargs=dict(init_state=init_state))
+
+    # Save the trajectories
     if not hasattr(ro, 'env_infos'):
         raise KeyError('Rollout does not have the field env_infos!')
-    t, qpos_des, qvel_des = ro.env_infos['t'], ro.env_infos['qpos_des'], ro.env_infos['qvel_des']
+    t = ro.env_infos['t']
+    qpos, qvel = ro.env_infos['qpos'], ro.env_infos['qvel']
+    qpos_des, qvel_des = ro.env_infos['qpos_des'], ro.env_infos['qvel_des']
+    np.save(osp.join(ex_dir, 'qpos.npy'), qpos)
+    np.save(osp.join(ex_dir, 'qvel.npy'), qvel)
     np.save(osp.join(ex_dir, 'qpos_des.npy'), qpos_des)
     np.save(osp.join(ex_dir, 'qvel_des.npy'), qvel_des)
 
