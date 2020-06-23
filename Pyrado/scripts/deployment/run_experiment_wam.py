@@ -12,11 +12,13 @@ import os.path as osp
 import numpy as np
 import robcom_python as r
 
+import pyrado
 from pyrado.logger.experiment import ask_for_experiment
 from pyrado.utils.argparser import get_argparser
+from pyrado.utils.input_output import print_cbt
 
 
-def run_direct_control(ex_dir, qpos_des, qvel_des):
+def run_direct_control(ex_dir, qpos_des, qvel_des, start_pos):
 
     def callback(jg, eg, data_provider):
         nonlocal n
@@ -41,6 +43,9 @@ def run_direct_control(ex_dir, qpos_des, qvel_des):
         time_step += 1
 
         return False
+
+    if not len(start_pos) == 7:
+        raise pyrado.ShapeErr(given=start_pos, expected_match=np.empty(7))
 
     # Connect to client
     c = r.Client()
@@ -89,7 +94,7 @@ def run_direct_control(ex_dir, qpos_des, qvel_des):
     print('Connection closed.')
 
 
-def run_goto(qpos_des, start_pos, dt):
+def run_goto(qpos_des, start_pos, dt=1/500.):
     # Connect to client
     c = r.Client()
     c.start('192.168.2.2', 2013)  # ip adress and port
@@ -129,12 +134,14 @@ if __name__ == '__main__':
     ex_dir = ask_for_experiment() if args.ex_dir is None else args.ex_dir
 
     # Get desired positions and velocities
-    qpos_des = np.load(osp.join(ex_dir, 'qpos_des.npy'))
-    qvel_des = np.load(osp.join(ex_dir, 'qvel_des.npy'))
+    if args.mode == 'des':
+        print_cbt('Running desired trajectory ...', 'c', bright=True)
+        qpos_exec = np.load(osp.join(ex_dir, 'qpos_des.npy'))
+        qvel_exec = np.load(osp.join(ex_dir, 'qvel_des.npy'))
+    else:
+        print_cbt('Running recorded trajectory ...', 'c', bright=True)
+        qpos_exec = np.load(osp.join(ex_dir, 'qpos.npy'))
+        qvel_exec = np.load(osp.join(ex_dir, 'qvel.npy'))
 
-    start_pos = np.array([0.0, 0.5876, 0.0, 1.36, 0.0, -0.321, -1.57])  # starting position
-    dt = 0.002  # step size
-
-    #run_goto(qpos_des, start_pos, dt)
-    #input('Hit enter to continue.')
-    run_direct_control(ex_dir, qpos_des, qvel_des)
+    # Run on real WAM
+    run_direct_control(ex_dir, qpos_exec, qvel_exec, start_pos=qpos_exec[0, :])

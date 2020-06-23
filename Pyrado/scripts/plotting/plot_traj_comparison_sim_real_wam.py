@@ -20,20 +20,12 @@ if __name__ == '__main__':
     args = get_argparser().parse_args()
     plt.rc('text', usetex=args.use_tex)
 
-    # Do a simple loop to ask again for a directory if the chosen one does not contain a real-world trajectory
-    data_exists = False
-    while not data_exists:
-        # Get the experiment's directory to load from if not given as command line argument
-        ex_dir = ask_for_experiment() if args.ex_dir is None else args.ex_dir
+    # Get the experiment's directory to load from if not given as command line argument
+    ex_dir = ask_for_experiment() if args.ex_dir is None else args.ex_dir
 
-        # Load real trajectories
-        try:
-            qpos_real = np.load(osp.join(ex_dir, 'qpos_real.npy'))
-            qvel_real = np.load(osp.join(ex_dir, 'qvel_real.npy'))
-            data_exists = True
-        except FileNotFoundError:
-            print_cbt('Did not find a recorded real trajectory (qpos_real and qvel_real) for this policy!',
-                      'r', bright=True)
+    # Load real trajectories
+    qpos_real = np.load(osp.join(ex_dir, 'qpos_real.npy'))
+    qvel_real = np.load(osp.join(ex_dir, 'qvel_real.npy'))
 
     # Load the policy and the environment
     env, policy, _ = load_experiment(ex_dir, args)
