@@ -450,5 +450,5 @@ def get_default_domain_param_map_wambic() -> Dict[int, Tuple[str, str]]:
         4: ('ball_mass', 'mean'),
         5: ('ball_mass', 'std'),
         6: ('joint_damping', 'mean'),
-        7: ('joint_damping', 'halspan'),
+        7: ('joint_damping', 'halfspan'),
     }

@@ -31,7 +31,7 @@ if __name__ == '__main__':
         0: ('rope_length', 'mean'),
         1: ('rope_length', 'std'),
         2: ('joint_damping', 'mean'),
-        3: ('joint_damping', 'halspan'),
+        3: ('joint_damping', 'halfspan'),
     }
     env_sim = MetaDomainRandWrapper(env_sim, dp_map)
 

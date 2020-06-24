@@ -60,7 +60,7 @@ class DomainParam(ABC):
         :param domain_distr_param_value: new value of the distribution parameter
         """
         if domain_distr_param not in self.get_field_names():
-            raise KeyError(f'The domain parameter {self.name} does not have a domain distribution parameter'
+            raise KeyError(f'The domain parameter {self.name} does not have a domain distribution parameter '
                            f'called {domain_distr_param}!')
         setattr(self, domain_distr_param, domain_distr_param_value)
 

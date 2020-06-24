@@ -183,7 +183,7 @@ class DomainRandomizer:
                         pyrado.TypeErr(given=domain_distr_param_value, expected_type=[int, float, bool])
                     dp.adapt(domain_distr_param, domain_distr_param_value)
                 else:
-                    raise KeyError(f'The domain parameter {dp.name} does not have a domain distribution parameter'
+                    raise KeyError(f'The domain parameter {dp.name} does not have a domain distribution parameter '
                                    f'called {domain_distr_param}!')
 
     def rescale_distr_param(self, param: str, scale: float):
