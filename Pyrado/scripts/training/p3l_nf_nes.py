@@ -1,18 +1,18 @@
 """
-Train an agent to solve the Planar-3-Link task using Neural fields and Hill Climbing.
+Train an agent to solve the Planar-3-Link task using Neural Fields and Natural Evolution Strategies.
 """
 import torch as to
 
-from pyrado.algorithms.hc import HCNormal
+from pyrado.algorithms.nes import NES
 from pyrado.environment_wrappers.observation_normalization import ObsNormWrapper
-from pyrado.environments.rcspysim.planar_3_link import Planar3LinkIKSim, Planar3LinkTASim
+from pyrado.environments.rcspysim.planar_3_link import Planar3LinkIKSim
 from pyrado.logger.experiment import setup_experiment, save_list_of_dicts_to_yaml
 from pyrado.policies.neural_fields import NFPolicy
 
 
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
-    ex_dir = setup_experiment(Planar3LinkTASim.name, f'nf-{HCNormal.name}', '', seed=1001)
+    ex_dir = setup_experiment(Planar3LinkIKSim.name, f'nf-{NES.name}', 'obsnorm', seed=1001)
 
     # Environment
     env_hparams = dict(
@@ -20,20 +20,19 @@ if __name__ == '__main__':
         dt=1/50.,
         max_steps=1000,
         max_dist_force=None,
-        position_mps=True,
         taskCombinationMethod='sum',
         checkJointLimits=True,
         collisionAvoidanceIK=True,
-        observeVelocities=False,
+        observeVelocities=True,
         observeForceTorque=True,
         observeCollisionCost=False,
         observePredictedCollisionCost=False,
         observeManipulabilityIndex=False,
         observeCurrentManipulability=True,
-        observeGoalDistance=True,
+        observeGoalDistance=False,
         observeDynamicalSystemDiscrepancy=False,
     )
-    env = Planar3LinkTASim(**env_hparams)
+    env = Planar3LinkIKSim(**env_hparams)
     eub = {
         'GD_DS0': 2.,
         'GD_DS1': 2.,
@@ -45,7 +44,7 @@ if __name__ == '__main__':
     policy_hparam = dict(
         hidden_size=5,
         conv_out_channels=1,
-        conv_kernel_size=5,
+        # conv_kernel_size=5,
         conv_padding_mode='circular',
         activation_nonlin=to.sigmoid,
         tau_init=1e-1,
@@ -55,14 +54,17 @@ if __name__ == '__main__':
 
     # Algorithm
     algo_hparam = dict(
-        max_iter=100,
-        pop_size=2*policy.num_param,
-        expl_factor=1.1,
+        max_iter=5000,
+        pop_size=policy.num_param,
         num_rollouts=1,
+        eta_mean=2.,
+        eta_std=None,
         expl_std_init=0.5,
-        num_sampler_envs=4,
+        symm_sampling=False,
+        transform_returns=True,
+        num_sampler_envs=32,
     )
-    algo = HCNormal(ex_dir, env, policy, **algo_hparam)
+    algo = NES(ex_dir, env, policy, **algo_hparam)
 
     # Save the hyper-parameters
     save_list_of_dicts_to_yaml([

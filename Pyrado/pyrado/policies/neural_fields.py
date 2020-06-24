@@ -124,8 +124,8 @@ class NFPolicy(RecurrentPolicy):
         if conv_kernel_size is None:
             conv_kernel_size = hidden_size
         if not conv_kernel_size%2 == 1:
-            print_cbt(f'Made kernel size {conv_kernel_size} odd (to {conv_kernel_size + 1}) for shape-conserving'
-                      f'padding.', 'y')
+            print_cbt(f'Increased the kernel size {conv_kernel_size} the next odd number ({conv_kernel_size + 1})'
+                      f'in order to obtain shape-conserving padding.', 'y')
             conv_kernel_size = conv_kernel_size + 1
         if conv_padding_mode not in ['circular', 'reflected', 'zeros']:
             raise pyrado.ValueErr(given=conv_padding_mode, eq_constraint='circular, reflected, or zeros')
@@ -143,16 +143,16 @@ class NFPolicy(RecurrentPolicy):
 
         # Create the RNN's layers
         self.obs_layer = nn.Linear(self._input_size, self._hidden_size, bias=True) if obs_layer is None else obs_layer
-        padding = conv_kernel_size//2 if conv_padding_mode != 'circular' else conv_kernel_size - 1
+        padding = conv_kernel_size//2 if conv_padding_mode != 'circular' else conv_kernel_size - 1  # 1 means no padding
         conv1d_class = MirrConv1d if mirrored_conv_weights else nn.Conv1d
         self.conv_layer = conv1d_class(
             in_channels=1,  # treat potentials as a time series of values (convolutions is over the "time" axis)
             out_channels=conv_out_channels,
-            kernel_size=conv_kernel_size, padding=padding, bias=False,
-            stride=1, padding_mode=conv_padding_mode, dilation=1, groups=1  # defaults
+            kernel_size=conv_kernel_size, padding_mode=conv_padding_mode, padding=padding, bias=False,
+            stride=1, dilation=1, groups=1  # defaults
         )
         # self.post_conv_layer = nn.Linear(conv_out_channels, spec.act_space.flat_dim, bias=False)
-        self.nonlin_layer = IndiNonlinLayer(self._hidden_size, nonlin=activation_nonlin, bias=True)
+        self.nonlin_layer = IndiNonlinLayer(self._hidden_size, nonlin=activation_nonlin, bias=False)
         self.act_layer = nn.Linear(self._hidden_size, spec.act_space.flat_dim, bias=False)
 
         # Call custom initialization function after PyTorch network parameter initialization
