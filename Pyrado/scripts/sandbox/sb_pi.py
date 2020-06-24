@@ -5,7 +5,7 @@ import math
 
 import rcsenv
 from pyrado.environments.rcspysim.planar_insert import PlanarInsertIKSim, PlanarInsertTASim
-from pyrado.plotting.rollout_based import plot_adn_data
+from pyrado.plotting.rollout_based import plot_potentials
 from pyrado.policies.time import TimePolicy
 from pyrado.sampling.rollout import rollout
 from pyrado.utils.data_types import RenderMode
@@ -90,4 +90,4 @@ if __name__ == '__main__':
         ro = ik_control_variant(**common_hparam)
     elif setup_type == 'activation':
         ro = task_activation_variant(**common_hparam)
-        plot_adn_data(ro)
+        plot_potentials(ro)

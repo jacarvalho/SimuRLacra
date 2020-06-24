@@ -65,9 +65,10 @@ required_packages = [
     "freeglut3-dev",  #  conda install -c anaconda freeglut 
     "mesa-common-dev",  #  conda install -c conda-forge mesalib
     "libopenscenegraph-dev",  # conda install -c conda-forge openscenegraph __OR__ HEADLESS BUILD
-    "openscenegraph",  #  conda install -c conda-forge openscenegraph 
+    "openscenegraph",  #  conda install -c conda-forge openscenegraph __OR__ HEADLESS BUILD
     "liblapack-dev"  #  conda install -c conda-forge lapack 
 ]
+# using --headless: conda install -c conda-forge bullet freetype libglu freeglut mesalib lapack
 
 # Environment for build processes
 env_vars = {

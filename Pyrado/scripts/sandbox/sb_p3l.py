@@ -10,7 +10,7 @@ import pyrado
 from pyrado.environment_wrappers.observation_normalization import ObsNormWrapper
 from pyrado.environments.rcspysim.planar_3_link import Planar3LinkJointCtrlSim, Planar3LinkIKSim, Planar3LinkTASim
 from pyrado.domain_randomization.utils import print_domain_params
-from pyrado.plotting.rollout_based import plot_adn_data, plot_rewards
+from pyrado.plotting.rollout_based import plot_potentials, plot_rewards
 from pyrado.policies.adn import ADNPolicy, pd_cubic
 from pyrado.policies.time import TimePolicy
 from pyrado.sampling.rollout import rollout
@@ -175,7 +175,7 @@ def adn_variant(dt, max_steps, max_dist_force, physics_engine, normalize_obs=Tru
 
     # Simulate and plot potentials
     ro = rollout(env, policy, render_mode=RenderMode(video=True), stop_on_done=True)
-    plot_adn_data(ro)
+    plot_potentials(ro)
 
     return ro
 
