@@ -13,7 +13,7 @@ from pyrado.tasks.sequential import SequentialTasks
 from pyrado.tasks.utils import proximity_succeeded
 from pyrado.tasks.desired_state import DesStateTask, RadiallySymmDesStateTask
 from pyrado.tasks.parallel import ParallelTasks
-from pyrado.tasks.reward_functions import CombinedRewFcn, CosOfOneEleRewFcn, MinusOnePerStepRewFcn, QuadrErrRewFcn, \
+from pyrado.tasks.reward_functions import CompoundRewFcn, CosOfOneEleRewFcn, MinusOnePerStepRewFcn, QuadrErrRewFcn, \
     ScaledExpQuadrErrRewFcn, RewFcn, PlusOnePerStepRewFcn
 
 
@@ -31,7 +31,7 @@ def envspec_432():
     ], ids=['wo_args-wo_kwargs', 'w_args-wo_kwargs', 'w_args2-wo_kwargs', 'wo_args-w_kwargs'])
 def test_combined_reward_function_step(fcn_list, reset_args, reset_kwargs):
     # Create combined reward function
-    c = CombinedRewFcn(fcn_list)
+    c = CompoundRewFcn(fcn_list)
     # Create example state and action error
     err_s, err_a = np.array([1., 2.]), np.array([3.])
     # Calculate combined reward
