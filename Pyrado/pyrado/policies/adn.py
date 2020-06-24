@@ -135,7 +135,7 @@ class ADNPolicy(RecurrentPolicy):
     def __init__(self,
                  spec: EnvSpec,
                  dt: float,
-                 output_nonlin: [Callable, Sequence[Callable]],
+                 activation_nonlin: [Callable, Sequence[Callable]],
                  potentials_dyn_fcn: Callable,
                  obs_layer: [nn.Module, Policy] = None,
                  tau_init: float = 2.,
@@ -151,8 +151,8 @@ class ADNPolicy(RecurrentPolicy):
 
         :param spec: environment specification
         :param dt: time step size
-        :param output_nonlin: nonlinearity for output layer, highly suggested functions:
-                              `to.sigmoid` for position `to.tasks`, tanh for velocity tasks
+        :param activation_nonlin: nonlinearity for output layer, highly suggested functions:
+                                  `to.sigmoid` for position `to.tasks`, tanh for velocity tasks
         :param potentials_dyn_fcn: function to compute the derivative of the neurons' potentials
         :param obs_layer: specify a custom Pytorch Module;
                           by default (`None`) a linear layer with biases is used
@@ -168,17 +168,17 @@ class ADNPolicy(RecurrentPolicy):
         super().__init__(spec, use_cuda)
         if not isinstance(dt, (float, int)):
             raise pyrado.TypeErr(given=dt, expected_type=float)
-        if not callable(output_nonlin):
-            if output_nonlin is not None and not len(output_nonlin) == spec.act_space.flat_dim:
-                raise pyrado.ShapeErr(given=output_nonlin, expected_match=spec.act_space.shape)
+        if not callable(activation_nonlin):
+            if activation_nonlin is not None and not len(activation_nonlin) == spec.act_space.flat_dim:
+                raise pyrado.ShapeErr(given=activation_nonlin, expected_match=spec.act_space.shape)
 
         # Store inputs
         self._dt = to.tensor([dt], dtype=to.get_default_dtype())
         self._input_size = spec.obs_space.flat_dim  # observations include goal distance, prediction error, ect.
         self._hidden_size = spec.act_space.flat_dim  # hidden_size = output_size = num actions
         self._num_recurrent_layers = 1
-        self._output_nonlin = output_nonlin
-        self._potentials_dot_fcn = potentials_dyn_fcn
+        self.activation_nonlin = activation_nonlin
+        self.potentials_dot_fcn = potentials_dyn_fcn
 
         # Create the RNN's layers
         self.obs_layer = nn.Linear(self._input_size, self._hidden_size, bias=True) if obs_layer is None else obs_layer
@@ -212,13 +212,13 @@ class ADNPolicy(RecurrentPolicy):
         # capacity
         self._capacity_learnable = capacity_learnable
         if potentials_dyn_fcn in [pd_capacity_21, pd_capacity_21_abs, pd_capacity_32, pd_capacity_32_abs]:
-            if self._output_nonlin is to.sigmoid:
+            if self.activation_nonlin is to.sigmoid:
                 # sigmoid(7.) approx 0.999
                 self._log_capacity_init = to.log(to.tensor([7.], dtype=to.get_default_dtype()))
                 self._log_capacity = nn.Parameter(self._log_capacity_init, requires_grad=True) \
                     if self._capacity_learnable else self._log_capacity_init
                 self._init_potentials = -7.*to.ones_like(self._potentials)
-            elif self._output_nonlin is to.tanh:
+            elif self.activation_nonlin is to.tanh:
                 # tanh(3.8) approx 0.999
                 self._log_capacity_init = to.log(to.tensor([3.8], dtype=to.get_default_dtype()))
                 self._log_capacity = nn.Parameter(self._log_capacity_init, requires_grad=True) \
@@ -289,7 +289,7 @@ class ADNPolicy(RecurrentPolicy):
         :param stimuli: sum of external and internal stimuli at the current point in time
         :return: time derivative of the potentials
         """
-        return self._potentials_dot_fcn(self._potentials, stimuli, self.tau, kappa=self.kappa, capacity=self.capacity)
+        return self.potentials_dot_fcn(self._potentials, stimuli, self.tau, kappa=self.kappa, capacity=self.capacity)
 
     def init_param(self, init_values: to.Tensor = None, **kwargs):
         if init_values is None:
@@ -306,11 +306,11 @@ class ADNPolicy(RecurrentPolicy):
             if self._tau_learnable:
                 self._log_tau.data = self._log_tau_init
             # Initialize cubic decay if modifiable
-            if self._potentials_dot_fcn == pd_cubic:
+            if self.potentials_dot_fcn == pd_cubic:
                 if self._kappa_learnable:
                     self._log_kappa.data = self._log_kappa_init
             # Initialize capacity if modifiable
-            elif self._potentials_dot_fcn in [pd_capacity_21, pd_capacity_21_abs, pd_capacity_32, pd_capacity_32_abs]:
+            elif self.potentials_dot_fcn in [pd_capacity_21, pd_capacity_21_abs, pd_capacity_32, pd_capacity_32_abs]:
                 if self._capacity_learnable:
                     self._log_capacity.data = self._log_capacity_init
 
@@ -354,10 +354,10 @@ class ADNPolicy(RecurrentPolicy):
 
         # Don't track the gradient through the potentials
         potentials = potentials.detach()
+        self._potentials = potentials.clone()  # saved in rollout()
 
-        # Clip the potentials, and save them for later use
+        # Clip the potentials
         potentials = potentials.clamp(min=-self._potentials_max, max=self._potentials_max)
-        self._potentials = potentials
 
         # ----------------
         # Activation Logic
@@ -374,23 +374,17 @@ class ADNPolicy(RecurrentPolicy):
         act = self.scaling_layer(potentials) if self.scaling_layer is not None else potentials
 
         # Pass the potentials through a nonlinearity
-        if self._output_nonlin is not None:
-            if isinstance(self._output_nonlin, (list, tuple)):
+        if self.activation_nonlin is not None:
+            if isinstance(self.activation_nonlin, (list, tuple)):
                 for i in range(len(act)):
                     # Individual nonlinearity for each dimension
-                    act[i] = self._output_nonlin[i](act[i])
+                    act[i] = self.activation_nonlin[i](act[i])
             else:
                 # Same nonlinearity for all dimensions
-                act = self._output_nonlin(act)
+                act = self.activation_nonlin(act)
 
-        # Since we want that this kind of Policy only returns activations in [0, 1] or in [-1, 1],
-        # we clip the actions right here
-        if self._output_nonlin is not to.sigmoid or self._output_nonlin is not to.tanh:
-            act = act.clamp(min=-1., max=1.)
-
-        # Pack hidden state
-        prev_act = act.clone()
-        hidden_out = self._pack_hidden(prev_act, potentials, batch_size)
+        # Pack hidden state (act becomes prev_act of next step)
+        hidden_out = self._pack_hidden(act, potentials, batch_size)  # calls to.cat(), thus no cloning necessary
 
         # Return the next action and store the last one as a hidden variable
         return act, hidden_out

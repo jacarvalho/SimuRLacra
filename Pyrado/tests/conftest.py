@@ -466,7 +466,7 @@ def gru_policy(env):
 
 @pytest.fixture(scope='function')
 def adn_policy(env):
-    return ADNPolicy(env.spec, dt=env.dt, output_nonlin=to.tanh, potentials_dyn_fcn=pd_cubic)
+    return ADNPolicy(env.spec, dt=env.dt, activation_nonlin=to.sigmoid, potentials_dyn_fcn=pd_cubic)
 
 
 @pytest.fixture(scope='function')

@@ -124,7 +124,7 @@ class NFPolicy(RecurrentPolicy):
         if conv_kernel_size is None:
             conv_kernel_size = hidden_size
         if not conv_kernel_size%2 == 1:
-            print_cbt(f'Increased the kernel size {conv_kernel_size} the next odd number ({conv_kernel_size + 1})'
+            print_cbt(f'Increased the kernel size {conv_kernel_size} the next odd number ({conv_kernel_size + 1}) '
                       f'in order to obtain shape-conserving padding.', 'y')
             conv_kernel_size = conv_kernel_size + 1
         if conv_padding_mode not in ['circular', 'reflected', 'zeros']:
@@ -260,9 +260,9 @@ class NFPolicy(RecurrentPolicy):
 
         # Don't track the gradient through the potentials
         potentials = potentials.detach()
-        self._potentials = potentials.clone()
+        self._potentials = potentials.clone()  # saved in rollout()
 
-        # Clip the potentials, and save them for later use
+        # Clip the potentials
         potentials = potentials.clamp(min=-self._potentials_max, max=self._potentials_max)
 
         # ----------------

@@ -29,7 +29,7 @@ if __name__ == '__main__':
         tau_learnable=True,
         kappa_learnable=True,
         capacity_learnable=False,
-        output_nonlin=to.tanh,
+        activation_nonlin=to.tanh,
         potentials_dyn_fcn=pd_cubic,
         scaling_layer=False,
     )
@@ -42,7 +42,7 @@ if __name__ == '__main__':
         expl_factor=1.05,
         num_rollouts=4,
         expl_std_init=2.,
-        num_sampler_envs=4,
+        num_sampler_envs=1,
     )
     algo = HCNormal(ex_dir, env, policy, **algo_hparam)
 
