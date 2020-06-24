@@ -20,6 +20,7 @@ if __name__ == '__main__':
         physicsEngine='Bullet',  # Bullet or Vortex
         dt=1/50.,
         max_steps=1000,
+        task_args=dict(consider_velocities=True),
         max_dist_force=None,
         position_mps=True,
         taskCombinationMethod='sum',

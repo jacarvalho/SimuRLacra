@@ -19,11 +19,12 @@ if __name__ == '__main__':
         physicsEngine='Bullet',  # Bullet or Vortex
         dt=1/50.,
         max_steps=1000,
+        task_args=dict(consider_velocities=True),
         max_dist_force=None,
         taskCombinationMethod='sum',
         checkJointLimits=True,
         collisionAvoidanceIK=True,
-        observeVelocities=False,
+        observeVelocities=True,
         observeForceTorque=True,
         observeCollisionCost=False,
         observePredictedCollisionCost=False,
@@ -42,7 +43,7 @@ if __name__ == '__main__':
 
     # Policy
     policy_hparam = dict(
-        hidden_size=5,
+        hidden_size=10,
         conv_out_channels=1,
         # conv_kernel_size=5,
         conv_padding_mode='circular',
@@ -55,13 +56,13 @@ if __name__ == '__main__':
     # Algorithm
     algo_hparam = dict(
         max_iter=50,
-        pop_size=2*policy.num_param,
-        num_rollouts=2,
-        num_is_samples=2*policy.num_param//10,
-        expl_std_init=0.5,
+        pop_size=policy.num_param,
+        num_rollouts=1,
+        num_is_samples=policy.num_param//10,
+        expl_std_init=1.0,
         expl_std_min=0.02,
-        extra_expl_std_init=0.5,
-        extra_expl_decay_iter=10,
+        extra_expl_std_init=1.0,
+        extra_expl_decay_iter=25,
         full_cov=False,
         symm_sampling=False,
         num_sampler_envs=6,
