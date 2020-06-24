@@ -29,7 +29,7 @@ class RewFcn(ABC):
         pass
 
 
-class CombinedRewFcn(RewFcn):
+class CompoundRewFcn(RewFcn):
     """ Combine multiple reward functions """
 
     def __init__(self, rew_fcns: Sequence):

@@ -106,7 +106,7 @@ def rollout(env: Env,
         else:
             policy.train()
 
-    # Check for recurrent policy, which requries special handling
+    # Check for recurrent policy, which requires special handling
     if policy.is_recurrent:
         # Initialize hidden state var
         hidden = policy.init_hidden()
@@ -120,7 +120,7 @@ def rollout(env: Env,
     env.render(render_mode, render_step=1)
 
     # Initialize the main loop variables
-    curr_step = 0
+    done = False
     if record_dts:
         t_post_step = time.time()  # first sample of remainder is useless
 
@@ -128,9 +128,8 @@ def rollout(env: Env,
     # Begin loop
     # ----------
 
-    done = False
     # Terminate if the environment signals done, it also keeps track of the time
-    while not (done and stop_on_done) and curr_step < env.max_steps:
+    while not (done and stop_on_done) and env.curr_step < env.max_steps:
         # Record step start time
         if record_dts or render_mode.video:
             t_start = time.time()  # dual purpose
@@ -203,9 +202,8 @@ def rollout(env: Env,
         elif isinstance(getattr(policy, 'policy', policy), TwoHeadedPolicy):
             head_2_hist.append(head_2_to)
 
-        # Prepare observation for next step (if done, this is the final observation)
+        # Store the observation for next step (if done, this is the final observation)
         obs = obs_next
-        curr_step += 1
 
         # Render if wanted (actually renders the next state)
         env.render(render_mode, render_step)

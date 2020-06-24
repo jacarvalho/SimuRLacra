@@ -204,7 +204,7 @@ class Planar3LinkTASim(Planar3LinkSim, Serializable):
     name: str = 'p3l-ta'
 
     def __init__(self,
-                 task_args: dict,
+                 task_args: dict = None,
                  mps: Sequence[dict] = None,
                  position_mps: bool = True,
                  **kwargs):

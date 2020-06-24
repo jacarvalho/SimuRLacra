@@ -153,7 +153,6 @@ def default_p3l_ik_bt():
         dt=1/50.,
         max_steps=1000,
         max_dist_force=None,
-        position_mps=True,
         taskCombinationMethod='sum',
         checkJointLimits=True,
         collisionAvoidanceIK=True,

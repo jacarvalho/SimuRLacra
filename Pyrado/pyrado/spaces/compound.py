@@ -3,6 +3,7 @@ from copy import deepcopy
 from typing import Sequence
 
 from pyrado.spaces.base import Space
+from pyrado.utils.input_output import print_cbt
 
 
 class CompoundSpace(Space):
@@ -26,21 +27,26 @@ class CompoundSpace(Space):
         return self._spaces
 
     def project_to(self, ele: np.ndarray):
-        return NotImplementedError
+        raise NotImplementedError
 
     def subspace(self, idcs: [int, slice]):
         # Subspace of this CompoundSpace and not of the individual spaces
         return self._spaces[idcs]
 
     def shrink(self, new_lo: np.ndarray, new_up: np.ndarray):
-        return NotImplementedError
+        raise NotImplementedError
 
     @staticmethod
     def cat(spaces: [list, tuple]):
         raise NotImplementedError
 
     def contains(self, cand: np.ndarray, verbose: bool = False) -> bool:
-        return any([s.contains(cand, verbose) for s in self._spaces])
+        valid = any([s.contains(cand) for s in self._spaces])
+        if not valid and verbose:
+            print_cbt(f'Violated all of the {len(self._spaces)} subspaces!', 'r')
+            for s in self._spaces:
+                s.contains(cand, verbose)
+        return valid
 
     def sample_uniform(self, concrete_inf: float = 1e6) -> np.ndarray:
         # Sample a subspace and then sample from this subspace

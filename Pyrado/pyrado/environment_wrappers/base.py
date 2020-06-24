@@ -64,6 +64,10 @@ class EnvWrapper(Env, Serializable):
         self._wrapped_env.dt = dt
 
     @property
+    def curr_step(self) -> int:
+        return self._wrapped_env.curr_step
+
+    @property
     def max_steps(self) -> int:
         return self._wrapped_env.max_steps
 
