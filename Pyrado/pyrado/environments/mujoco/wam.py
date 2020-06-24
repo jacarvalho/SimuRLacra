@@ -206,7 +206,6 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         # Observation space (normalized time)
         self._obs_space = BoxSpace(np.array([0.]), np.array([1.]), labels=['$t$'])
 
-
     def _create_task(self, task_args: dict) -> Task:
         return ParallelTasks([self._create_main_task(task_args), self._create_deviation_task(task_args)])
 
@@ -244,7 +243,7 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
             # If we do not use copy(), state_des is a reference to passed body and updates automatically at each step
             state_des = self.sim.data.get_site_xpos('cup_goal')  # this is a reference
             rew_fcn = ExpQuadrErrRewFcn(
-                Q=task_args.get('Q', np.diag([1e1, 1e2, 2e1])),  # distance ball - cup; shouldn't move in y-direction
+                Q=task_args.get('Q', np.diag([2e1, 1e-2, 2e1])),  # distance ball - cup; shouldn't move in y-direction
                 R=task_args.get('R', np.zeros((spec.act_space.flat_dim, spec.act_space.flat_dim)))
             )
             task = DesStateTask(spec, state_des, rew_fcn)
@@ -266,7 +265,7 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
 
         state_des = self.sim.data.qpos[1:7:2].copy()  # actual init pose of the controlled joints
         rew_fcn = QuadrErrRewFcn(
-            Q=np.diag([5e-2, 5e-2, 5e-2]),
+            Q=np.diag([8e-2, 5e-2, 5e-2]),
             R=np.zeros((spec.act_space.flat_dim, spec.act_space.flat_dim))
         )
         task = DesStateTask(spec, state_des, rew_fcn)
