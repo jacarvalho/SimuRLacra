@@ -22,14 +22,15 @@ if __name__ == '__main__':
     # Environment
     env_hparams = dict(
         max_steps=1750,
-        task_args=dict(final_factor=0.05, sparse_rew_fcn=True)
+        task_args=dict(final_factor=0.05, sparse_rew_fcn=True),
+        fixed_initial_state=True,
     )
     env = WAMBallInCupSim(**env_hparams)
 
     # Randomizer
     randomizer = DomainRandomizer(
        # NormalDomainParam(name='cup_scale', mean=1.0, std=0.05),
-       NormalDomainParam(name='rope_length', mean=0.3, std=0.015)
+       NormalDomainParam(name='rope_length', mean=0.3, std=0.005)
     )
     env = DomainRandWrapperLive(env, randomizer)
 
@@ -48,11 +49,11 @@ if __name__ == '__main__':
         num_is_samples=10,
         expl_std_init=np.pi/6,
         expl_std_min=0.02,
-        extra_expl_std_init=0,
-        extra_expl_decay_iter=1,
+        extra_expl_std_init=np.pi/6,
+        extra_expl_decay_iter=10,
         full_cov=False,
         symm_sampling=False,
-        num_sampler_envs=8,
+        num_sampler_envs=32,
     )
     algo = CEM(ex_dir, env, policy, **algo_hparam)
 

@@ -43,8 +43,8 @@ if __name__ == '__main__':
     bounds = to.tensor(
         # [[0.7*dp_nom['cup_scale'], dp_nom['cup_scale']/100, 0.8*dp_nom['rope_length'], dp_nom['rope_length']/100],
         #  [1.3*dp_nom['cup_scale'], dp_nom['cup_scale']/20, 1.2*dp_nom['rope_length'], dp_nom['rope_length']/10]]
-        [[0.9*dp_nom['rope_length'], dp_nom['rope_length']/100, 0.5*dp_nom['joint_damping'], dp_nom['joint_damping']/100],
-         [1.1*dp_nom['rope_length'], dp_nom['rope_length']/10, 2*dp_nom['joint_damping'], dp_nom['joint_damping']/10]]
+        [[0.9*dp_nom['rope_length'], dp_nom['rope_length']/100, 0*dp_nom['joint_damping'], dp_nom['joint_damping']/100],
+         [1.1*dp_nom['rope_length'], dp_nom['rope_length']/10, 4*dp_nom['joint_damping'], dp_nom['joint_damping']/10]]
     )
 
     # env_real = WAMBallInCupReal(ip=None)
