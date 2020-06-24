@@ -4,11 +4,16 @@ Train an agent to solve the Box Shelving task task using Activation Dynamics Net
 import numpy as np
 import torch as to
 
+from pyrado.algorithms.advantage import GAE
 from pyrado.algorithms.cem import CEM
+from pyrado.algorithms.ppo import PPO
 from pyrado.environment_wrappers.action_normalization import ActNormWrapper
 from pyrado.environments.pysim.one_mass_oscillator import OneMassOscillatorSim
 from pyrado.logger.experiment import setup_experiment, save_list_of_dicts_to_yaml
+from pyrado.policies.fnn import FNNPolicy
 from pyrado.policies.neural_fields import NFPolicy
+from pyrado.spaces import ValueFunctionSpace
+from pyrado.utils.data_types import EnvSpec
 
 
 if __name__ == '__main__':
@@ -32,21 +37,33 @@ if __name__ == '__main__':
     )
     policy = NFPolicy(spec=env.spec, dt=env.dt, **policy_hparam)
 
+    # Critic
+    value_fcn_hparam = dict(hidden_sizes=[64, 64], hidden_nonlin=to.tanh)
+    value_fcn = FNNPolicy(spec=EnvSpec(env.obs_space, ValueFunctionSpace), **value_fcn_hparam)
+    critic_hparam = dict(
+        gamma=0.995,
+        lamda=0.95,
+        num_epoch=10,
+        batch_size=512,
+        standardize_adv=False,
+        standardizer=None,
+        max_grad_norm=1.,
+        lr=5e-4,
+    )
+    critic = GAE(value_fcn, **critic_hparam)
+
     # Algorithm
     algo_hparam = dict(
-        max_iter=50,
-        pop_size=2*policy.num_param,
-        num_rollouts=2,
-        num_is_samples=2*policy.num_param//10,
-        expl_std_init=0.5,
-        expl_std_min=0.02,
-        extra_expl_std_init=0.5,
-        extra_expl_decay_iter=10,
-        full_cov=False,
-        symm_sampling=False,
-        num_sampler_envs=6,
+        max_iter=500,
+        min_steps=20*env.max_steps,
+        num_epoch=10,
+        eps_clip=0.15,
+        batch_size=512,
+        max_grad_norm=1.,
+        lr=5e-4,
+        num_sampler_envs=8,
     )
-    algo = CEM(ex_dir, env, policy, **algo_hparam)
+    algo = PPO(ex_dir, env, policy, critic, **algo_hparam)
 
     # Save the hyper-parameters
     save_list_of_dicts_to_yaml([
