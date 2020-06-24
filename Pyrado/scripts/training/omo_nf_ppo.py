@@ -5,7 +5,6 @@ import numpy as np
 import torch as to
 
 from pyrado.algorithms.advantage import GAE
-from pyrado.algorithms.cem import CEM
 from pyrado.algorithms.ppo import PPO
 from pyrado.environment_wrappers.action_normalization import ActNormWrapper
 from pyrado.environments.pysim.one_mass_oscillator import OneMassOscillatorSim
@@ -18,12 +17,12 @@ from pyrado.utils.data_types import EnvSpec
 
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
-    ex_dir = setup_experiment(OneMassOscillatorSim.name, f'nf-{CEM.name}', 'const-lin', seed=1001)
+    ex_dir = setup_experiment(OneMassOscillatorSim.name, f'nf-{PPO.name}', 'const-lin', seed=1001)
 
     # Environment
     env_hparams = dict(dt=1/50., max_steps=200)
     env = OneMassOscillatorSim(**env_hparams, task_args=dict(state_des=np.array([0.5, 0])))
-    # env = ActNormWrapper(env)
+    env = ActNormWrapper(env)
 
     # Policy
     policy_hparam = dict(

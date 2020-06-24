@@ -21,9 +21,9 @@ if __name__ == '__main__':
 
     # Policy
     policy_hparam = dict(
-        hidden_size=20,
+        hidden_size=21,
         conv_out_channels=1,
-        conv_kernel_size=20,
+        conv_kernel_size=5,
         conv_padding_mode='circular',
         activation_nonlin=to.sigmoid,
         mirrored_conv_weights=True,
@@ -34,14 +34,14 @@ if __name__ == '__main__':
 
     # Algorithm
     algo_hparam = dict(
-        max_iter=100,
-        pop_size=4*policy.num_param,
-        num_rollouts=2,
-        num_is_samples=4*policy.num_param//10,
-        expl_std_init=0.5,
+        max_iter=50,
+        pop_size=policy.num_param,
+        num_rollouts=4,
+        num_is_samples=policy.num_param//10,
+        expl_std_init=1.,
         expl_std_min=0.02,
-        extra_expl_std_init=0.5,
-        extra_expl_decay_iter=10,
+        extra_expl_std_init=1.,
+        extra_expl_decay_iter=25,
         full_cov=False,
         symm_sampling=False,
         num_sampler_envs=32,
