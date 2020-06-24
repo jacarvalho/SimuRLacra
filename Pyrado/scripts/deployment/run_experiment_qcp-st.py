@@ -33,7 +33,7 @@ def experiment_wo_distruber(env_real: RealEnv, env_sim: SimEnv):
     env_real = wrap_like_other_env(env_real, env_sim)
 
     # Run learned policy on the device
-    print_cbt('Running the evaluation policy ...', 'c')
+    print_cbt('Running the evaluation policy ...', 'c', bright=True)
     return rollout(env_real, policy, eval=True, max_steps=args.max_steps, render_mode=RenderMode(text=True),
                    no_reset=True, no_close=True)
 
@@ -43,13 +43,13 @@ def experiment_w_distruber(env_real: RealEnv, env_sim: SimEnv):
     env_real = wrap_like_other_env(env_real, env_sim)
 
     # Run learned policy on the device
-    print_cbt('Running the evaluation policy ...', 'c')
+    print_cbt('Running the evaluation policy ...', 'c', bright=True)
     ro1 = rollout(env_real, policy, eval=True, max_steps=args.max_steps//3, render_mode=RenderMode(),
                   no_reset=True, no_close=True)
 
     # Run disturber
     env_real = inner_env(env_real)  # since we are reusing it
-    print_cbt('Running the 1st disturber ...', 'c')
+    print_cbt('Running the 1st disturber ...', 'c', bright=True)
     rollout(env_real, disturber_pos, eval=True, max_steps=steps_disturb, render_mode=RenderMode(),
             no_reset=True, no_close=True)
 
@@ -57,13 +57,13 @@ def experiment_w_distruber(env_real: RealEnv, env_sim: SimEnv):
     env_real = wrap_like_other_env(env_real, env_sim)
 
     # Run learned policy on the device
-    print_cbt('Running the evaluation policy ...', 'c')
+    print_cbt('Running the evaluation policy ...', 'c', bright=True)
     ro2 = rollout(env_real, policy, eval=True, max_steps=args.max_steps//3, render_mode=RenderMode(),
                   no_reset=True, no_close=True)
 
     # Run disturber
     env_real = inner_env(env_real)  # since we are reusing it
-    print_cbt('Running the 2nd disturber ...', 'c')
+    print_cbt('Running the 2nd disturber ...', 'c', bright=True)
     rollout(env_real, disturber_neg, eval=True, max_steps=steps_disturb, render_mode=RenderMode(),
             no_reset=True, no_close=True)
 
@@ -71,7 +71,7 @@ def experiment_w_distruber(env_real: RealEnv, env_sim: SimEnv):
     env_real = wrap_like_other_env(env_real, env_sim)
 
     # Run learned policy on the device
-    print_cbt('Running the evaluation policy ...', 'c')
+    print_cbt('Running the evaluation policy ...', 'c', bright=True)
     ro3 = rollout(env_real, policy, eval=True, max_steps=args.max_steps//3, render_mode=RenderMode(),
                   no_reset=True, no_close=True)
 

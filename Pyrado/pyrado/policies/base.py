@@ -109,7 +109,7 @@ class Policy(nn.Module, ABC):
         :param init_values: tensor of fixed initial policy parameter values
         :param kwargs: additional keyword arguments for the policy parameter initialization
         """
-        return NotImplementedError
+        raise NotImplementedError
 
     def reset(self):
         """
@@ -127,7 +127,7 @@ class Policy(nn.Module, ABC):
         :param obs: observation from the environment
         :return act: action to be taken
         """
-        return NotImplementedError
+        raise NotImplementedError
 
     def evaluate(self, rollout: StepSequence, hidden_states_name: str = 'hidden_states') -> to.Tensor:
         """

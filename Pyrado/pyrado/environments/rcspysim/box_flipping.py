@@ -13,7 +13,7 @@ from pyrado.tasks.desired_state import DesStateTask
 from pyrado.tasks.endless_flipping import EndlessFlippingTask
 from pyrado.tasks.masked import MaskedTask
 from pyrado.tasks.reward_functions import ExpQuadrErrRewFcn, MinusOnePerStepRewFcn, AbsErrRewFcn, CosOfOneEleRewFcn, \
-    CombinedRewFcn, RewFcn
+    CompoundRewFcn, RewFcn
 from pyrado.tasks.parallel import ParallelTasks
 from pyrado.tasks.utils import proximity_succeeded, never_succeeded
 from pyrado.tasks.predefined import create_check_all_boundaries_task, create_collision_task
@@ -60,7 +60,7 @@ def create_box_flip_task(env_spec: EnvSpec, continuous_rew_fcn):
         # r = 1e-6*np.ones(spec.act_space.flat_dim)
         # rew_fcn_act = AbsErrRewFcn(q, r)
         rew_fcn = CosOfOneEleRewFcn(idx=0)
-        # rew_fcn = CombinedRewFcn([rew_fcn_act, rew_fcn_box])
+        # rew_fcn = CompoundRewFcn([rew_fcn_act, rew_fcn_box])
     else:
         rew_fcn = MinusOnePerStepRewFcn()
     ef_task = EndlessFlippingTask(spec, rew_fcn, init_angle=0.)

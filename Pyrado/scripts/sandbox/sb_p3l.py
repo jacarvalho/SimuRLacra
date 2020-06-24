@@ -171,7 +171,7 @@ def adn_variant(dt, max_steps, max_dist_force, physics_engine, normalize_obs=Tru
         potentials_dyn_fcn=pd_cubic,
     )
     policy = ADNPolicy(spec=env.spec, dt=dt, **policy_hparam)
-    print_cbt('Running ADNPolicy with random initialization', 'y', bright=True)
+    print_cbt('Running ADNPolicy with random initialization', 'c', bright=True)
 
     # Simulate and plot potentials
     ro = rollout(env, policy, render_mode=RenderMode(video=True), stop_on_done=True)
