@@ -6,6 +6,7 @@ from init_args_serializer import Serializable
 import pyrado
 from pyrado.environments.quanser.base import RealEnv
 from pyrado.spaces.box import BoxSpace
+from pyrado.spaces.compound import CompoundSpace
 from pyrado.tasks.base import Task
 from pyrado.tasks.final_reward import FinalRewTask, FinalRewMode
 from pyrado.tasks.desired_state import RadiallySymmDesStateTask
@@ -16,11 +17,7 @@ from pyrado.utils.input_output import print_cbt
 class QCartPoleReal(RealEnv, Serializable):
     """ Base class for the real Quanser Cart-Pole """
 
-    def __init__(self,
-                 dt: float = 1/500.,
-                 max_steps: int = pyrado.inf,
-                 ip: str = '10.0.0.3',
-                 task_args: [dict, None] = None):
+    def __init__(self, dt: float, max_steps: int, ip: str, task_args: [dict, None]):
         """
         Constructor
 
@@ -32,7 +29,7 @@ class QCartPoleReal(RealEnv, Serializable):
         Serializable._init(self, locals())
 
         # Initialize spaces, dt, max_step, and communication
-        super().__init__(ip, rcv_dim=4, snd_dim=2, dt=dt, max_steps=max_steps, task_args=task_args)
+        super().__init__(ip, rcv_dim=4, snd_dim=1, dt=dt, max_steps=max_steps, task_args=task_args)
         self._curr_act = np.zeros(self.act_space.shape)  # just for usage in render function
 
         # Calibration and limits
@@ -47,7 +44,7 @@ class QCartPoleReal(RealEnv, Serializable):
         self._state_space = None  # needs to be set in subclasses
         max_obs = np.array([0.814/2., 1., 1., pyrado.inf, pyrado.inf])
         max_act = np.array([8.])  # [V], original: 24
-        self._obs_space = BoxSpace(max_obs, max_obs,
+        self._obs_space = BoxSpace(-max_obs, max_obs,
                                    labels=['$x$', r'$\sin\theta$', r'$\cos\theta$', r'$\dot{x}$', r'$\dot{\theta}$'])
         self._act_space = BoxSpace(-max_act, max_act, labels=['$V$'])
 
@@ -72,7 +69,7 @@ class QCartPoleReal(RealEnv, Serializable):
 
         # Current reward depending on the (measurable) state and the current (unlimited) action
         remaining_steps = self._max_steps - (self._curr_step + 1) if self._max_steps is not pyrado.inf else 0
-        self._curr_rew = self._task.step_rew(self.state, act, self._curr_step, remaining_steps)
+        self._curr_rew = self._task.step_rew(self.state, act, remaining_steps)
 
         # Apply actuator limits
         act_lim = self._limit_act(act)
@@ -180,7 +177,7 @@ class QCartPoleStabReal(QCartPoleReal):
     def __init__(self,
                  dt: float = 1/500.,
                  max_steps: int = pyrado.inf,
-                 ip: str = '10.0.0.3',
+                 ip: str = '192.168.2.17',
                  task_args: [dict, None] = None):
         """
         Constructor
@@ -194,9 +191,15 @@ class QCartPoleStabReal(QCartPoleReal):
 
         # Define the task-specific state space
         stab_thold = 15/180.*np.pi  # threshold angle for the stabilization task to be a failure [rad]
-        min_state = np.array([-self._l_rail/2. + self._x_buffer, np.pi - stab_thold, np.inf, np.inf])
-        max_state = np.array([+self._l_rail/2. - self._x_buffer, np.pi + stab_thold, np.inf, np.inf])
-        self._state_space = BoxSpace(min_state, max_state, labels=['$x$', r'$\theta$', r'$\dot{x}$', r'$\dot{\theta}$'])
+        min_state_1 = np.array([-self._l_rail/2. + self._x_buffer, np.pi - stab_thold, -np.inf, -np.inf])
+        max_state_1 = np.array([+self._l_rail/2. - self._x_buffer, np.pi + stab_thold, np.inf, np.inf])
+        min_state_2 = np.array([-self._l_rail/2. + self._x_buffer, -np.pi - stab_thold, -np.inf, -np.inf])
+        max_state_2 = np.array([+self._l_rail/2. - self._x_buffer, -np.pi + stab_thold, np.inf, np.inf])
+
+        bs_1 = BoxSpace(min_state_1, max_state_1, labels=['$x$', r'$\theta$', r'$\dot{x}$', r'$\dot{\theta}$'])
+        bs_2 = BoxSpace(min_state_2, max_state_2, labels=['$x$', r'$\theta$', r'$\dot{x}$', r'$\dot{\theta}$'])
+
+        self._state_space = CompoundSpace([bs_1, bs_2])
 
     def _create_task(self, task_args: dict) -> Task:
         # Define the task including the reward function
@@ -226,9 +229,10 @@ class QCartPoleStabReal(QCartPoleReal):
             obs, _, _, _ = self.step(np.zeros(self.act_space.shape))
             time.sleep(1/550.)
 
-            transformed_state = np.array(obs, copy=True)
-            transformed_state[1] -= np.sign(transformed_state[1])*np.pi
-            if np.all(np.abs(transformed_state) <= th):
+            abs_err = np.abs(np.array([obs[1], obs[2]]) - np.array([[0., -1.]]))
+            err_th = np.array([np.sin(np.deg2rad(3.)), np.sin(np.deg2rad(3.))])
+
+            if np.all(abs_err <= err_th):
                 upright = True
                 break
 
@@ -251,6 +255,12 @@ class QCartPoleStabReal(QCartPoleReal):
         # Reset socket, task, and calibrate
         super().reset(args, kwargs)
 
+        # The system only needs to be calibrated once, as this is a bit time consuming
+        self.calibrate()
+
+        # Center the cart in the middle
+        self._center_cart()
+
         # Wait until the human reset the pole properly
         self._wait_for_upright_pole(verbose=True)
 
@@ -271,7 +281,7 @@ class QCartPoleSwingUpReal(QCartPoleReal):
     def __init__(self,
                  dt: float = 1/500.,
                  max_steps: int = pyrado.inf,
-                 ip: str = '10.0.0.3',
+                 ip: str = '192.168.2.17',
                  task_args: [dict, None] = None):
         """
         Constructor
@@ -285,7 +295,7 @@ class QCartPoleSwingUpReal(QCartPoleReal):
 
         # Define the task-specific state space
         max_state = np.array([self._l_rail/2. - self._x_buffer, +4*np.pi, np.inf, np.inf])  # [m, rad, m/s, rad/s]
-        min_state = np.array([self._l_rail/2. + self._x_buffer, -4*np.pi, np.inf, np.inf])  # [m, rad, m/s, rad/s]
+        min_state = np.array([-self._l_rail/2. + self._x_buffer, -4*np.pi, -np.inf, -np.inf])  # [m, rad, m/s, rad/s]
         self._state_space = BoxSpace(min_state, max_state, labels=['$x$', r'$\theta$', r'$\dot{x}$', r'$\dot{\theta}$'])
 
     def _create_task(self, task_args: dict) -> Task:

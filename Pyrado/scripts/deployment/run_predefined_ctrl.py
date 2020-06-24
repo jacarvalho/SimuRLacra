@@ -1,5 +1,6 @@
 """
 Run a PD-controller with the parameter from Quanser on the real device.
+By default all controllers in this script run infinitely.
 """
 import torch as to
 
@@ -21,34 +22,33 @@ if __name__ == '__main__':
 
     # Set up PD-controller
     if args.env_name in QBallBalancerReal.name:
-        env = QBallBalancerReal(args.dt, args.max_steps)  # runs infinitely by default
-        policy = QBallBalancerPDCtrl(env.spec,
-                                     kp=to.diag(to.tensor([3.45, 3.45])),
-                                     kd=to.diag(to.tensor([2.11, 2.11])))
+        env = QBallBalancerReal(args.dt, args.max_steps)
+        policy = QBallBalancerPDCtrl(env.spec, kp=to.diag(to.tensor([3.45, 3.45])), kd=to.diag(to.tensor([2.11, 2.11])))
         print_cbt('Set up controller for the QBallBalancerReal environment.', 'c')
 
     elif args.env_name == QCartPoleStabReal.name:
-        env = QCartPoleStabReal(args.dt, args.max_steps)  # runs infinitely by default
+        env = QCartPoleStabReal(args.dt, args.max_steps)
         policy = QCartPoleSwingUpAndBalanceCtrl(env.spec)
         print_cbt('Set up controller for the QCartPoleStabReal environment.', 'c')
 
     elif args.env_name == QCartPoleSwingUpReal.name:
-        env = QCartPoleSwingUpReal(args.dt, args.max_steps)  # runs infinitely by default
+        env = QCartPoleSwingUpReal(args.dt, args.max_steps)
         policy = QCartPoleSwingUpAndBalanceCtrl(env.spec)
         print_cbt('Set up controller for the QCartPoleSwingUpReal environment.', 'c')
 
     elif args.env_name == QQubeReal.name:
-        env = QQubeReal(args.dt, args.max_steps)  # runs infinitely by default
+        env = QQubeReal(args.dt, args.max_steps)
         policy = QQubeSwingUpAndBalanceCtrl(env.spec)
         print_cbt('Set up controller for the QQubeReal environment.', 'c')
 
     else:
-        raise pyrado.ValueErr(given=args.env_name, eq_constraint=f'{QBallBalancerReal.name}, {QCartPoleSwingUpReal.name}, '
-                                                                 f'{QCartPoleStabReal.name}, or {QQubeReal.name}')
+        raise pyrado.ValueErr(given=args.env_name,
+                              eq_constraint=f'{QBallBalancerReal.name}, {QCartPoleSwingUpReal.name}, '
+                                            f'{QCartPoleStabReal.name}, or {QQubeReal.name}')
 
     # Run on device
     done = False
     while not done:
-        print_cbt('Running PD-controller ...', 'c')
-        ro = rollout(env, policy, eval=True, render_mode=RenderMode(text=False))
+        print_cbt('Running predefined controller ...', 'c', bright=True)
+        ro = rollout(env, policy, eval=True, render_mode=RenderMode(text=args.verbose))
         done, _, _ = after_rollout_query(env, policy, ro)
