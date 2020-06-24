@@ -167,7 +167,7 @@ def rollout_dummy_rbf_policy():
     des_vel_traj = ro.env_infos['qvel_des']  # (max_steps,7) ndarray
     vel_traj = ro.env_infos['qvel']
     ball_pos = ro.env_infos['ball_pos']
-    state_des = ro.env_infos['state_des']
+    cup_pos = ro.env_infos['cup_pos']
 
     # Plot trajectories of the directly controlled joints and their corresponding desired trajectories
     fig, ax = plt.subplots(3, sharex='all')
@@ -180,8 +180,8 @@ def rollout_dummy_rbf_policy():
     ax = fig.add_subplot(111, projection='3d')
     ax.plot(xs=ball_pos[:, 0], ys=ball_pos[:, 1], zs=ball_pos[:, 2], color='blue', label='Ball')
     ax.scatter(xs=ball_pos[-1, 0], ys=ball_pos[-1, 1], zs=ball_pos[-1, 2], color='blue', label='Ball final')
-    ax.plot(xs=state_des[:, 0], ys=state_des[:, 1], zs=state_des[:, 2], color='red', label='Cup')
-    ax.scatter(xs=state_des[-1, 0], ys=state_des[-1, 1], zs=state_des[-1, 2], color='red', label='Cup final')
+    ax.plot(xs=cup_pos[:, 0], ys=cup_pos[:, 1], zs=cup_pos[:, 2], color='red', label='Cup')
+    ax.scatter(xs=cup_pos[-1, 0], ys=cup_pos[-1, 1], zs=cup_pos[-1, 2], color='red', label='Cup final')
     ax.legend()
     ax.set_xlabel('x')
     ax.set_ylabel('y')

@@ -14,7 +14,8 @@ from pyrado.tasks.desired_state import DesStateTask
 from pyrado.tasks.final_reward import BestStateFinalRewTask, FinalRewTask, FinalRewMode
 from pyrado.tasks.goalless import GoallessTask
 from pyrado.tasks.masked import MaskedTask
-from pyrado.tasks.reward_functions import ZeroPerStepRewFcn, ExpQuadrErrRewFcn
+from pyrado.tasks.parallel import ParallelTasks
+from pyrado.tasks.reward_functions import ZeroPerStepRewFcn, ExpQuadrErrRewFcn, QuadrErrRewFcn
 from pyrado.tasks.sequential import SequentialTasks
 from pyrado.utils.data_types import EnvSpec
 from pyrado.utils.input_output import print_cbt
@@ -83,8 +84,7 @@ class WAMSim(MujocoSimEnv, Serializable):
         self.sim.data.qfrc_applied[:] = act
         self.sim.step()
 
-        qpos = self.sim.data.qpos.copy()
-        qvel = self.sim.data.qvel.copy()
+        qpos, qvel = self.sim.data.qpos.copy(), self.sim.data.qvel.copy()
         self.state = np.concatenate([qpos, qvel])
         return dict()
 
@@ -206,7 +206,11 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         # Observation space (normalized time)
         self._obs_space = BoxSpace(np.array([0.]), np.array([1.]), labels=['$t$'])
 
+
     def _create_task(self, task_args: dict) -> Task:
+        return ParallelTasks([self._create_main_task(task_args), self._create_deviation_task(task_args)])
+
+    def _create_main_task(self, task_args: dict) -> Task:
         # Create a DesStateTask that masks everything but the ball position
         idcs = list(range(self.state_space.flat_dim - 3, self.state_space.flat_dim))  # Cartesian ball position
         spec = EnvSpec(
@@ -241,7 +245,7 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
             state_des = self.sim.data.get_site_xpos('cup_goal')  # this is a reference
             rew_fcn = ExpQuadrErrRewFcn(
                 Q=task_args.get('Q', np.diag([1e1, 1e2, 2e1])),  # distance ball - cup; shouldn't move in y-direction
-                R=task_args.get('R', np.diag([1e-1, 1e-1, 1e-1, 1e-2, 1e-2, 1e-2]))  # desired joint angles and velocities
+                R=task_args.get('R', np.zeros((spec.act_space.flat_dim, spec.act_space.flat_dim)))
             )
             task = DesStateTask(spec, state_des, rew_fcn)
 
@@ -250,6 +254,24 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
                 MaskedTask(self.spec, task, idcs),
                 max_steps=self.max_steps, factor=task_args.get('final_factor', 1.)
             )
+
+    def _create_deviation_task(self, task_args: dict) -> Task:
+        # Create a DesStateTask that masks everything but the actuated joint angles
+        idcs = [1, 3, 5]  # see act in _mujoco_step()
+        spec = EnvSpec(
+            self.spec.obs_space,
+            self.spec.act_space,
+            self.spec.state_space.subspace(self.spec.state_space.create_mask(idcs))
+        )
+
+        state_des = self.sim.data.qpos[1:7:2].copy()  # actual init pose of the controlled joints
+        rew_fcn = QuadrErrRewFcn(
+            Q=np.diag([5e-2, 5e-2, 5e-2]),
+            R=np.zeros((spec.act_space.flat_dim, spec.act_space.flat_dim))
+        )
+        task = DesStateTask(spec, state_des, rew_fcn)
+
+        return MaskedTask(self.spec, task, idcs)
 
     def _adapt_model_file(self, xml_model: str, domain_param: dict) -> str:
         # First replace special domain parameters
@@ -300,24 +322,16 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
             # Instead, we want the episode to end with a failure
             mjsim_crashed = True
 
-        qpos = self.sim.data.qpos.copy()
-        qvel = self.sim.data.qvel.copy()
+        qpos, qvel = self.sim.data.qpos.copy(), self.sim.data.qvel.copy()
         ball_pos = self.sim.data.get_body_xpos('ball').copy()
         self.state = np.concatenate([qpos, qvel, ball_pos])
-
-        # Update task's desired state
-        state_des = np.zeros_like(self.state)  # needs to be of same dimension as self.state since it is masked later
-        state_des[-3:] = self.sim.data.get_site_xpos('cup_goal').copy()
-        if isinstance(self._task.wrapped_task, DesStateTask):
-            # In case of a continous reward task
-            self._task.state_des = state_des
 
         # If desired, check for collisions of the ball with the robot
         ball_collided = self.check_ball_collisions() if self.stop_on_collision else False
 
         return dict(
             qpos_des=qpos_des, qvel_des=qvel_des, qpos=qpos[:7], qvel=qvel[:7], ball_pos=ball_pos,
-            state_des=state_des[-3:], failed=mjsim_crashed or ball_collided
+            cup_pos=self.sim.data.get_site_xpos('cup_goal').copy(), failed=mjsim_crashed or ball_collided
         )
 
     def check_ball_collisions(self, verbose: bool = False) -> bool:
