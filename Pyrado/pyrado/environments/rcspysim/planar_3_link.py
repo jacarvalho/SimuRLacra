@@ -26,7 +26,7 @@ rcsenv.addResourcePath(osp.join(rcsenv.RCSPYSIM_CONFIG_PATH, 'Planar3Link'))
 class Planar3LinkSim(RcsSim, Serializable):
     """ Base class for the Planar 3-link environments simulated in Rcs using the Vortex or Bullet physics engine """
 
-    def __init__(self, task_args: dict, max_dist_force: float = None, position_mps: bool = True, **kwargs):
+    def __init__(self, task_args: dict, max_dist_force: float = None, **kwargs):
         """
         Constructor
 
@@ -35,8 +35,6 @@ class Planar3LinkSim(RcsSim, Serializable):
 
         :param task_args: arguments for the task construction
         :param max_dist_force: maximum disturbance force, set to None (default) for no disturbance
-        :param position_mps: `True` if the MPs are defined on position level, `False` if defined on velocity level,
-                             only matters if `actionModelType='activation'`
         :param kwargs: keyword arguments forwarded to `RcsSim`
                        collisionConfig: specification of the Rcs CollisionModel
         """
@@ -60,7 +58,6 @@ class Planar3LinkSim(RcsSim, Serializable):
             envType='Planar3Link',
             graphFileName='gPlanar3Link.xml',
             task_args=task_args,
-            positionTasks=position_mps,
             collisionConfig=collision_config,
             **kwargs
         )
@@ -82,11 +79,15 @@ class Planar3LinkSim(RcsSim, Serializable):
 
     @classmethod
     def get_nominal_domain_param(cls):
-        return NotImplementedError
+        # Needs to be implemented by subclasses
+        raise NotImplementedError
 
     def _create_task(self, task_args: dict) -> Task:
         # Define the indices for selection. This needs to match the observations' names in RcsPySim.
-        idcs = ['Effector_X', 'Effector_Z']
+        if task_args.get('consider_velocities', False):
+            idcs = ['Effector_X', 'Effector_Z', 'Effector_Xd', 'Effector_Zd']
+        else:
+            idcs = ['Effector_X', 'Effector_Z']
 
         # Get the masked environment specification
         spec = EnvSpec(
@@ -104,8 +105,11 @@ class Planar3LinkSim(RcsSim, Serializable):
         state_des3 = np.array([p3[0], p3[2]])
 
         success_fcn = functools.partial(proximity_succeeded, thold_dist=7.5e-2, dims=[0, 1])  # min distance = 7cm
-        Q = np.diag([1e0, 1e0])
-        R = 5e-2*np.eye(spec.act_space.flat_dim)
+        if task_args.get('consider_velocities', False):
+            Q = np.diag([1e0, 1e0, 1e-2, 1e-2])
+        else:
+            Q = np.diag([1e0, 1e0])
+        R = np.zeros((spec.act_space.flat_dim, spec.act_space.flat_dim))
 
         # Create the tasks
         subtask_11 = FinalRewTask(
@@ -151,17 +155,20 @@ class Planar3LinkJointCtrlSim(Planar3LinkSim, Serializable):
 
     name: str = 'p3l-jt'
 
-    def __init__(self, state_des: np.ndarray = None, **kwargs):
+    def __init__(self, task_args: dict = None, **kwargs):
         """
         Constructor
 
-        :param state_des: desired state for the task
         :param kwargs: keyword arguments forwarded to `RcsSim`
         """
         Serializable._init(self, locals())
 
         # Forward to the Planar3LinkSim's constructor, specifying the characteristic action model
-        super().__init__(task_args=dict(state_des=state_des), actionModelType='joint_pos', **kwargs)
+        super().__init__(
+            task_args=dict() if task_args is None else task_args,
+            actionModelType='joint_pos',
+            **kwargs
+        )
 
 
 class Planar3LinkIKSim(Planar3LinkSim, Serializable):
@@ -169,11 +176,10 @@ class Planar3LinkIKSim(Planar3LinkSim, Serializable):
 
     name: str = 'p3l-ik'
 
-    def __init__(self, state_des: np.ndarray = None, **kwargs):
+    def __init__(self, task_args: dict = None, **kwargs):
         """
         Constructor
 
-        :param state_des: desired state for the task
         :param kwargs: keyword arguments forwarded to `RcsSim`
                        checkJointLimits: bool = False,
                        collisionAvoidanceIK: bool = True,
@@ -181,7 +187,12 @@ class Planar3LinkIKSim(Planar3LinkSim, Serializable):
         Serializable._init(self, locals())
 
         # Forward to the Planar3LinkSim's constructor, specifying the characteristic action model
-        super().__init__(task_args=dict(state_des=state_des), actionModelType='ik', position_mps=True, **kwargs)
+        super().__init__(
+            task_args=dict() if task_args is None else task_args,
+            actionModelType='ik',
+            positionTasks=True,
+            **kwargs
+        )
 
 
 class Planar3LinkTASim(Planar3LinkSim, Serializable):
@@ -190,6 +201,7 @@ class Planar3LinkTASim(Planar3LinkSim, Serializable):
     name: str = 'p3l-ta'
 
     def __init__(self,
+                 task_args: dict,
                  mps: Sequence[dict] = None,
                  position_mps: bool = True,
                  **kwargs):
@@ -280,10 +292,10 @@ class Planar3LinkTASim(Planar3LinkSim, Serializable):
 
         # Forward to the Planar3LinkSim's constructor, specifying the characteristic action model
         super().__init__(
-            task_args=dict(mps=mps),
+            task_args=dict() if task_args is None else task_args,
             actionModelType='activation',
             tasks=mps,
-            position_mps=position_mps,
+            positionTasks=position_mps,
             **kwargs
         )
 

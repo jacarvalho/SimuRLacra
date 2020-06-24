@@ -159,7 +159,7 @@ protected:
             auto omLin = new OMBodyStateLinear(graph, "Effector");  // in world coordinates
             omLin->setMinState(-1.56); // [m]
             omLin->setMaxState(1.56); // [m]
-            omLin->setMaxVelocity(3.0); // [m/s]
+            omLin->setMaxVelocity(10.0); // [m/s]
             fullState->addPart(OMPartial::fromMask(omLin, {true, false, true}));  // mask out y axis
         }
         else
