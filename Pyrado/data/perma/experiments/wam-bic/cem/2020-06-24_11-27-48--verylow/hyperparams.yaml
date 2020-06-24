@@ -9,13 +9,13 @@ policy:
     bounds: !!python/tuple
     - 0.0
     - 1.0
-    num_feat_per_dim: 9
+    num_feat_per_dim: 7
     scale: None
 algo:
-  expl_std_init: 0.5235987755982988
+  expl_std_init: 1.5707963267948966
   expl_std_min: 0.02
-  extra_expl_decay_iter: 1
-  extra_expl_std_init: 0
+  extra_expl_decay_iter: 10
+  extra_expl_std_init: 1.5707963267948966
   full_cov: false
   max_iter: 50
   num_is_samples: 10
