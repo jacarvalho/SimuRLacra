@@ -51,7 +51,7 @@ class QCartPoleReal(RealEnv, Serializable):
     @abstractmethod
     def _create_task(self, task_args: dict):
         # Needs to implemented by subclasses
-        return NotImplementedError
+        raise NotImplementedError
 
     @property
     def task(self):

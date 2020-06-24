@@ -69,4 +69,4 @@ class MPBlendingSim(RcsSim, Serializable):
 
     @classmethod
     def get_nominal_domain_param(cls):
-        return NotImplementedError
+        raise NotImplementedError

@@ -27,14 +27,14 @@ class CompoundSpace(Space):
         return self._spaces
 
     def project_to(self, ele: np.ndarray):
-        return NotImplementedError
+        raise NotImplementedError
 
     def subspace(self, idcs: [int, slice]):
         # Subspace of this CompoundSpace and not of the individual spaces
         return self._spaces[idcs]
 
     def shrink(self, new_lo: np.ndarray, new_up: np.ndarray):
-        return NotImplementedError
+        raise NotImplementedError
 
     @staticmethod
     def cat(spaces: [list, tuple]):
