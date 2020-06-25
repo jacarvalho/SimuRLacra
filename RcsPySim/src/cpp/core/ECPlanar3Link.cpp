@@ -9,7 +9,7 @@
 #include "observation/OMCombined.h"
 #include "observation/OMJointState.h"
 #include "observation/OMPartial.h"
-#include "observation/OMGoalDistance.h"
+#include "observation/OMDynamicalSystemGoalDistance.h"
 #include "observation/OMForceTorque.h"
 #include "observation/OMCollisionCost.h"
 #include "observation/OMCollisionCostPrediction.h"

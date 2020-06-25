@@ -9,7 +9,7 @@
 #include "physics/PPDSphereRadius.h"
 #include "physics/PPDMaterialProperties.h"
 #include "physics/ForceDisturber.h"
-#include "observation/OMGoalDistance.h"
+#include "observation/OMDynamicalSystemGoalDistance.h"
 #include "util/string_format.h"
 #include "observation/OMCollisionCostPrediction.h"
 
