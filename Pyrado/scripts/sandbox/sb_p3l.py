@@ -167,7 +167,7 @@ def adn_variant(dt, max_steps, max_dist_force, physics_engine, normalize_obs=Tru
     # Set up random policy
     policy_hparam = dict(
         tau_init=0.2,
-        output_nonlin=to.sigmoid,
+        activation_nonlin=to.sigmoid,
         potentials_dyn_fcn=pd_cubic,
     )
     policy = ADNPolicy(spec=env.spec, dt=dt, **policy_hparam)

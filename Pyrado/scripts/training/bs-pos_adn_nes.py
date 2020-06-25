@@ -63,7 +63,7 @@ if __name__ == '__main__':
         tau_init=0.75,
         tau_learnable=True,
         kappa_init=3.5e-5,
-        output_nonlin=to.sigmoid,
+        activation_nonlin=to.sigmoid,
         potentials_dyn_fcn=pd_cubic,
     )
     policy = ADNPolicy(spec=env.spec, dt=env.dt, **policy_hparam)

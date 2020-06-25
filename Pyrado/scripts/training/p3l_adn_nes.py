@@ -50,7 +50,7 @@ if __name__ == '__main__':
                       hidden_sizes=[32, 32],
                       hidden_nonlin=to.tanh),
         tau_init=5.,
-        output_nonlin=to.sigmoid,
+        activation_nonlin=to.sigmoid,
         potentials_dyn_fcn=pd_cubic,
         init_param_kwargs=dict(sigmoid_nlin=True),
     )
