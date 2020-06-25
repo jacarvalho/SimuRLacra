@@ -33,7 +33,7 @@ class Experiment:
     def __init__(self,
                  env_name: str,
                  algo_name: str,
-                 add_info: str = None,
+                 extra_info: str = None,
                  exp_id: str = None,
                  timestamp: datetime = None,
                  base_dir: str = pyrado.TEMP_DIR,
@@ -43,19 +43,19 @@ class Experiment:
 
         :param env_name: environment trained on
         :param algo_name: algorithm trained with
-        :param add_info: additional information on the experiment (freeform)
-        :param exp_id: combined timestamp and add_info, usually the final folder name.
+        :param extra_info: additional information on the experiment (freeform)
+        :param exp_id: combined timestamp and extra_info, usually the final folder name.
         :param timestamp: experiment creation timestamp
         :param base_dir: base storage directory
         :param seed: seed value for the random number generators, pass None for no seeding
         """
         if exp_id is not None:
-            # Try to parse add_info from exp id
+            # Try to parse extra_info from exp id
             sd = exp_id.split('--', 1)
             if len(sd) == 1:
                 timestr = sd[0]
             else:
-                timestr, add_info = sd
+                timestr, extra_info = sd
             # Parse time string
             if '_' in timestr:
                 timestamp = datetime.strptime(timestr, timestamp_format)
@@ -67,13 +67,13 @@ class Experiment:
                 timestamp = datetime.now()
             exp_id = timestamp.strftime(timestamp_format)
 
-            if add_info is not None:
-                exp_id = exp_id + '--' + add_info
+            if extra_info is not None:
+                exp_id = exp_id + '--' + extra_info
 
         # Store values
         self.env_name = env_name
         self.algo_name = algo_name
-        self.add_info = add_info
+        self.extra_info = extra_info
         self.exp_id = exp_id
         self.timestamp = timestamp
         self.base_dir = base_dir
@@ -117,12 +117,12 @@ class Experiment:
 
 def setup_experiment(env_name: str,
                      algo_name: str,
-                     add_info: str = None,
+                     extra_info: str = None,
                      base_dir: str = pyrado.TEMP_DIR,
                      seed: [int, None] = None):
     """ Setup a new experiment for recording. """
     # Create experiment object
-    exp = Experiment(env_name, algo_name, add_info, base_dir=base_dir, seed=seed)
+    exp = Experiment(env_name, algo_name, extra_info, base_dir=base_dir, seed=seed)
 
     # Create the folder
     os.makedirs(exp, exist_ok=True)
