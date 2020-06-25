@@ -20,12 +20,12 @@
 #include "physics/PPDMaterialProperties.h"
 #include "physics/ForceDisturber.h"
 #include "util/string_format.h"
+#include "observation/OMTaskSpaceDiscrepancy.h"
 
 #include <Rcs_Mat3d.h>
 #include <Rcs_Vec3d.h>
 #include <Rcs_typedef.h>
 #include <Rcs_macros.h>
-
 #include <TaskPosition1D.h>
 #include <TaskVelocity1D.h>
 
@@ -242,7 +242,7 @@ protected:
             int horizon = 20;
             properties->getChild("collisionConfig")->getProperty(horizon, "predCollHorizon");
             // Add collision model
-            auto omCollisionCost = new OMCollisionCostPrediction(graph, collisionMdl, actionModel, 50);
+            auto omCollisionCost = new OMCollisionCostPrediction(graph, collisionMdl, actionModel, 20);
             fullState->addPart(omCollisionCost);
         }
         
@@ -252,6 +252,22 @@ protected:
         {
             bool ocm = properties->getPropertyBool("observeCurrentManipulability", true);
             fullState->addPart(new OMManipulabilityIndex(ikModel, ocm));
+        }
+
+        // Add the task space discrepancy observation model
+        if (properties->getPropertyBool("observeTaskSpaceDiscrepancy", false))
+        {
+            auto wamIK = actionModel->unwrap<ActionModelIK>();
+            if (wamIK)
+            {
+                auto omTSDescr = new OMTaskSpaceDiscrepancy("Effector", graph, wamIK->getController()->getGraph());
+                fullState->addPart(OMPartial::fromMask(omTSDescr, {true, false, true}));
+            }
+            else
+            {
+                delete fullState;
+                throw std::invalid_argument("The action model needs to be of type ActionModelIK!");
+            }
         }
         
         return fullState;
