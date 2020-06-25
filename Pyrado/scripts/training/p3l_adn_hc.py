@@ -23,7 +23,7 @@ if __name__ == '__main__':
         max_steps=1000,
         max_dist_force=None,
         task_args=dict(consider_velocities=False),
-        positionTasks=False,
+        positionTasks=True,
         checkJointLimits=True,
         collisionAvoidanceIK=True,
         observeVelocities=False,
@@ -36,7 +36,7 @@ if __name__ == '__main__':
         observeGoalDistance=True,
     )
     env = Planar3LinkIKSim(**env_hparams)
-    env = ActNormWrapper(env)
+    # env = ActNormWrapper(env)
     # eub = {
     #     'GD_DS0': 2.,
     #     'GD_DS1': 2.,
@@ -61,7 +61,7 @@ if __name__ == '__main__':
         pop_size=10*policy.num_param,
         expl_factor=1.05,
         num_rollouts=1,
-        expl_std_init=1.5,
+        expl_std_init=0.5,
         num_sampler_envs=4,
     )
     algo = HCNormal(ex_dir, env, policy, **algo_hparam)

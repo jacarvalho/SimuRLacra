@@ -74,18 +74,25 @@ protected:
         {
             // Create the action model
             auto amIK = new AMIKGeneric(graph);
+            std::vector<TaskGenericIK*> tasks;
 
-            // Check if the MPs are defined on position or task level
+            // Check if the tasks are defined on position or task level. Adapt their parameters if desired.
             if (properties->getPropertyBool("positionTasks", true))
             {
-                amIK->addTask(new TaskPosition1D("X", graph, effector, nullptr, nullptr));
-                amIK->addTask(new TaskPosition1D("Z", graph, effector, nullptr, nullptr));
+                tasks.emplace_back(new TaskPosition1D("X", graph, effector, nullptr, nullptr));
+                tasks.emplace_back(new TaskPosition1D("Z", graph, effector, nullptr, nullptr));
+                tasks[0]->resetParameter(Task::Parameters(-1.5, 1.5, 1.0, "X Position [m]"));
+                tasks[1]->resetParameter(Task::Parameters(0., 1.7, 1.0, "Z Position [m]"));
             }
             else
             {
-                amIK->addTask(new TaskVelocity1D("Xd", graph, effector, nullptr, nullptr));
-                amIK->addTask(new TaskVelocity1D("Zd", graph, effector, nullptr, nullptr));
+                tasks.emplace_back(new TaskVelocity1D("Xd", graph, effector, nullptr, nullptr));
+                tasks.emplace_back(new TaskVelocity1D("Zd", graph, effector, nullptr, nullptr));
             }
+
+            // Add the tasks
+            for (auto t : tasks)
+            { amIK->addTask(t); }
 
             return amIK;
         }
