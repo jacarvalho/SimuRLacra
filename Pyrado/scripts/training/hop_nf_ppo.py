@@ -1,12 +1,12 @@
 """
-Train an agent to solve the Hopper environment using Proximal Policy Optimization.
+Train an agent to solve the Hopper environment using Neural Fields and Proximal Policy Optimization.
 """
 import torch as to
 
 from pyrado.algorithms.ppo import PPO
 from pyrado.algorithms.advantage import GAE
 from pyrado.environment_wrappers.action_normalization import ActNormWrapper
-from pyrado.policies.adn import ADNPolicy, pd_capacity_21
+from pyrado.policies.neural_fields import NFPolicy
 from pyrado.spaces import ValueFunctionSpace
 from pyrado.environments.mujoco.openai_hopper import HopperSim
 from pyrado.logger.experiment import setup_experiment, save_list_of_dicts_to_yaml
@@ -16,7 +16,7 @@ from pyrado.utils.data_types import EnvSpec
 
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
-    ex_dir = setup_experiment(HopperSim.name, PPO.name, 'adn_lin', seed=1001)
+    ex_dir = setup_experiment(HopperSim.name, PPO.name, 'nf_lin', seed=1001)
 
     # Environment
     env_hparams = dict()
@@ -29,13 +29,15 @@ if __name__ == '__main__':
         #               output_size=env.act_space.flat_dim,
         #               hidden_sizes=[32, 32],
         #               hidden_nonlin=to.tanh),
+        hidden_size=3,
+        conv_out_channels=1,
+        conv_kernel_size=3,
+        conv_padding_mode='circular',
+        activation_nonlin=to.tanh,
         tau_init=1.,
         tau_learnable=True,
-        capacity_learnable=False,
-        activation_nonlin=to.tanh,
-        potentials_dyn_fcn=pd_capacity_21,
     )
-    policy = ADNPolicy(spec=env.spec, dt=env.dt, **policy_hparam)
+    policy = NFPolicy(spec=env.spec, dt=env.dt, **policy_hparam)
 
     # Critic
     value_fcn_hparam = dict(hidden_sizes=[64, 64], hidden_nonlin=to.tanh)
@@ -61,7 +63,7 @@ if __name__ == '__main__':
         batch_size=512,
         max_grad_norm=1.,
         lr=3e-4,
-        num_sampler_envs=12,
+        num_sampler_envs=6,
     )
     algo = PPO(ex_dir, env, policy, critic, **algo_hparam)
 

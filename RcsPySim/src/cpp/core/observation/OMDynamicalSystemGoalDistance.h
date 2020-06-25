@@ -1,5 +1,5 @@
-#ifndef _OMGOALDISTANCE_H_
-#define _OMGOALDISTANCE_H_
+#ifndef _OMDYNAMICALSYSTEMGOALDISTANCE_H_
+#define _OMDYNAMICALSYSTEMGOALDISTANCE_H_
 
 #include "ObservationModel.h"
 #include "../action/AMTaskActivation.h"
@@ -11,8 +11,8 @@ namespace Rcs
 class ControllerBase;
 
 /**
- * ObservationModel wrapping multiple AMTaskActivation to compute the distances to the individuals goals but not
- * the rate of change of these goal distances.
+ * ObservationModel wrapping multiple AMTaskActivation to compute the distances to the individuals goals of the
+ * dynamical systems but not the rate of change of these goal distances.
  */
 class OMGoalDistance : public ObservationModel
 {
@@ -52,4 +52,4 @@ private:
 
 } /* namespace Rcs */
 
-#endif /* _OMGOALDISTANCE_H_ */
+#endif /* _OMDYNAMICALSYSTEMGOALDISTANCE_H_ */

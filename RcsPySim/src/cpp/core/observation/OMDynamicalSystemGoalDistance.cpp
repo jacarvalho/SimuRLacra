@@ -1,4 +1,4 @@
-#include "OMGoalDistance.h"
+#include "OMDynamicalSystemGoalDistance.h"
 #include "../action/AMTaskActivation.h"
 #include "../action/ActionModelIK.h"
 #include "../util/eigen_matnd.h"

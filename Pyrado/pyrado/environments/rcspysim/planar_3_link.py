@@ -184,8 +184,16 @@ class Planar3LinkIKSim(Planar3LinkSim, Serializable):
         Constructor
 
         :param kwargs: keyword arguments forwarded to `RcsSim`
+                       positionTasks: bool = True,
                        checkJointLimits: bool = False,
                        collisionAvoidanceIK: bool = True,
+                       observeVelocities: bool = True,
+                       observeForceTorque: bool = True,
+                       observeCollisionCost: bool = False,
+                       observePredictedCollisionCost: bool = False,
+                       observeManipulabilityIndex: bool = False,
+                       observeCurrentManipulability: bool = True,
+                       observeGoalDistance: bool = False,
         """
         Serializable._init(self, locals())
 
@@ -193,7 +201,7 @@ class Planar3LinkIKSim(Planar3LinkSim, Serializable):
         super().__init__(
             task_args=dict() if task_args is None else task_args,
             actionModelType='ik',
-            positionTasks=True,
+            positionTasks=kwargs.pop('positionTasks', True),
             **kwargs
         )
 

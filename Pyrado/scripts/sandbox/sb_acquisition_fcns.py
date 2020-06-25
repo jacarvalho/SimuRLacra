@@ -83,9 +83,9 @@ if __name__ == '__main__':
 
         # Plot the model
         fig = plt.figure(figsize=(8, 6))
-        gs = gridspec.GridSpec(2, 1, height_ratios=[2, 1])
-        ax_gp = plt.subplot(gs[0])
-        ax_acq = plt.subplot(gs[1])
+        gs = fig.add_gridspec(2, 1, height_ratios=[2, 1])
+        ax_gp = fig.add_subplot(gs[0])
+        ax_acq = fig.add_subplot(gs[1])
         X_test = to.linspace(x_min, x_max, 501)
         X_test_raw = to.linspace(x_min_raw, x_max_raw, 501)
 

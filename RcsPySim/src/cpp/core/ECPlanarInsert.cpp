@@ -8,7 +8,7 @@
 #include "observation/OMCombined.h"
 #include "observation/OMJointState.h"
 #include "observation/OMPartial.h"
-#include "observation/OMGoalDistance.h"
+#include "observation/OMDynamicalSystemGoalDistance.h"
 #include "observation/OMForceTorque.h"
 #include "observation/OMCollisionCost.h"
 #include "observation/OMCollisionCostPrediction.h"
@@ -60,11 +60,25 @@ protected:
         {
             // Create the action model
             auto amIK = new AMIKGeneric(graph);
+            std::vector<TaskGenericIK*> tasks;
 
-            // Define velocity level Rcs tasks
-            amIK->addTask(new TaskVelocity1D("Xd", graph, effector, nullptr, nullptr));
-            amIK->addTask(new TaskVelocity1D("Zd", graph, effector, nullptr, nullptr));
-            amIK->addTask(new TaskOmega1D("Bd", graph, effector, nullptr, nullptr));
+            // Check if the tasks are defined on position or task level. Adapt their parameters if desired.
+            if (properties->getPropertyBool("positionTasks", false))
+            {
+                throw std::invalid_argument("Position tasks based are not implemented for PlanarInsert!");
+            }
+            else
+            {
+                tasks.emplace_back(new TaskVelocity1D("Xd", graph, effector, nullptr, nullptr));
+                tasks.emplace_back(new TaskVelocity1D("Zd", graph, effector, nullptr, nullptr));
+                tasks.emplace_back(new TaskOmega1D("Bd", graph, effector, nullptr, nullptr));
+                tasks[0]->resetParameter(Task::Parameters(-0.5, 0.5, 1.0, "X Velocity [m/s]"));
+                tasks[1]->resetParameter(Task::Parameters(-0.5, 0.5, 1.0, "Z Velocity [m/s]"));
+            }
+
+            // Add the tasks
+            for (auto t : tasks)
+            { amIK->addTask(t); }
 
             return amIK;
         }
@@ -132,7 +146,7 @@ protected:
         auto omLin = new OMBodyStateLinear(graph, "Effector", "GroundPlane"); // Base center is above ground level
         omLin->setMinState(-0.2); // [m] applied to X and Z
         omLin->setMaxState(1.5); // [m] applied to X and Z
-        omLin->setMaxVelocity(0.5); // [m/s]
+        omLin->setMaxVelocity(1.); // [m/s]
         fullState->addPart(OMPartial::fromMask(omLin, {true, false, true}));  // mask out y axis
 
         auto omAng = new OMBodyStateAngular(graph, "Effector", "GroundPlane"); // Base center is above ground level

@@ -50,7 +50,7 @@ if __name__ == '__main__':
         #               hidden_nonlin=to.tanh),
         tau_init=5.,
         tau_learnable=True,
-        output_nonlin=[to.tanh, to.tanh, to.tanh, to.tanh, to.tanh, to.sigmoid],
+        activation_nonlin=[to.tanh, to.tanh, to.tanh, to.tanh, to.tanh, to.sigmoid],
         # init_param_kwargs=dict(sigmoid_nlin=True),
         potentials_dyn_fcn=pd_cubic,  # pd_cubic, pd_capacity_21_abs
     )

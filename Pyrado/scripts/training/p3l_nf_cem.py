@@ -1,19 +1,18 @@
 """
-Train an agent to solve the Planar-3-Link task using Activation Dynamics Networks and Natural Evolution Strategies.
+Train an agent to solve the Planar-3-Link task using Neural Fields and Hill Climbing.
 """
 import torch as to
 
-from pyrado.algorithms.nes import NES
+from pyrado.algorithms.cem import CEM
 from pyrado.environment_wrappers.observation_normalization import ObsNormWrapper
-from pyrado.environments.rcspysim.planar_3_link import Planar3LinkTASim
+from pyrado.environments.rcspysim.planar_3_link import Planar3LinkIKSim
 from pyrado.logger.experiment import setup_experiment, save_list_of_dicts_to_yaml
-from pyrado.policies.adn import ADNPolicy, pd_cubic, pd_capacity_21
-from pyrado.policies.fnn import FNN
+from pyrado.policies.neural_fields import NFPolicy
 
 
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
-    ex_dir = setup_experiment(Planar3LinkTASim.name, f'adn-{NES.name}', 'obsnorm', seed=1001)
+    ex_dir = setup_experiment(Planar3LinkIKSim.name, f'nf-{CEM.name}', '', seed=1001)
 
     # Environment
     env_hparams = dict(
@@ -22,7 +21,6 @@ if __name__ == '__main__':
         max_steps=1000,
         task_args=dict(consider_velocities=True),
         max_dist_force=None,
-        position_mps=True,
         taskCombinationMethod='sum',
         checkJointLimits=True,
         collisionAvoidanceIK=True,
@@ -32,10 +30,10 @@ if __name__ == '__main__':
         observePredictedCollisionCost=False,
         observeManipulabilityIndex=False,
         observeCurrentManipulability=True,
-        observeGoalDistance=False,
+        observeGoalDistance=True,
         observeDynamicalSystemDiscrepancy=False,
     )
-    env = Planar3LinkTASim(**env_hparams)
+    env = Planar3LinkIKSim(**env_hparams)
     eub = {
         'GD_DS0': 2.,
         'GD_DS1': 2.,
@@ -45,30 +43,31 @@ if __name__ == '__main__':
 
     # Policy
     policy_hparam = dict(
-        obs_layer=FNN(input_size=env.obs_space.flat_dim,
-                      output_size=env.act_space.flat_dim,
-                      hidden_sizes=[32, 32],
-                      hidden_nonlin=to.tanh),
-        tau_init=5.,
+        hidden_size=10,
+        conv_out_channels=1,
+        # conv_kernel_size=5,
+        conv_padding_mode='circular',
         activation_nonlin=to.sigmoid,
-        potentials_dyn_fcn=pd_cubic,
-        init_param_kwargs=dict(sigmoid_nlin=True),
+        tau_init=1e-1,
+        tau_learnable=True,
     )
-    policy = ADNPolicy(spec=env.spec, dt=env.dt, **policy_hparam)
+    policy = NFPolicy(spec=env.spec, dt=env.dt, **policy_hparam)
 
     # Algorithm
     algo_hparam = dict(
-        max_iter=5000,
-        pop_size=None,
+        max_iter=50,
+        pop_size=policy.num_param,
         num_rollouts=1,
-        eta_mean=1.,
-        eta_std=None,
+        num_is_samples=policy.num_param//10,
         expl_std_init=1.0,
+        expl_std_min=0.02,
+        extra_expl_std_init=1.0,
+        extra_expl_decay_iter=25,
+        full_cov=False,
         symm_sampling=False,
-        transform_returns=True,
-        num_sampler_envs=12,
+        num_sampler_envs=6,
     )
-    algo = NES(ex_dir, env, policy, **algo_hparam)
+    algo = CEM(ex_dir, env, policy, **algo_hparam)
 
     # Save the hyper-parameters
     save_list_of_dicts_to_yaml([

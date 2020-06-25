@@ -5,7 +5,7 @@
 #include "observation/OMCombined.h"
 #include "observation/OMBodyStateLinear.h"
 #include "observation/OMBodyStateAngular.h"
-#include "observation/OMGoalDistance.h"
+#include "observation/OMDynamicalSystemGoalDistance.h"
 #include "observation/OMForceTorque.h"
 #include "observation/OMPartial.h"
 #include "observation/OMCollisionCost.h"

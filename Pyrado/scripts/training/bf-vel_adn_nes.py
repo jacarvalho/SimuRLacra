@@ -44,7 +44,7 @@ if __name__ == '__main__':
         tau_init=2.,
         tau_learnable=True,
         capacity_learnable=True,
-        output_nonlin=to.tanh,
+        activation_nonlin=to.tanh,
         potentials_dyn_fcn=pd_capacity_21_abs,
     )
     policy = ADNPolicy(spec=env.spec, dt=env.dt, **policy_hparam)

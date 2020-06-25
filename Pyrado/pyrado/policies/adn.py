@@ -135,7 +135,7 @@ class ADNPolicy(RecurrentPolicy):
     def __init__(self,
                  spec: EnvSpec,
                  dt: float,
-                 output_nonlin: [Callable, Sequence[Callable]],
+                 activation_nonlin: [Callable, Sequence[Callable]],
                  potentials_dyn_fcn: Callable,
                  obs_layer: [nn.Module, Policy] = None,
                  tau_init: float = 2.,
@@ -151,8 +151,8 @@ class ADNPolicy(RecurrentPolicy):
 
         :param spec: environment specification
         :param dt: time step size
-        :param output_nonlin: nonlinearity for output layer, highly suggested functions:
-                              `to.sigmoid` for position `to.tasks`, tanh for velocity tasks
+        :param activation_nonlin: nonlinearity for output layer, highly suggested functions:
+                                  `to.sigmoid` for position `to.tasks`, tanh for velocity tasks
         :param potentials_dyn_fcn: function to compute the derivative of the neurons' potentials
         :param obs_layer: specify a custom Pytorch Module;
                           by default (`None`) a linear layer with biases is used
@@ -168,17 +168,17 @@ class ADNPolicy(RecurrentPolicy):
         super().__init__(spec, use_cuda)
         if not isinstance(dt, (float, int)):
             raise pyrado.TypeErr(given=dt, expected_type=float)
+        if not callable(activation_nonlin):
+            if activation_nonlin is not None and not len(activation_nonlin) == spec.act_space.flat_dim:
+                raise pyrado.ShapeErr(given=activation_nonlin, expected_match=spec.act_space.shape)
 
         # Store inputs
         self._dt = to.tensor([dt], dtype=to.get_default_dtype())
         self._input_size = spec.obs_space.flat_dim  # observations include goal distance, prediction error, ect.
         self._hidden_size = spec.act_space.flat_dim  # hidden_size = output_size = num actions
         self._num_recurrent_layers = 1
-        if not callable(output_nonlin):
-            if output_nonlin is not None and not len(output_nonlin) == spec.act_space.flat_dim:
-                raise pyrado.ShapeErr(given=output_nonlin, expected_match=spec.act_space.shape)
-        self._output_nonlin = output_nonlin
-        self._potentials_dot_fcn = potentials_dyn_fcn
+        self.activation_nonlin = activation_nonlin
+        self.potentials_dot_fcn = potentials_dyn_fcn
 
         # Create the RNN's layers
         self.obs_layer = nn.Linear(self._input_size, self._hidden_size, bias=True) if obs_layer is None else obs_layer
@@ -192,7 +192,8 @@ class ADNPolicy(RecurrentPolicy):
         self._potentials = to.zeros(self._hidden_size)
         self._init_potentials = to.zeros_like(self._potentials)
         self._potentials_max = 100.  # clip potentials symmetrically
-        self._stimuli = to.zeros_like(self._potentials)
+        self._stimuli_external = to.zeros_like(self._potentials)
+        self._stimuli_internal = to.zeros_like(self._potentials)
 
         # Potential dynamics
         # time constant
@@ -211,13 +212,13 @@ class ADNPolicy(RecurrentPolicy):
         # capacity
         self._capacity_learnable = capacity_learnable
         if potentials_dyn_fcn in [pd_capacity_21, pd_capacity_21_abs, pd_capacity_32, pd_capacity_32_abs]:
-            if self._output_nonlin is to.sigmoid:
+            if self.activation_nonlin is to.sigmoid:
                 # sigmoid(7.) approx 0.999
                 self._log_capacity_init = to.log(to.tensor([7.], dtype=to.get_default_dtype()))
                 self._log_capacity = nn.Parameter(self._log_capacity_init, requires_grad=True) \
                     if self._capacity_learnable else self._log_capacity_init
                 self._init_potentials = -7.*to.ones_like(self._potentials)
-            elif self._output_nonlin is to.tanh:
+            elif self.activation_nonlin is to.tanh:
                 # tanh(3.8) approx 0.999
                 self._log_capacity_init = to.log(to.tensor([3.8], dtype=to.get_default_dtype()))
                 self._log_capacity = nn.Parameter(self._log_capacity_init, requires_grad=True) \
@@ -237,7 +238,7 @@ class ADNPolicy(RecurrentPolicy):
     def hidden_size(self) -> int:
         """ Get the total number of hidden parameters is the hidden layer size times the hidden layer count. """
         assert self._num_recurrent_layers == 1
-        return self._num_recurrent_layers*self._hidden_size + self._hidden_size  # added once for the potentials
+        return self._num_recurrent_layers*self._hidden_size + self._hidden_size  # previous potentials and actions
 
     @property
     def potentials(self) -> to.Tensor:
@@ -245,9 +246,20 @@ class ADNPolicy(RecurrentPolicy):
         return self._potentials
 
     @property
-    def stimuli(self) -> to.Tensor:
-        """ Get the neurons' (external) stimuli. This is used for recording during a rollout """
-        return self._stimuli
+    def stimuli_external(self) -> to.Tensor:
+        """
+        Get the neurons' external stimuli, resulting from the current observations.
+        This is used for recording during a rollout.
+        """
+        return self._stimuli_external
+
+    @property
+    def stimuli_internal(self) -> to.Tensor:
+        """
+        Get the neurons' internal stimuli, resulting from the previous activations of the neurons.
+        This is used for recording during a rollout.
+        """
+        return self._stimuli_internal
 
     @property
     def tau(self) -> to.Tensor:
@@ -274,10 +286,10 @@ class ADNPolicy(RecurrentPolicy):
         """
         Compute the derivative of the neurons' potentials per time step.
 
-        :param stimuli: sum of external stimuli at the current point in time
+        :param stimuli: sum of external and internal stimuli at the current point in time
         :return: time derivative of the potentials
         """
-        return self._potentials_dot_fcn(self._potentials, stimuli, self.tau, kappa=self.kappa, capacity=self.capacity)
+        return self.potentials_dot_fcn(self._potentials, stimuli, self.tau, kappa=self.kappa, capacity=self.capacity)
 
     def init_param(self, init_values: to.Tensor = None, **kwargs):
         if init_values is None:
@@ -294,11 +306,11 @@ class ADNPolicy(RecurrentPolicy):
             if self._tau_learnable:
                 self._log_tau.data = self._log_tau_init
             # Initialize cubic decay if modifiable
-            if self._potentials_dot_fcn == pd_cubic:
+            if self.potentials_dot_fcn == pd_cubic:
                 if self._kappa_learnable:
                     self._log_kappa.data = self._log_kappa_init
             # Initialize capacity if modifiable
-            elif self._potentials_dot_fcn in [pd_capacity_21, pd_capacity_21_abs, pd_capacity_32, pd_capacity_32_abs]:
+            elif self.potentials_dot_fcn in [pd_capacity_21, pd_capacity_21_abs, pd_capacity_32, pd_capacity_32_abs]:
                 if self._capacity_learnable:
                     self._log_capacity.data = self._log_capacity_init
 
@@ -342,66 +354,58 @@ class ADNPolicy(RecurrentPolicy):
 
         # Don't track the gradient through the potentials
         potentials = potentials.detach()
+        self._potentials = potentials.clone()  # saved in rollout()
 
-        # Clip the potentials, and save them for later use
+        # Clip the potentials
         potentials = potentials.clamp(min=-self._potentials_max, max=self._potentials_max)
-        self._potentials = potentials
 
         # ----------------
         # Activation Logic
         # ----------------
 
         # Combine the current input and the hidden variables from the last step
-        stimulus_obs = self.obs_layer(obs)
-        stimulus_prev_act = self.prev_act_layer(prev_act)
-        self._stimuli = stimulus_obs + stimulus_prev_act
+        self._stimuli_external = self.obs_layer(obs)
+        self._stimuli_internal = self.prev_act_layer(prev_act)
 
         # Potential dynamics forward integration
-        potentials = potentials + self._dt*self.potentials_dot(self._stimuli)
+        potentials = potentials + self._dt*self.potentials_dot(self._stimuli_external + self._stimuli_internal)
 
-        # Optionally scale the potentials
+        # Optionally scale the potentials (individually)
         act = self.scaling_layer(potentials) if self.scaling_layer is not None else potentials
 
         # Pass the potentials through a nonlinearity
-        if self._output_nonlin is not None:
-            if isinstance(self._output_nonlin, (list, tuple)):
+        if self.activation_nonlin is not None:
+            if isinstance(self.activation_nonlin, (list, tuple)):
                 for i in range(len(act)):
                     # Individual nonlinearity for each dimension
-                    act[i] = self._output_nonlin[i](act[i])
+                    act[i] = self.activation_nonlin[i](act[i])
             else:
                 # Same nonlinearity for all dimensions
-                act = self._output_nonlin(act)
+                act = self.activation_nonlin(act)
 
-        # Since we want that this kind of Policy only returns activations in [0, 1] or in [-1, 1],
-        # we clip the actions right here
-        if self._output_nonlin is not to.sigmoid or self._output_nonlin is not to.tanh:
-            act = act.clamp(min=-1., max=1.)
-
-        # Pack hidden state
-        prev_act = act.clone()
-        hidden_out = self._pack_hidden(prev_act, potentials, batch_size)
+        # Pack hidden state (act becomes prev_act of next step)
+        hidden_out = self._pack_hidden(act, potentials, batch_size)  # calls to.cat(), thus no cloning necessary
 
         # Return the next action and store the last one as a hidden variable
         return act, hidden_out
 
     def _init_hidden_unpacked(self, batch_size: int = None):
         """ Get initial hidden variables in unpacked state """
-        assert self._num_recurrent_layers == 1
         # Obtain values
-        hidden = to.zeros(self._num_recurrent_layers*self._hidden_size)
+        prev_act = to.zeros(self._num_recurrent_layers*self._hidden_size)  # as many potential-based neurons as actions
         potentials = self._init_potentials.clone()
 
         # Batch if needed
         if batch_size is not None:
-            hidden = hidden.unsqueeze(0).expand(batch_size, -1)
+            prev_act = prev_act.unsqueeze(0).expand(batch_size, -1)
             potentials = potentials.unsqueeze(0).expand(batch_size, -1)
 
-        return hidden, potentials
+        return prev_act, potentials
 
     def _unpack_hidden(self, packed: to.Tensor, batch_size: int = None):
         """ Unpack hidden values from argument """
         n_rh = self._num_recurrent_layers*self._hidden_size
-        # Split into hidden and potentials
+        # Split into previous actions and potentials
         return packed[..., :n_rh], packed[..., n_rh:]
 
     def _pack_hidden(self, prev_act: to.Tensor, potentials: to.Tensor, batch_size: int = None):

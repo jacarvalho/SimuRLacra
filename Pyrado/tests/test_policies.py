@@ -76,7 +76,7 @@ def grupol_bobspec(default_bob):
 @pytest.fixture(scope='function',
                 ids=['adnpol_bob_default'])
 def adnpol_bobspec(default_bob):
-    return ADNPolicy(spec=default_bob.spec, dt=default_bob.dt, output_nonlin=to.sigmoid,
+    return ADNPolicy(spec=default_bob.spec, dt=default_bob.dt, activation_nonlin=to.sigmoid,
                      potentials_dyn_fcn=pd_cubic)
 
 

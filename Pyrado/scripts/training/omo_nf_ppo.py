@@ -1,41 +1,40 @@
 """
-Train an agent to solve the Hopper environment using Proximal Policy Optimization.
+Train an agent to solve the Box Shelving task task using Activation Dynamics Networks and Cross-Entropy Method.
 """
+import numpy as np
 import torch as to
 
-from pyrado.algorithms.ppo import PPO
 from pyrado.algorithms.advantage import GAE
+from pyrado.algorithms.ppo import PPO
 from pyrado.environment_wrappers.action_normalization import ActNormWrapper
-from pyrado.policies.adn import ADNPolicy, pd_capacity_21
-from pyrado.spaces import ValueFunctionSpace
-from pyrado.environments.mujoco.openai_hopper import HopperSim
+from pyrado.environments.pysim.one_mass_oscillator import OneMassOscillatorSim
 from pyrado.logger.experiment import setup_experiment, save_list_of_dicts_to_yaml
 from pyrado.policies.fnn import FNNPolicy
+from pyrado.policies.neural_fields import NFPolicy
+from pyrado.spaces import ValueFunctionSpace
 from pyrado.utils.data_types import EnvSpec
 
 
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
-    ex_dir = setup_experiment(HopperSim.name, PPO.name, 'adn_lin', seed=1001)
+    ex_dir = setup_experiment(OneMassOscillatorSim.name, f'nf-{PPO.name}', 'const-lin', seed=1001)
 
     # Environment
-    env_hparams = dict()
-    env = HopperSim(**env_hparams)
+    env_hparams = dict(dt=1/50., max_steps=200)
+    env = OneMassOscillatorSim(**env_hparams, task_args=dict(state_des=np.array([0.5, 0])))
     env = ActNormWrapper(env)
 
     # Policy
     policy_hparam = dict(
-        # obs_layer=FNN(input_size=env.obs_space.flat_dim,
-        #               output_size=env.act_space.flat_dim,
-        #               hidden_sizes=[32, 32],
-        #               hidden_nonlin=to.tanh),
-        tau_init=1.,
-        tau_learnable=True,
-        capacity_learnable=False,
+        hidden_size=5,
+        conv_out_channels=1,
+        conv_kernel_size=5,
+        conv_padding_mode='circular',
         activation_nonlin=to.tanh,
-        potentials_dyn_fcn=pd_capacity_21,
+        tau_init=1e-1,
+        tau_learnable=True,
     )
-    policy = ADNPolicy(spec=env.spec, dt=env.dt, **policy_hparam)
+    policy = NFPolicy(spec=env.spec, dt=env.dt, **policy_hparam)
 
     # Critic
     value_fcn_hparam = dict(hidden_sizes=[64, 64], hidden_nonlin=to.tanh)
@@ -60,8 +59,8 @@ if __name__ == '__main__':
         eps_clip=0.15,
         batch_size=512,
         max_grad_norm=1.,
-        lr=3e-4,
-        num_sampler_envs=12,
+        lr=5e-4,
+        num_sampler_envs=8,
     )
     algo = PPO(ex_dir, env, policy, critic, **algo_hparam)
 
@@ -69,10 +68,9 @@ if __name__ == '__main__':
     save_list_of_dicts_to_yaml([
         dict(env=env_hparams, seed=ex_dir.seed),
         dict(policy=policy_hparam),
-        dict(critic=critic_hparam, value_fcn=value_fcn_hparam),
         dict(algo=algo_hparam, algo_name=algo.name)],
         ex_dir
     )
 
     # Jeeeha
-    algo.train(seed=ex_dir.seed, snapshot_mode='best')
+    algo.train(snapshot_mode='latest', seed=ex_dir.seed)

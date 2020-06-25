@@ -5,7 +5,7 @@
 #include "observation/OMCombined.h"
 #include "observation/OMBodyStateLinear.h"
 #include "observation/OMBodyStateAngular.h"
-#include "observation/OMGoalDistance.h"
+#include "observation/OMDynamicalSystemGoalDistance.h"
 #include "observation/OMForceTorque.h"
 #include "observation/OMPartial.h"
 #include "observation/OMCollisionCost.h"
@@ -91,16 +91,33 @@ protected:
         {
             // Create the action model
             auto amIK = new AMIKGeneric(graph);
+            std::vector<TaskGenericIK*> tasks;
 
-            // Define position level Rcs tasks
-            // Left
-            amIK->addTask(new TaskPosition1D("Y", graph, leftCP, refBody, refFrame));
-            amIK->addTask(new TaskPosition1D("Z", graph, leftCP, refBody, refFrame));
-//            amIK->addTask(new TaskDistance1D(graph, leftCP, box, 1));  // Y
-            // Right
-            amIK->addTask(new TaskPosition1D("Y", graph, rightCP, refBody, refFrame));
-            amIK->addTask(new TaskPosition1D("Z", graph, rightCP, refBody, refFrame));
-//            amIK->addTask(new TaskDistance1D(graph, rightCP, box, 1));  // Y
+            // Check if the tasks are defined on position or task level. Adapt their parameters if desired.
+            if (properties->getPropertyBool("positionTasks", true))
+            {
+                // Left
+                amIK->addTask(new TaskPosition1D("Y", graph, leftCP, refBody, refFrame));
+                amIK->addTask(new TaskPosition1D("Z", graph, leftCP, refBody, refFrame));
+//                amIK->addTask(new TaskDistance1D(graph, leftCP, box, 1));  // Y
+                // Right
+                amIK->addTask(new TaskPosition1D("Y", graph, rightCP, refBody, refFrame));
+                amIK->addTask(new TaskPosition1D("Z", graph, rightCP, refBody, refFrame));
+//                amIK->addTask(new TaskDistance1D(graph, rightCP, box, 1));  // Y
+            }
+            else
+            {
+                // Left
+                amIK->addTask(new TaskVelocity1D("Yd", graph, leftCP, refBody, refFrame));
+                amIK->addTask(new TaskVelocity1D("Zd", graph, leftCP, refBody, refFrame));
+                // Right
+                amIK->addTask(new TaskVelocity1D("Yd", graph, rightCP, refBody, refFrame));
+                amIK->addTask(new TaskVelocity1D("Zd", graph, rightCP, refBody, refFrame));
+            }
+
+            // Add the tasks
+            for (auto t : tasks)
+            { amIK->addTask(t); }
 
             return amIK;
         }

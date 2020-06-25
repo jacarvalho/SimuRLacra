@@ -36,7 +36,7 @@ if __name__ == '__main__':
                 BoxSpace(-1, 1, 2),
             ),
             dt=0.01,
-            output_nonlin=to.sigmoid,
+            activation_nonlin=to.sigmoid,
             potentials_dyn_fcn=pd_capacity_21
         )
     else:

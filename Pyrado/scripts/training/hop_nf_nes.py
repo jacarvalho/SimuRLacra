@@ -1,5 +1,5 @@
 """
-Train an agent to solve the Half-Cheetah task using Activation Dynamics Networks and Natural Evolution Strategies.
+Train an agent to solve the Half-Cheetah task using Neural Fields and Natural Evolution Strategies.
 """
 import torch as to
 
@@ -7,13 +7,12 @@ from pyrado.algorithms.nes import NES
 from pyrado.environment_wrappers.action_normalization import ActNormWrapper
 from pyrado.environments.mujoco.openai_hopper import HopperSim
 from pyrado.logger.experiment import setup_experiment, save_list_of_dicts_to_yaml
-from pyrado.policies.adn import ADNPolicy, pd_cubic, pd_capacity_21_abs, pd_capacity_32_abs
-from pyrado.policies.fnn import FNN
+from pyrado.policies.neural_fields import NFPolicy
 
 
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
-    ex_dir = setup_experiment(HopperSim.name, f'adn-{NES.name}', 'lin', seed=1002)
+    ex_dir = setup_experiment(HopperSim.name, f'nf-{NES.name}', 'lin', seed=1002)
 
     # Environment
     env_hparams = dict()
@@ -22,23 +21,19 @@ if __name__ == '__main__':
 
     # Policy
     policy_hparam = dict(
-        # obs_layer=FNN(input_size=env.obs_space.flat_dim,
-        #               output_size=env.act_space.flat_dim,
-        #               hidden_sizes=[32, 32],
-        #               hidden_nonlin=to.tanh),
+        hidden_size=3,
+        conv_out_channels=1,
+        conv_kernel_size=3,
+        conv_padding_mode='circular',
+        activation_nonlin=to.tanh,
         tau_init=1.,
         tau_learnable=True,
-        kappa_learnable=True,
-        capacity_learnable=False,
-        activation_nonlin=to.tanh,
-        potentials_dyn_fcn=pd_capacity_21_abs,
-        scaling_layer=False,
     )
-    policy = ADNPolicy(spec=env.spec, dt=env.dt, **policy_hparam)
+    policy = NFPolicy(spec=env.spec, dt=env.dt, **policy_hparam)
 
     # Algorithm
     algo_hparam = dict(
-        max_iter=5000,
+        max_iter=10000,
         pop_size=100,
         num_rollouts=4,
         eta_mean=2.,
@@ -46,7 +41,7 @@ if __name__ == '__main__':
         expl_std_init=2.0,
         symm_sampling=False,
         transform_returns=True,
-        num_sampler_envs=8,
+        num_sampler_envs=6,
     )
     algo = NES(ex_dir, env, policy, **algo_hparam)
 
