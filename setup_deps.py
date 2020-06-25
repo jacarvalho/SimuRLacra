@@ -410,7 +410,7 @@ def setup_pytorch_based():
     sp.check_call([sys.executable, "-m", "pip", "install", "-U", "--no-deps", "pyro-ppl"])
 
 
-def _setup_cppsctp():
+def setup_cppsctp():
     # Get it all GitLab
     if not osp.exists(cppsctp_dir):
         mkdir_p(cppsctp_dir)
@@ -447,7 +447,7 @@ def setup_sl():
         print("Dependencies have NOT been installed.")
 
     # Set up custom IAS dependency
-    _setup_cppsctp()
+    setup_scppsctp()
 
     # Get it all GitLab
     if not osp.exists(sl_dir):
@@ -465,16 +465,19 @@ def setup_sl():
 
 def setup_robcom():
     # Set up dependency
-    _setup_cppsctp()
+    setup_cppsctp()
 
     # Get it all GitLab
     if not osp.exists(robcom_dir):
         mkdir_p(robcom_dir)
         sp.check_call(["git", "clone", robcom_git_repo, robcom_dir])
 
-    # Install it suing it's setup script
+    # Install it suing its setup script
     env = os.environ.copy()
     env.update(env_vars)
+    env["BUILD_ROBCIMPYTHON_WRAPPER"] = "ON"
+    env["IAS_DIR"] = ias_dir
+    env["INSTALL_IN_IAS_DIR"] = "ON"
     sp.check_call([sys.executable, "setup.py", "install", "--user"], cwd=robcom_dir, env=env)
 
 
