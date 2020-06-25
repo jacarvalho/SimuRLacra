@@ -358,14 +358,14 @@ public:
         {
         linesOut.emplace_back(
             string_format("end-eff pos:   [% 1.3f,% 1.3f] m  end-eff vel:   [% 1.2f,% 1.2f] m/s",
-                          obs->ele[omLin.pos], obs->ele[omLin.pos + 2],
+                          obs->ele[omLin.pos], obs->ele[omLin.pos + 1],
                           obs->ele[sd + omLin.vel], obs->ele[sd + omLin.vel + 1]));
         }
         else if (omLinPos)
         {
             linesOut.emplace_back(
                 string_format("end-eff pos:   [% 1.3f,% 1.3f] m",
-                              obs->ele[omLinPos.pos], obs->ele[omLinPos.pos + 2]));
+                              obs->ele[omLinPos.pos], obs->ele[omLinPos.pos + 1]));
         }
         
         auto omGD = observationModel->findOffsets<OMGoalDistance>();

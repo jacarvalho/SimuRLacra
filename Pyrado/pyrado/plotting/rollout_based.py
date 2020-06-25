@@ -100,7 +100,7 @@ def plot_observations(ro: StepSequence, idcs_sel: Sequence[int] = None):
         fig, axs = plt.subplots(nrows=num_rows, ncols=num_cols, figsize=(num_cols*5, num_rows*3))
         fig.suptitle('Observations over Time')
         plt.subplots_adjust(hspace=.5)
-        colors = plt.get_cmap('tab20')(np.linspace(0, 1, dim_obs))
+        colors = plt.get_cmap('tab20')(np.linspace(0, 1, len(dim_obs)))
 
         if len(dim_obs) == 1:
             axs.plot(t, ro.observations[:-1, dim_obs[0]], label=_get_obs_label(ro, dim_obs[0]))
