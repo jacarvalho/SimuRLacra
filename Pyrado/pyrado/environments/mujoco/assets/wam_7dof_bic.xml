@@ -113,7 +113,7 @@ Credits to Pascal Klink, Kai Plöger, and OpenAI
 
         <body name="wam/shoulder_pitch_link" pos="0 0 0.184" quat="0.707107 -0.707107 0 0">
           <inertial pos="-0.00236983 -0.01542114 0.03105614" mass="3.87493756" fullinertia="0.02140958 0.01558906 0.01377875 0.00002461 -0.00027172 -0.00181920"/>
-          <joint name="wam/shoulder_pitch_joint" range="-1.985 1.985"/>
+          <joint name="wam/shoulder_pitch_joint" range="-1.985 1.985" frictionloss="[stiction_1]" />
           <geom class="viz" mesh="shoulder_pitch_link_fine"/>
           <geom class="col" mesh="shoulder_pitch_link_convex"/>
 
@@ -126,7 +126,7 @@ Credits to Pascal Klink, Kai Plöger, and OpenAI
 
             <body name="wam/forearm_link" pos="0.045 0 0.045" quat="0.707107 -0.707107 0 0">
               <inertial pos="0.00498512 -0.13271662 -0.00022942" mass="2.40016804" fullinertia="0.01491672 0.00780497 0.01968956 -0.00150604 -0.00001741 -0.00002109"/>
-              <joint name="wam/elbow_pitch_joint" range="-0.9 3.14159"/>
+              <joint name="wam/elbow_pitch_joint" range="-0.9 3.14159" frictionloss="[stiction_3]"/>
               <geom class="viz" mesh="elbow_link_fine"/>
               <geom class="col" mesh="elbow_link_convex"/>
               <geom class="viz" mesh="forearm_link_fine" pos="-.045 -0.0730 0" euler="1.57 0 0"/>
@@ -142,7 +142,7 @@ Credits to Pascal Klink, Kai Plöger, and OpenAI
 
                 <body name="wam/wrist_pitch_link" pos="0 0 0.3" quat="0.707107 -0.707107 0 0">
                   <inertial pos="-0.00012262 -0.02468336 -0.01703194" mass="0.41797364" fullinertia="0.00055516 0.00045358 0.00024367 -0.00000074 -0.00000061 -0.00004590"/>
-                  <joint name="wam/wrist_pitch_joint" range="-1.5707 1.5707"/>
+                  <joint name="wam/wrist_pitch_joint" range="-1.5707 1.5707" frictionloss="[stiction_5]"/>
                   <geom class="viz" mesh="wrist_pitch_link_fine" pos="0 0 0"/>
                   <geom class="col" mesh="wrist_pitch_link_convex_decomposition_p1"/>
                   <geom class="col" mesh="wrist_pitch_link_convex_decomposition_p2"/>
@@ -186,6 +186,8 @@ Credits to Pascal Klink, Kai Plöger, and OpenAI
 
                       <body name="B0" pos="0 -0.045 [pos_goal]" quat="0.707107 0 0 -0.707107">
                         <inertial pos="0 0 0" quat="0.707107 0 0.707107 0" mass="7.4927e-05" diaginertia="5.87e-10 5.87e-10 3.74635e-11" />
+                        <joint name="J0_0" class="rope_joint_y"/>
+                        <joint name="J1_0" class="rope_joint_z"/>
                         <geom name="G0" class="rope_geom"/>
                         <body name="B1" pos="[pos_capsule] 0 0">
                           <inertial pos="0 0 0" quat="0.707107 0 0.707107 0" mass="7.4927e-05" diaginertia="5.87e-10 5.87e-10 3.74635e-11" />

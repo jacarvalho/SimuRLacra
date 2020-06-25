@@ -159,6 +159,7 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
             rope_length=0.3,  # length of the rope [m] (previously 0.3103)
             ball_mass=0.021,  # mass of the ball [kg]
             joint_damping=0.05,  # damping of motor joints [N/s] (default value is small)
+            joint_stiction=0.1,  # dry friction coefficient of motor joints (reasonable values are 0.1 to 0.6)
         )
 
     def _create_spaces(self):
@@ -276,6 +277,7 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         # First replace special domain parameters
         cup_scale = domain_param.pop('cup_scale', None)
         rope_length = domain_param.pop('rope_length', None)
+        joint_stiction = domain_param.pop('joint_stiction', None)
 
         if cup_scale is not None:
             # See [1, l.93-96]
@@ -286,13 +288,18 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
             xml_model = xml_model.replace('[size_cup_inner]', str(cup_scale*0.03))
 
         if rope_length is not None:
-            # The rope consists of 29 capsules
-            xml_model = xml_model.replace('[pos_capsule]', str(rope_length/29))
+            # The rope consists of 30 capsules
+            xml_model = xml_model.replace('[pos_capsule]', str(rope_length/30))
             # Each joint is at the top of each capsule (therefore negative direction from center)
-            xml_model = xml_model.replace('[pos_capsule_joint]', str(-rope_length/58))
+            xml_model = xml_model.replace('[pos_capsule_joint]', str(-rope_length/60))
             # Pure visualization component
             xml_model = xml_model.replace('[size_capsule_geom]', str(rope_length/72))
 
+        if rope_length is not None:
+            # Amplify joint stiction (dry friction) for the stronger motor joints
+            xml_model = xml_model.replace('[stiction_1]', str(4*joint_stiction))
+            xml_model = xml_model.replace('[stiction_3]', str(2*joint_stiction))
+            xml_model = xml_model.replace('[stiction_5]', str(joint_stiction))
         # Resolve mesh directory and replace the remaining domain parameters
         return super()._adapt_model_file(xml_model, domain_param)
 
