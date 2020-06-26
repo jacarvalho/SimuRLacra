@@ -123,12 +123,12 @@ def _recurse_envstack_update(head_env, op):
 
 def remove_env(stack, key_type):
     """
-    Remove an EnvWrapper of the given type from the environment chain and return the modified chain.
+    Remove an `EnvWrapper` of the given type from the environment chain and return the modified chain.
     The original stack is unmodified, but untouched parts will be shared.
     If the key is not found, nothing will be done and the original chain is returned.
 
     :param stack: outermost environment of the chain
-    :param key_type: Type of environment to remove
+    :param key_type: type of environment to remove
     :return: the modified environment chain
     """
     assert issubclass(key_type, EnvWrapper)

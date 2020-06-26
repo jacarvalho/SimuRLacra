@@ -103,7 +103,7 @@ class RosenSim(SimEnv, Serializable):
 
     def step(self, act):
         # Apply actuator limits
-        act = self._limit_act(act)
+        act = self.limit_act(act)
 
         # Action equal selection a new state a.k.a. solution of the optimization problem
         self.state = act

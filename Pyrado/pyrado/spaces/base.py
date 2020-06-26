@@ -151,7 +151,7 @@ class Space(ABC):
     @abstractmethod
     def project_to(self, ele: np.ndarray) -> np.ndarray:
         """
-        Project an into the box space by clipping, or do nothing of it already is .
+        Project an into the box space by clipping, or do nothing of it already is.
 
         :param ele: element from outside or inside of the box space
         :return: element within the box space (at the border if it has been outside of the space before the projection).
