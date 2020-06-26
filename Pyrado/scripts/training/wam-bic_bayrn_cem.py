@@ -18,8 +18,8 @@ from pyrado.policies.environment_specific import DualRBFLinearPolicy
 
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
-    ex_dir = setup_experiment(WAMBallInCupSim.name, f'{BayRn.name}_{CEM.name}', 'dr_rl_jd', seed=111)
-    # ex_dir = setup_experiment(WAMBallInCupSim.name, f'{BayRn.name}_{CEM.name}-sim2sim', 'dr_rl_jd', seed=111)
+    # ex_dir = setup_experiment(WAMBallInCupSim.name, f'{BayRn.name}_{CEM.name}', 'dr_rl_jd', seed=1001)
+    ex_dir = setup_experiment(WAMBallInCupSim.name, f'{BayRn.name}_{CEM.name}-sim2sim', 'dr_rl_jd', seed=1001)
 
     # Environments
     env_hparams = dict(
@@ -56,21 +56,21 @@ if __name__ == '__main__':
         dim_mask=2
     )
     policy = DualRBFLinearPolicy(env_sim.spec, **policy_hparam)
-    policy_init = to.load(osp.join(pyrado.EXP_DIR, WAMBallInCupSim.name, CEM.name,
-                                   # '2020-06-08_13-04-04--dr_cs_rl--swingfrombelow',
-                                   # '2020-06-08_13-04-04--dr-cs-rl_firstupthendown',
-                                   '2020-06-22_10-41-26--catchbelow', 'policy.pt'))
+    # policy_init = to.load(osp.join(pyrado.EXP_DIR, WAMBallInCupSim.name, CEM.name,
+    #                                # '2020-06-08_13-04-04--dr_cs_rl--swingfrombelow',
+    #                                # '2020-06-08_13-04-04--dr-cs-rl_firstupthendown',
+    #                                '2020-06-22_10-41-26--catchbelow', 'policy.pt'))
 
     # Subroutine
     subroutine_hparam = dict(
         max_iter=30,
-        pop_size=10,
-        num_rollouts=50,
+        pop_size=100,
+        num_rollouts=100,
         num_is_samples=10,
         expl_std_init=np.pi/6,
         expl_std_min=0.02,
         extra_expl_std_init=np.pi/6,
-        extra_expl_decay_iter=10,
+        extra_expl_decay_iter=15,
         full_cov=False,
         symm_sampling=False,
         num_sampler_envs=32,
@@ -87,7 +87,7 @@ if __name__ == '__main__':
         warmstart=False,
         num_eval_rollouts_real=100 if isinstance(env_real, WAMBallInCupSim) else 5,
         num_eval_rollouts_sim=100,
-        policy_param_init=policy_init.param_values.data,
+        # policy_param_init=policy_init.param_values.data,
         subroutine_snapshot_mode='latest'
     )
 
