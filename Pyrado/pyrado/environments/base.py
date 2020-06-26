@@ -144,7 +144,7 @@ class Env(ABC, Serializable):
         When a terminal condition is met, the reset function is called.
 
         .. note::
-            This function is responsible for limiting the actions, i.e. has to call `_limit_act()`.
+            This function is responsible for limiting the actions, i.e. has to call `limit_act()`.
 
         :param act: action to be taken in the step
         :return obs: current observation of the environment
@@ -166,7 +166,7 @@ class Env(ABC, Serializable):
         """
         return state.copy()
 
-    def _limit_act(self, act: np.ndarray) -> np.ndarray:
+    def limit_act(self, act: np.ndarray) -> np.ndarray:
         """
         Clip the actions according to the environment's action space. Note, this also affects the exploration.
 

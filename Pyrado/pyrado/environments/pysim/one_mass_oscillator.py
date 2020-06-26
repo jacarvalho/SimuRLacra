@@ -196,7 +196,7 @@ class OneMassOscillatorDyn(Serializable):
         :return: next state
         """
         self._calc_constants(domain_param)
-        # act = self._limit_act(act)
+        # act = self.limit_act(act)
 
         # state_dot = self.A @ state + self.B @ act
         state_dot = state@self.A.t() + act@self.B.t()  # Pyro batching

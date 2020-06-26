@@ -229,7 +229,7 @@ class RcsSim(SimEnv, Serializable):
         self._curr_rew = self._task.step_rew(self.state, act, remaining_steps)
 
         # Apply actuator limits
-        act = self._limit_act(act)
+        act = self.limit_act(act)
 
         # Get the disturbance to be applied on the Rcs side
         disturbance = self._disturbance_generator()
