@@ -10,6 +10,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import pyrado
 from pyrado.logger.experiment import ask_for_experiment
 from pyrado.policies.adn import ADNPolicy
+from pyrado.policies.neural_fields import NFPolicy
 from pyrado.utils.argparser import get_argparser
 from pyrado.utils.experiments import load_experiment
 from pyrado.utils.input_output import print_cbt
@@ -24,23 +25,24 @@ if __name__ == '__main__':
 
     # Load the environment and the policy
     env, policy, _ = load_experiment(ex_dir, args)
-    if not isinstance(policy, ADNPolicy):
-        raise pyrado.TypeErr(given=policy, expected_type=ADNPolicy)
+    if not isinstance(policy, (ADNPolicy, NFPolicy)):
+        raise pyrado.TypeErr(given=policy, expected_type=[ADNPolicy, NFPolicy])
 
     # Define the parameters for evaluation
-    num_steps = 50
+    num_steps, dt_eval = 200, env.dt/10
+    policy._dt = dt_eval
     p_init_min, p_init_max, num_p_init = -6., 6., 11
-    print_cbt(f'Evaluating an ADNPolicy for {num_steps} steps ad {1/env.dt} Hz with initial potentials ranging from'
+    print_cbt(f'Evaluating an ADNPolicy for {num_steps} steps ad {1/dt_eval} Hz with initial potentials ranging from'
               f'{p_init_min} to {p_init_max}.', 'c')
 
-    time = to.linspace(0., num_steps*env.dt, num_steps)  # endpoint included
+    time = to.linspace(0., num_steps*dt_eval, num_steps)  # endpoint included
     p_init = to.linspace(p_init_min, p_init_max, num_p_init)  # endpoint included
     num_p = len(policy.potentials)
 
     # Iterate over all action dimensions since we got as many potential-based neurons as action dimensions
     # For mode = standalone they are currently all the same because all neuron potential-based obey the same dynamics.
     # However, this does not necessarily have to be that way. Thus we plot the same way as for mode = policy.
-    for a in range(policy.env_spec.act_space.flat_dim):
+    for a in range(policy.hidden_size):
 
         fig, ax = plt.subplots(1, figsize=(12, 10), subplot_kw={'projection': '3d'})
         fig.canvas.set_window_title(f'Potential dynamics for the {a}-th action dimension for initial values')
@@ -57,7 +59,7 @@ if __name__ == '__main__':
             for i in range(num_steps):
                 if args.mode == 'standalone':
                     # Use the potential dynamics as defined in the loaded ADNPolicy
-                    p[i, :] = policy.potentials + env.dt*policy.potentials_dot(stimuli=s[i, :])
+                    p[i, :] = policy.potentials + dt_eval*policy.potentials_dot(stimuli=s[i, :])
                     policy._potentials = p[i, :].clone()
 
                 elif args.mode == 'policy':
@@ -66,7 +68,7 @@ if __name__ == '__main__':
                     _, hidden = policy(to.zeros(policy.env_spec.obs_space.shape), hidden)  # previous action is in hidden
 
                 else:
-                    raise pyrado.ValueErr(given=args.mode, eq_constraint="'standalone' or 'policy'")
+                    raise pyrado.ValueErr(given=args.mode, given_name='mode', eq_constraint="'standalone' or 'policy'")
 
             # Plot
             plt.plot(time.numpy(), p_0.repeat(num_steps).numpy(), p[:, a].detach().numpy())
