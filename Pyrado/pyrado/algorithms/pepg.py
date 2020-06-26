@@ -107,7 +107,7 @@ class PEPG(ParameterExploring):
     @to.no_grad()
     def update(self, param_results: ParameterSamplingResult, ret_avg_curr: float = None):
         # Average the return values over the rollouts
-        rets_avg_ros = param_results.mean_returns
+        rets_avg_ros = param_results[1:].mean_returns
 
         # Rank policy parameters by return (a.k.a. fitness)
         rets = rank_transform(rets_avg_ros) if self.transform_returns else rets_avg_ros
