@@ -13,7 +13,7 @@ from pyrado.environment_wrappers.utils import inner_env, typed_env
 from pyrado.plotting.curve import plot_dts
 from pyrado.plotting.policy_parameters import render_policy_params
 from pyrado.plotting.rollout_based import plot_observations_actions_rewards, plot_actions, plot_observations, \
-    plot_rewards, plot_adn_data, plot_features
+    plot_rewards, plot_potentials, plot_features
 from pyrado.policies.adn import ADNPolicy
 from pyrado.policies.base import Policy
 from pyrado.policies.two_headed import TwoHeadedPolicy
@@ -345,7 +345,7 @@ def after_rollout_query(env: Env, policy: Policy, rollout: StepSequence) -> tupl
         return after_rollout_query(env, policy, rollout),
 
     elif ans == 'padn':
-        plot_adn_data(rollout)
+        plot_potentials(rollout)
         return after_rollout_query(env, policy, rollout)
 
     elif ans == 's':
