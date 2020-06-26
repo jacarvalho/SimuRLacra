@@ -137,7 +137,11 @@ class NormalParamNoise(StochasticParamExplStrat):
     def sample_param_set(self, nominal_params: to.Tensor) -> to.Tensor:
         return self._noise(nominal_params).sample()
 
-    def sample_param_sets(self, nominal_params: to.Tensor, num_samples: int, include_nominal_params: bool = False) -> to.Tensor:
+    def sample_param_sets(self,
+                          nominal_params: to.Tensor,
+                          num_samples: int,
+                          include_nominal_params: bool = False) -> to.Tensor:
+        # Sample all exploring policy parameter at once
         ps = self._noise(nominal_params).sample((num_samples,))
         if include_nominal_params:
             ps = to.cat([nominal_params.view(1, -1), ps])
