@@ -114,7 +114,7 @@ class PoWER(ParameterExploring):
         # For importance sampling we select the best rollouts
         self.is_mem_ret = to.cat([self.is_mem_ret, rets_avg_ros], dim=0)
         self.is_mem_params = to.cat([self.is_mem_params, param_results.parameters], dim=0)
-        self.is_mem_W = to.cat([self.is_mem_W, W.repeat(self.pop_size, 1, 1)], dim=0)  # same cov for all rollouts
+        self.is_mem_W = to.cat([self.is_mem_W, W.repeat(self.pop_size + 1, 1, 1)], dim=0)  # same cov for all rollouts
 
         # Descending sort according to return values
         idcs_dcs = to.argsort(self.is_mem_ret, descending=True)
