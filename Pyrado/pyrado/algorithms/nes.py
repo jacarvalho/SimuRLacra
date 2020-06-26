@@ -87,12 +87,14 @@ class NES(ParameterExploring):
             self._expl_strat = SymmParamExplStrat(self._expl_strat)
 
         # Utility coefficients (ignored for transform_returns = False)
-        eta_std = eta_std if eta_std is not None else (3 + np.log(policy.num_param))/np.sqrt(self.pop_size)/5.
-        self.eta_mean_util, self.eta_std_util = self.compute_utilities(self.pop_size, eta_mean, eta_std)
+        # Use pop_size + 1 since we are also considering the current policy
+        eta_std = eta_std if eta_std is not None else (3 + np.log(policy.num_param))/np.sqrt(self.pop_size + 1)/5.
+        self.eta_mean_util, self.eta_std_util = self.compute_utilities(self.pop_size + 1, eta_mean, eta_std)
 
         # Learning rates [2]
+        # Use pop_size + 1 since we are also considering the current policy
         self.lr_mean = 1. if transform_returns else 1e-2
-        self.lr_std = 0.6*(3 + np.log(self.pop_size))/3./np.sqrt(self.pop_size)
+        self.lr_std = 0.6*(3 + np.log(self.pop_size + 1))/3./np.sqrt(self.pop_size + 1)
 
     @staticmethod
     def compute_utilities(pop_size: int, eta_mean: float, eta_std: float):
