@@ -4,6 +4,7 @@ Run a PD-controller with the parameter from Quanser on the real device.
 import torch as to
 
 import pyrado
+from pyrado.environments.pysim.quanser_qube import QQubeSim
 from pyrado.environments.quanser.quanser_ball_balancer import QBallBalancerReal
 from pyrado.environments.quanser.quanser_cartpole import QCartPoleSwingUpReal, QCartPoleStabReal
 from pyrado.environments.quanser.quanser_qube import QQubeReal
@@ -14,6 +15,8 @@ from pyrado.utils.argparser import get_argparser
 from pyrado.utils.data_types import RenderMode
 from pyrado.utils.input_output import print_cbt
 
+
+# python ... -env-name qcp-st
 
 if __name__ == '__main__':
     # Parse command line arguments
@@ -41,6 +44,7 @@ if __name__ == '__main__':
         env = QQubeReal(args.dt, args.max_steps)  # runs infinitely by default
         policy = QQubeSwingUpAndBalanceCtrl(env.spec)
         print_cbt('Set up controller for the QQubeReal environment.', 'c')
+
 
     else:
         raise pyrado.ValueErr(given=args.env_name, eq_constraint=f'{QBallBalancerReal.name}, {QCartPoleSwingUpReal.name}, '

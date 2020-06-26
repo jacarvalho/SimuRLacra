@@ -268,8 +268,8 @@ class QQubeSwingUpAndBalanceCtrl(Policy):
 
     def __init__(self,
                  env_spec: EnvSpec,
-                 ref_energy: float = 0.04,  # Quanser's value: 0.04
-                 energy_gain: float = 30.,  # Quanser's value: 25.
+                 ref_energy: float = 0.09,  # Quanser's value: 0.04
+                 energy_gain: float = 40.,  # Quanser's value: 25.
                  energy_th_gain: float = 0.4,
                  acc_max: float = 5.,  # Quanser's value: 5.
                  alpha_max_pd_enable: float = 10.,  # Quanser's value: 20

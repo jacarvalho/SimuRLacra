@@ -135,6 +135,8 @@ class CEM(ParameterExploring):
         else:
             raise NotImplementedError  # CEM could also sample using different distributions
 
+        print(self._policy.param_values)
+
         # Logging
         self.logger.add_value('median imp samp return', to.median(rets_avg_is))
         self.logger.add_value('min imp samp return', to.min(rets_avg_is))

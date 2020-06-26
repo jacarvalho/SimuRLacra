@@ -150,6 +150,8 @@ class Algorithm(ABC, LoggerAware):
             # Increase the iteration counter
             self._curr_iter += 1
 
+            print(self._policy.param_values)
+
         if self.stopping_criterion_met():
             stopping_reason = 'Stopping criterion met!'
         else:

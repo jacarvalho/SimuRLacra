@@ -228,15 +228,26 @@ class QQubeStabSim(QQubeSim):
         This environment is only for testing purposes, or to find the PD gains for stabilizing the pendulum at the top.
     """
 
+    name: str = 'qq-st'
+
+
     def _create_spaces(self):
         max_volt = self.domain_param['max_volt']
 
         # Define the spaces
-        max_state = np.array([120./180*np.pi, 4*np.pi, 20*np.pi, 20*np.pi])  # [rad, rad, rad/s, rad/s]
+
+        # min_state = np.array([120. / 180 * np.pi, 4 * np.pi, 20 * np.pi, 20 * np.pi])  # [rad, rad, rad/s, rad/s]
+        # max_state = np.array([120./180*np.pi, 4*np.pi, 20*np.pi, 20*np.pi])  # [rad, rad, rad/s, rad/s]
+
+        self.stab_thold = 15/180.*np.pi  # threshold angle for the stabilization task to be a failure [rad]
+
+        min_state = np.array([-120./180*np.pi, np.pi - self.stab_thold, -20*np.pi, -20*np.pi])  # [rad, rad, rad/s, rad/s]
+        max_state = np.array([120./180*np.pi, np.pi + self.stab_thold, 20*np.pi, 20*np.pi])  # [rad, rad, rad/s, rad/s]
+
         min_init_state = np.array([-5./180*np.pi, 175./180*np.pi, 0, 0])  # [rad, rad, rad/s, rad/s]
         max_init_state = np.array([5./180*np.pi, 185./180*np.pi, 0, 0])  # [rad, rad, rad/s, rad/s]
 
-        self._state_space = BoxSpace(-max_state, max_state,
+        self._state_space = BoxSpace(min_state, max_state,
                                      labels=[r'$\theta$', r'$\alpha$', r'$\dot{\theta}$', r'$\dot{\alpha}$'])
         self._obs_space = self._state_space
         self._init_space = BoxSpace(min_init_state, max_init_state,
@@ -245,7 +256,10 @@ class QQubeStabSim(QQubeSim):
 
     def observe(self, state, dtype=np.ndarray):
         # Directly observe the noise-free state
-        return state.copy()
+        # return state.copy()
+
+        # Observe the error
+        return (np.array([0., np.pi, 0., 0.]) - state).copy()
 
     def _create_task(self, task_args: dict) -> Task:
         # Define the task including the reward function
