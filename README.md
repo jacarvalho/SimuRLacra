@@ -177,7 +177,7 @@ cd PATH_TO/SimuRLacra/Pyrado/scripts
 ```
 To exemplarily check basic Pyrado environments (implemented in Python without dependencies to RcsPySim)
 ```
-python sandbox/sb_qcp.py --env_name qcp-su
+python sandbox/sb_qcp.py --env_name qcp-su --dt 0.002
 ```
 Quickly check the environments interfacing Rcs via RcsPySim
 ```
