@@ -264,7 +264,9 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
             self.spec.state_space.subspace(self.spec.state_space.create_mask(idcs))
         )
 
-        state_des = self.sim.data.qpos[1:7:2].copy()  # actual init pose of the controlled joints
+        # Note: the MuJoCo sim object has not yet been set to the actual init state. However, init_qpos is already set
+        # to the correct state in _create_spaces() which is called before _create_task()
+        state_des = self.init_qpos[1:7:2]  # actual init pose of the controlled joints
         rew_fcn = QuadrErrRewFcn(
             Q=np.diag([8e-2, 5e-2, 5e-2]),
             R=np.zeros((spec.act_space.flat_dim, spec.act_space.flat_dim))
