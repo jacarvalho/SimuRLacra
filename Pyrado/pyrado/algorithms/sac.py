@@ -95,7 +95,7 @@ class SAC(Algorithm):
         if not isinstance(env, Env):
             raise pyrado.TypeErr(given=env, expected_type=Env)
         if typed_env(env, ActNormWrapper) is None:
-            raise pyrado.TypeErr(msg='SAC required an environment wrapped by anActNormWrapper!')
+            raise pyrado.TypeErr(msg='SAC required an environment wrapped by an ActNormWrapper!')
         if not isinstance(q_fcn_1, Policy):
             raise pyrado.TypeErr(given=q_fcn_1, expected_type=Policy)
         if not isinstance(q_fcn_2, Policy):

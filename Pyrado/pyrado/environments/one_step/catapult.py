@@ -152,7 +152,7 @@ class CatapultSim(SimEnv, Serializable):
 
     def step(self, act):
         # Apply actuator limits
-        act = self._limit_act(act)  # dummy for CatapultSim
+        act = self.limit_act(act)  # dummy for CatapultSim
         self._curr_act = act  # just for the render function
 
         # Calculate the maximum height of the flight trajectory ("one step dynamics")

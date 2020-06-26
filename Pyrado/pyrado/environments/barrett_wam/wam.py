@@ -133,7 +133,7 @@ class WAMBallInCupReal(Env, Serializable):
         remaining_steps = self._max_steps - (self._curr_step + 1) if self._max_steps is not pyrado.inf else 0
         self._curr_rew = self._task.step_rew(self.state, act, remaining_steps)  # always 0 for wam-bic-real
 
-        act = self._limit_act(act)
+        act = self.limit_act(act)
 
         if self.poses_des is not None and self._curr_step < self.poses_des.shape[0]:
             # Use given desired trajectory if given and time step does no exceed its length

@@ -180,7 +180,7 @@ class SimPyEnv(SimEnv, Serializable):
         self._curr_rew = self.task.step_rew(self.state, act, remaining_steps)
 
         # Apply actuator limits
-        act = self._limit_act(act)
+        act = self.limit_act(act)
         self._curr_act = act  # just for the render function
 
         # Apply the action and simulate the resulting dynamics

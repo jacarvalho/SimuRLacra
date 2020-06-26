@@ -92,7 +92,7 @@ class QQubeReal(RealEnv, Serializable):
         self._curr_rew = self._task.step_rew(self.state, act, remaining_steps)
 
         # Apply actuator limits
-        act_lim = self._limit_act(act)
+        act_lim = self.limit_act(act)
         self._curr_act = act_lim
 
         # Send actions and receive sensor measurements
