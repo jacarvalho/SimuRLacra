@@ -160,7 +160,7 @@ def render_policy_params(policy: Policy,
                 ax.yaxis.set_major_locator(ticker.NullLocator())
                 ax.set_xticklabels(ensure_no_subscript(env_spec.obs_space.labels))
                 ax.yaxis.set_minor_formatter(ticker.NullFormatter())
-            elif name in ['_log_tau', 'obs_layer.bias', 'conv_layer.weight',
+            elif name in ['_log_tau', 'resting_level', 'obs_layer.bias', 'conv_layer.weight',
                           'nonlin_layer.log_weight', 'nonlin_layer.bias']:
                 ax.xaxis.set_major_locator(ticker.NullLocator())
                 ax.yaxis.set_major_locator(ticker.NullLocator())

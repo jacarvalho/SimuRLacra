@@ -140,9 +140,11 @@ class NFPolicy(RecurrentPolicy):
         self._hidden_size = hidden_size  # number of potential neurons
         self._num_recurrent_layers = 1
         self._activation_nonlin = activation_nonlin
+        self.mirrored_conv_weights = mirrored_conv_weights
 
-        # Create the RNN's layers
-        self.obs_layer = nn.Linear(self._input_size, self._hidden_size, bias=True) if obs_layer is None else obs_layer
+        # Create the layers
+        self.obs_layer = nn.Linear(self._input_size, self._hidden_size, bias=False) if obs_layer is None else obs_layer
+        self.resting_level = nn.Parameter(to.zeros(hidden_size), requires_grad=True)
         padding = conv_kernel_size//2 if conv_padding_mode != 'circular' else conv_kernel_size - 1  # 1 means no padding
         conv1d_class = MirrConv1d if mirrored_conv_weights else nn.Conv1d
         self.conv_layer = conv1d_class(
@@ -152,7 +154,7 @@ class NFPolicy(RecurrentPolicy):
             stride=1, dilation=1, groups=1  # defaults
         )
         # self.post_conv_layer = nn.Linear(conv_out_channels, spec.act_space.flat_dim, bias=False)
-        self.nonlin_layer = IndiNonlinLayer(self._hidden_size, nonlin=activation_nonlin, bias=False)
+        self.nonlin_layer = IndiNonlinLayer(self._hidden_size, nonlin=activation_nonlin, bias=False, weight=False)
         self.act_layer = nn.Linear(self._hidden_size, spec.act_space.flat_dim, bias=False)
 
         # Call custom initialization function after PyTorch network parameter initialization
@@ -214,7 +216,7 @@ class NFPolicy(RecurrentPolicy):
         """
         if not all(self.tau > 0):
             raise pyrado.ValueErr(given=self.tau, g_constraint='0')
-        return (stimuli - self._potentials)/self.tau
+        return (stimuli + self.resting_level - self._potentials)/self.tau
 
     def init_param(self, init_values: to.Tensor = None, **kwargs):
         if init_values is None:
@@ -222,6 +224,7 @@ class NFPolicy(RecurrentPolicy):
             init_param(self.obs_layer, **kwargs)
             # self.obs_layer.weight.data /= 100.
             # self.obs_layer.bias.data /= 100.
+            self.resting_level.data.fill_(0.)
             init_param(self.conv_layer, **kwargs)
             # init_param(self.post_conv_layer, **kwargs)
             init_param(self.nonlin_layer, **kwargs)
@@ -284,6 +287,7 @@ class NFPolicy(RecurrentPolicy):
         # Combine the different output channels of the convolution
         # stimulus_pot = self.post_conv_layer(stimulus_pot)
 
+        # Check the shapes before adding the resting level since the broadcasting could mask errors from the convolution
         if not self._stimuli_external.shape == self._stimuli_internal.shape:
             raise pyrado.ShapeErr(given=self._stimuli_internal, expected_match=self._stimuli_external)
 
