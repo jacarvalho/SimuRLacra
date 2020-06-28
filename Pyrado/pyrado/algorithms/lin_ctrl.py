@@ -15,7 +15,7 @@ from pyrado.policies.linear import LinearPolicy
 from pyrado.sampling.parallel_sampler import ParallelSampler
 from pyrado.sampling.sampler import SamplerBase
 from pyrado.tasks.reward_functions import QuadrErrRewFcn
-from pyrado.utils.tensor_utils import insert_tensor_col
+from pyrado.utils.tensor import insert_tensor_col
 
 
 class LQR(Algorithm):

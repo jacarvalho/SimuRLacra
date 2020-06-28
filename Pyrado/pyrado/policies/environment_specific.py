@@ -1,6 +1,7 @@
 import math
 import numpy as np
 import torch as to
+import torch.nn as nn
 
 import pyrado
 from pyrado.utils.data_types import EnvSpec
@@ -13,7 +14,7 @@ from pyrado.policies.base import Policy
 from pyrado.policies.features import FeatureStack, identity_feat, RBFFeat
 from pyrado.policies.linear import LinearPolicy
 from pyrado.utils.math import clamp_symm
-from pyrado.utils.tensor_utils import insert_tensor_col
+from pyrado.utils.tensor import insert_tensor_col
 
 
 class DualRBFLinearPolicy(LinearPolicy):
@@ -63,7 +64,7 @@ class DualRBFLinearPolicy(LinearPolicy):
             self.num_active_feat = self._feats.num_feat - 2*self.dim_mask*spec.obs_space.flat_dim
         else:
             self.num_active_feat = self._feats.num_feat
-        self.net = to.nn.Linear(self.num_active_feat, self._num_act//2, bias=False)
+        self.net = nn.Linear(self.num_active_feat, self._num_act//2, bias=False)
 
         # Create mask to deactivate first and last feature of every input dimension
         self.feats_mask = to.ones(self._feats.centers.shape, dtype=to.bool)
@@ -340,9 +341,9 @@ class QQubeEnergyCtrl(Policy):
         super().__init__(env_spec)
 
         # Initialize parameters
-        self._log_E_ref = to.nn.Parameter(to.log(to.tensor(ref_energy)), requires_grad=True)
-        self._log_E_gain = to.nn.Parameter(to.log(to.tensor(energy_gain)), requires_grad=True)
-        self._th_gain = to.nn.Parameter(to.tensor(th_gain), requires_grad=True)
+        self._log_E_ref = nn.Parameter(to.log(to.tensor(ref_energy)), requires_grad=True)
+        self._log_E_gain = nn.Parameter(to.log(to.tensor(energy_gain)), requires_grad=True)
+        self._th_gain = nn.Parameter(to.tensor(th_gain), requires_grad=True)
         self.acc_max = to.tensor(acc_max)
         self.dp_nom = QQubeSim.get_nominal_domain_param()
 
@@ -417,7 +418,7 @@ class QQubePDCtrl(Policy):
         """
         super().__init__(env_spec)
 
-        self.k = to.nn.Parameter(k, requires_grad=True)
+        self.k = nn.Parameter(k, requires_grad=True)
         self.state_des = to.tensor([th_des, al_des, 0., 0.])
         self.tols = tols
         self.calibration_mode = calibration_mode

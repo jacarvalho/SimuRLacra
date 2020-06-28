@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+
 import torch as to
 import torch.nn as nn
 import torch.nn.utils.convert_parameters as cp
@@ -176,43 +177,3 @@ class TracedPolicyWrapper(nn.Module):
 
     def forward(self, obs):
         return self.net(obs)
-
-
-class ScaleLayer(nn.Module):
-    """ Layer which scales the output of the previous layer using a learnable scaling factor """
-
-    def __init__(self, in_features: int, init_weight: float = 1.):
-        """
-        Constructor
-
-        :param in_features: size of each input sample
-        :param init_weight: initial scaling factor
-        """
-        super().__init__()
-        self.weight = nn.Parameter(init_weight * to.ones(in_features, dtype=to.get_default_dtype()), requires_grad=True)
-
-    def forward(self, inp: to.Tensor) -> to.Tensor:
-        # Element-wise product
-        return inp * self.weight
-
-
-class PositiveScaleLayer(nn.Module):
-    """ Layer which scales (strictly positive) the output of the previous layer using a learnable scaling factor """
-
-    def __init__(self, in_features: int, init_weight: float = 1.):
-        """
-        Constructor
-
-        :param in_features: size of each input sample
-        :param init_weight: initial scaling factor
-        """
-        if not init_weight > 0:
-            raise pyrado.ValueErr(given=init_weight, g_constraint='0')
-
-        super().__init__()
-        self.log_weight = nn.Parameter(to.log(init_weight * to.ones(in_features, dtype=to.get_default_dtype())),
-                                       requires_grad=True)
-
-    def forward(self, inp: to.Tensor) -> to.Tensor:
-        # Element-wise product
-        return inp * to.exp(self.log_weight)

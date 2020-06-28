@@ -18,7 +18,7 @@ from pyrado.utils.input_output import ensure_math_mode
 class wrap_value_fcn:
     """ Wrap the values function to be able to only pass a subset of the state. """
 
-    def __init__(self, fcn: to.nn.Module, fixed_state: to.Tensor, idcs: list):
+    def __init__(self, fcn: nn.Module, fixed_state: to.Tensor, idcs: list):
         """
         Constructor
 
