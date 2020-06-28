@@ -1,4 +1,5 @@
 import torch as to
+import torch.nn as nn
 
 import pyrado
 from pyrado.utils.data_types import EnvSpec
@@ -31,7 +32,7 @@ class LinearPolicy(Policy):
 
         self._feats = feats
         self.num_active_feat = feats.get_num_feat(self._num_obs)
-        self.net = to.nn.Linear(self.num_active_feat, self._num_act, bias=False)
+        self.net = nn.Linear(self.num_active_feat, self._num_act, bias=False)
 
         # Call custom initialization function after PyTorch network parameter initialization
         init_param_kwargs = init_param_kwargs if init_param_kwargs is not None else dict()

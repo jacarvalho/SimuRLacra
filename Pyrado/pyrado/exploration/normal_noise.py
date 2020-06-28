@@ -1,12 +1,13 @@
 import math
 import torch as to
+import torch.nn as nn
 from torch.distributions import Normal, MultivariateNormal
 from warnings import warn
 
 import pyrado
 
 
-class DiagNormalNoise(to.nn.Module):
+class DiagNormalNoise(nn.Module):
     """ Module for learnable additive Gaussian noise with a diagonal covariance matrix """
 
     def __init__(self,
@@ -37,8 +38,8 @@ class DiagNormalNoise(to.nn.Module):
 
         # Register parameters
         if learnable:
-            self.log_std = to.nn.Parameter(to.Tensor(noise_dim), requires_grad=True)
-            self.mean = to.nn.Parameter(to.Tensor(noise_dim), requires_grad=True) if train_mean else None
+            self.log_std = nn.Parameter(to.Tensor(noise_dim), requires_grad=True)
+            self.mean = nn.Parameter(to.Tensor(noise_dim), requires_grad=True) if train_mean else None
         else:
             self.log_std = to.empty(noise_dim)
             self.mean = None
@@ -116,7 +117,7 @@ class DiagNormalNoise(to.nn.Module):
         return 0.5 + 0.5*to.log(to.tensor(2*math.pi)) + 0.5*to.log(to.prod(to.pow(self.std, 2)))
 
 
-class FullNormalNoise(to.nn.Module):
+class FullNormalNoise(nn.Module):
     """ Module for learnable additive Gaussian noise with a full covariance matrix """
 
     def __init__(self,
@@ -151,8 +152,8 @@ class FullNormalNoise(to.nn.Module):
 
         # Register parameters
         if learnable:
-            self.cov = to.nn.Parameter(to.Tensor(noise_dim, noise_dim), requires_grad=True)
-            self.mean = to.nn.Parameter(to.Tensor(noise_dim), requires_grad=True) if train_mean else None
+            self.cov = nn.Parameter(to.Tensor(noise_dim, noise_dim), requires_grad=True)
+            self.mean = nn.Parameter(to.Tensor(noise_dim), requires_grad=True) if train_mean else None
         else:
             self.cov = to.empty(noise_dim, noise_dim)
             self.mean = None

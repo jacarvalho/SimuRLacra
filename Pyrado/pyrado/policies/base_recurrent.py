@@ -1,5 +1,6 @@
-from abc import ABC, abstractmethod
 import torch as to
+import torch.nn as nn
+from abc import ABC, abstractmethod
 from torch.jit import ScriptModule, export, trace_module, script
 
 from pyrado.policies.base import Policy
@@ -83,7 +84,7 @@ class RecurrentPolicy(Policy, ABC):
         return script(StatefulRecurrentNetwork(self))
 
 
-class StatefulRecurrentNetwork(to.nn.Module):
+class StatefulRecurrentNetwork(nn.Module):
     """
     A scripted wrapper for a recurrent neural network that stores the hidden state.
 

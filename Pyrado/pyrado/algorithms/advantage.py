@@ -1,6 +1,7 @@
 import numpy as np
 import sys
 import torch as to
+import torch.nn as nn
 from tqdm import tqdm
 from typing import Sequence
 from contextlib import ExitStack
@@ -17,7 +18,7 @@ from pyrado.utils.math import explained_var
 from pyrado.utils.standardizing import RunningStandardizer, standardize
 
 
-class GAE(LoggerAware, to.nn.Module):
+class GAE(LoggerAware, nn.Module):
     """
     General Advantage Estimation (GAE)
 
@@ -27,7 +28,7 @@ class GAE(LoggerAware, to.nn.Module):
     """
 
     def __init__(self,
-                 value_fcn: [to.nn.Module, Policy],
+                 value_fcn: [nn.Module, Policy],
                  gamma: float = 0.99,
                  lamda: float = 0.95,
                  num_epoch: int = 10,
@@ -55,8 +56,8 @@ class GAE(LoggerAware, to.nn.Module):
         :param lr_scheduler: learning rate scheduler that does one step per epoch (pass through the whole data set)
         :param lr_scheduler_hparam: hyper-parameters for the learning rate scheduler
         """
-        if not isinstance(value_fcn, (to.nn.Module, Policy)):
-            raise pyrado.TypeErr(given=value_fcn, expected_type=[to.nn.Module, Policy])
+        if not isinstance(value_fcn, (nn.Module, Policy)):
+            raise pyrado.TypeErr(given=value_fcn, expected_type=[nn.Module, Policy])
         if isinstance(value_fcn, Policy):
             if not value_fcn.env_spec.act_space == ValueFunctionSpace:
                 raise pyrado.ShapeErr(msg='The given act_space held by the value_fcn should be a ValueFunctionSpace.')
@@ -79,7 +80,7 @@ class GAE(LoggerAware, to.nn.Module):
         self.standardizer = standardizer
 
         # Initialize
-        self.loss_fcn = to.nn.MSELoss()
+        self.loss_fcn = nn.MSELoss()
         self.optim = to.optim.Adam(self._value_fcn.parameters(), lr=lr, betas=(0.9, 0.999), eps=1e-5)
         self._lr_scheduler = lr_scheduler
         self._lr_scheduler_hparam = lr_scheduler_hparam
@@ -87,15 +88,15 @@ class GAE(LoggerAware, to.nn.Module):
             self._lr_scheduler = lr_scheduler(self.optim, **lr_scheduler_hparam)
 
     @property
-    def value_fcn(self) -> [to.nn.Module, Policy]:
+    def value_fcn(self) -> [nn.Module, Policy]:
         """ Get the value function approximator. """
         return self._value_fcn
 
     @value_fcn.setter
-    def value_fcn(self, value_fcn: [to.nn.Module, Policy]):
+    def value_fcn(self, value_fcn: [nn.Module, Policy]):
         """ Set the value function approximator. """
-        if not isinstance(value_fcn, (to.nn.Module, Policy)):
-            raise pyrado.TypeErr(given=value_fcn, expected_type=[to.nn.Module, Policy])
+        if not isinstance(value_fcn, (nn.Module, Policy)):
+            raise pyrado.TypeErr(given=value_fcn, expected_type=[nn.Module, Policy])
         self._value_fcn = value_fcn
 
         # Reset the learning rate scheduler

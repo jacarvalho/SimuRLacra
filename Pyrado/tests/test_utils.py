@@ -1,5 +1,6 @@
 import pytest
 import torch as to
+import torch.nn as nn
 from functools import partial
 from tqdm import tqdm
 
@@ -361,7 +362,7 @@ def test_gss_optimizer_nlin_fcn():
 
     # Init param and optimizer
     x_init = to.rand(1)*(x_grid.max() - x_grid.min())/2 + x_grid.min() + (x_grid.max() - x_grid.min())/4  # [.25, .75]
-    x = to.nn.Parameter(to.tensor([x_init]), requires_grad=False)
+    x = nn.Parameter(to.tensor([x_init]), requires_grad=False)
     optim = GSS([x], param_min=x_grid.min().unsqueeze(0), param_max=x_grid.max().unsqueeze(0))
     obj_fcn = partial(noisy_nonlin_fcn, x=x, f=f, noise_std=noise_std)
     num_epochs = 10
