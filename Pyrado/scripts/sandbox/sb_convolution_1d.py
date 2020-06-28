@@ -6,10 +6,11 @@ Play around with PyTorch's 1-dim concolution class (in the context of using it f
     # https://github.com/jayleicn/TVQAplus/blob/master/model/cnn.py
 """
 import torch as to
+import torch.nn as nn
 from matplotlib import pyplot as plt
 
 import pyrado
-from pyrado.policies.neural_fields import MirrConv1d
+from pyrado.utils.nn_layers import MirrConv1d
 
 
 if __name__ == '__main__':
@@ -36,16 +37,16 @@ if __name__ == '__main__':
         signal[:, 1, :] = to.rand_like(signal[:, 0, :])/2
 
     if use_depth_wise_conv:
-        conv_layer = to.nn.Conv1d(in_channels, in_channels, kernel_size, stride=1, padding=padding,
+        conv_layer = nn.Conv1d(in_channels, in_channels, kernel_size, stride=1, padding=padding,
                                   dilation=1, groups=1, bias=False, padding_mode=padding_mode)
-        ptwise_conv_layer = to.nn.Conv1d(in_channels, out_channels, kernel_size=1, stride=1, padding=0,
+        ptwise_conv_layer = nn.Conv1d(in_channels, out_channels, kernel_size=1, stride=1, padding=0,
                                          dilation=1, groups=1, bias=False, padding_mode='zeros')
         print(f'conv_layer weights shape: {conv_layer.weight.shape}')
         print(f'ptwise_conv_layer weights shape: {ptwise_conv_layer.weight.shape}')
 
     else:
         # Standard way
-        conv_layer = to.nn.Conv1d(in_channels, out_channels, kernel_size, stride=1, padding=padding,
+        conv_layer = nn.Conv1d(in_channels, out_channels, kernel_size, stride=1, padding=padding,
                                   dilation=1, groups=1, bias=False, padding_mode=padding_mode)
         print(f'conv_layer weights shape: {conv_layer.weight.shape}')
 

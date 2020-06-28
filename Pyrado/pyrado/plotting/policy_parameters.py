@@ -2,8 +2,8 @@
 Functions to plot Pyrado policies
 """
 import numpy as np
-import torch as to
-from matplotlib import ticker, gridspec, colorbar
+import torch.nn as nn
+from matplotlib import ticker, colorbar
 from matplotlib import pyplot as plt
 from typing import Any
 
@@ -93,8 +93,8 @@ def render_policy_params(policy: Policy,
     :param ylabel: label for the y axis
     :return: handles to figures
     """
-    if not isinstance(policy, to.nn.Module):
-        raise pyrado.TypeErr(given=policy, expected_type=to.nn.Module)
+    if not isinstance(policy, nn.Module):
+        raise pyrado.TypeErr(given=policy, expected_type=nn.Module)
     cmap = plt.get_cmap(cmap_name)
 
     # Create axes and subplots depending on the NN structure

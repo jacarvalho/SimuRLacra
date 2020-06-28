@@ -1,3 +1,4 @@
+import torch.nn as nn
 import numpy as np
 from init_args_serializer.serializable import Serializable
 
@@ -205,17 +206,17 @@ class OneMassOscillatorDyn(Serializable):
         return state_dot*self._dt
 
 
-class OneMassOscillatorDomainParamEstimator(to.nn.Module):
+class OneMassOscillatorDomainParamEstimator(nn.Module):
     """ Class to estimate the domain parameters of the OneMassOscillator environment """
 
     def __init__(self, dt: float, dp_init: dict, num_epoch: int, batch_size: int):
         super().__init__()
 
-        self.dp_est = to.nn.Parameter(to.tensor([dp_init['m'], dp_init['k'], dp_init['d']]), requires_grad=True)
+        self.dp_est = nn.Parameter(to.tensor([dp_init['m'], dp_init['k'], dp_init['d']]), requires_grad=True)
         self.dp_fixed = dict(dt=dt)
 
         self.optim = to.optim.Adam(self.parameters(), lr=0.001, betas=(0.9, 0.999), eps=1e-8, amsgrad=True)
-        self.loss_fcn = to.nn.MSELoss()
+        self.loss_fcn = nn.MSELoss()
         self.num_epoch = num_epoch
         self.batch_size = batch_size
 

@@ -1,4 +1,5 @@
 import torch as to
+import torch.nn as nn
 from torch.nn.utils import convert_parameters as cp
 from typing import Sequence, Callable, Iterable
 
@@ -7,10 +8,10 @@ from pyrado.spaces.discrete import DiscreteSpace
 from pyrado.utils.data_types import EnvSpec
 from pyrado.policies.base import Policy
 from pyrado.policies.initialization import init_param
-from pyrado.utils.tensor_utils import atleast_2D
+from pyrado.utils.tensor import atleast_2D
 
 
-class FNN(to.nn.Module):
+class FNN(nn.Module):
     """ Feed-forward neural network """
 
     def __init__(self,
@@ -36,7 +37,7 @@ class FNN(to.nn.Module):
         """
         self._device = 'cuda' if use_cuda and to.cuda.is_available() else 'cpu'
 
-        super().__init__()  # init to.nn.Module
+        super().__init__()  # init nn.Module
 
         # Store settings
         self._hidden_nonlin = hidden_nonlin if isinstance(hidden_nonlin, Iterable) else len(hidden_sizes)*[
@@ -49,18 +50,18 @@ class FNN(to.nn.Module):
         # self.output_nonlin = output_nonlin
 
         # Create hidden layers (stored in ModuleList so their parameters are tracked)
-        self.hidden_layers = to.nn.ModuleList()
+        self.hidden_layers = nn.ModuleList()
         last_size = input_size
         for hs in hidden_sizes:
-            self.hidden_layers.append(to.nn.Linear(last_size, hs))
+            self.hidden_layers.append(nn.Linear(last_size, hs))
             # Current output size is next layer input size
             last_size = hs
             # Add a dropout layer after every hidden layer
             if self.dropout > 0:
-                self.hidden_layers.append(to.nn.Dropout(p=self.dropout))
+                self.hidden_layers.append(nn.Dropout(p=self.dropout))
 
         # Create output layer
-        self.output_layer = to.nn.Linear(last_size, output_size)
+        self.output_layer = nn.Linear(last_size, output_size)
 
         # Initialize parameter values
         init_param_kwargs = init_param_kwargs if init_param_kwargs is not None else dict()

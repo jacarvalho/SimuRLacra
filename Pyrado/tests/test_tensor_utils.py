@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 import torch as to
 
-from pyrado.utils.tensor_utils import stack_tensor_list, stack_tensor_dict_list, insert_tensor_col, \
+from pyrado.utils.tensor import stack_tensor_list, stack_tensor_dict_list, insert_tensor_col, \
     atleast_2D, atleast_3D
 
 

@@ -4,6 +4,7 @@ Collection of plotting functions which take ndarrays as inputs and produce surfa
 import matplotlib as mpl
 import numpy as np
 import torch as to
+import torch.nn as nn
 from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from typing import Callable
@@ -14,7 +15,7 @@ import pyrado
 def render_surface(
         x: np.ndarray,
         y: np.ndarray,
-        z_fcn: [Callable[[np.ndarray], np.ndarray], to.nn.Module],
+        z_fcn: [Callable[[np.ndarray], np.ndarray], nn.Module],
         x_label: str,
         y_label: str,
         z_label: str,
@@ -68,7 +69,7 @@ def render_surface(
         else:
             check_fcn = z_fcn
 
-        if isinstance(check_fcn, to.nn.Module):
+        if isinstance(check_fcn, nn.Module):
             # Adapt for batch-first behavior of NN-based policies
             zz = to.stack([z_fcn(to.stack((x, y), dim=1).view(-1, 1, 2).to(to.get_default_dtype()))
                            for x, y in zip(xx_tensor, yy_tensor)])

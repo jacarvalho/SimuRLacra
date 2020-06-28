@@ -4,7 +4,8 @@ from typing import Callable, Sequence
 
 import pyrado
 from pyrado.utils.data_types import EnvSpec
-from pyrado.policies.base import Policy, PositiveScaleLayer
+from pyrado.policies.base import Policy
+from pyrado.utils.nn_layers import PositiveScaleLayer
 from pyrado.policies.base_recurrent import RecurrentPolicy
 from pyrado.policies.initialization import init_param
 

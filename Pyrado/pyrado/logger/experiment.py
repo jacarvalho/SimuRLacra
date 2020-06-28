@@ -9,6 +9,7 @@ import numpy as np
 import os
 import os.path as osp
 import torch as to
+import torch.nn as nn
 import yaml
 from copy import deepcopy
 from datetime import datetime
@@ -259,7 +260,7 @@ def _process_list_for_saving(l: list) -> list:
         elif isinstance(item, np.float64):
             # PyYAML can not save numpy floats
             copy[i] = float(item)
-        elif isinstance(item, to.nn.Module):
+        elif isinstance(item, nn.Module):
             # Only save the class name as a sting
             copy[i] = get_class_name(item)
         elif callable(item):
@@ -295,7 +296,7 @@ def _process_dict_for_saving(d: dict) -> dict:
         elif isinstance(v, np.float64):
             # PyYAML can not save numpy floats
             copy[k] = float(v)
-        elif isinstance(v, to.nn.Module):
+        elif isinstance(v, nn.Module):
             # Only save the class name as a sting
             copy[k] = get_class_name(v)
         elif callable(v):

@@ -8,7 +8,7 @@ import pyrado
 from pyrado.utils import get_class_name
 from pyrado.utils.input_output import print_cbt
 from pyrado.utils.normalizing import normalize
-from pyrado.utils.tensor_utils import atleast_2D
+from pyrado.utils.tensor import atleast_2D
 
 
 class FeatureStack:
