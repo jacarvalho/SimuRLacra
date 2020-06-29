@@ -34,7 +34,7 @@ class NFPolicy(RecurrentPolicy):
                  conv_padding_mode: str = 'circular',
                  tau_init: float = 1.,
                  tau_learnable: bool = True,
-                 potential_init_learnable: bool = True,
+                 potential_init_learnable: bool = False,
                  init_param_kwargs: dict = None,
                  use_cuda: bool = False):
         """
@@ -50,7 +50,8 @@ class NFPolicy(RecurrentPolicy):
         :param conv_out_channels: number of filter for the 1-dim convolution along the potential-based neurons
         :param conv_kernel_size: size of the kernel for the 1-dim convolution along the potential-based neurons
         :param tau_init: initial value for the shared time constant of the potentials
-        :param tau_learnable: flag to determine if the time constant is a learnable parameter or a fixed tensor
+        :param tau_learnable: flag to determine if the time constant is a learnable parameter or fixed
+        :param potential_init_learnable: flag to determine if the initial potentials are a learnable parameter or fixed
         :param init_param_kwargs: additional keyword arguments for the policy parameter initialization
         :param use_cuda: `True` to move the policy to the GPU, `False` (default) to use the CPU
         """
@@ -93,7 +94,7 @@ class NFPolicy(RecurrentPolicy):
             stride=1, dilation=1, groups=1  # defaults
         )
         # self.post_conv_layer = nn.Linear(conv_out_channels, spec.act_space.flat_dim, bias=False)
-        self.nonlin_layer = IndiNonlinLayer(self._hidden_size, nonlin=activation_nonlin, bias=False, weight=False)
+        self.nonlin_layer = IndiNonlinLayer(self._hidden_size, nonlin=activation_nonlin, bias=True, weight=False)
         self.act_layer = nn.Linear(self._hidden_size, spec.act_space.flat_dim, bias=False)
 
         # Call custom initialization function after PyTorch network parameter initialization

@@ -160,10 +160,10 @@ class ADNPolicy(RecurrentPolicy):
         :param obs_layer: specify a custom Pytorch Module;
                           by default (`None`) a linear layer with biases is used
         :param tau_init: initial value for the shared time constant of the potentials
-        :param tau_learnable: flag to determine if the time constant is a learnable parameter or a fixed tensor
+        :param tau_learnable: flag to determine if the time constant is a learnable parameter or fixed
         :param kappa_init: initial value for the cubic decay
-        :param kappa_learnable: flag to determine if cubic decay is a learnable parameter or a fixed tensor
-        :param capacity_learnable: flag to determine if capacity is a learnable parameter or a fixed tensor
+        :param kappa_learnable: flag to determine if cubic decay is a learnable parameter or fixed
+        :param capacity_learnable: flag to determine if capacity is a learnable parameter or fixed
         :param scaling_layer: add a scaling before the nonlinearity which converts the potentials to activations
         :param init_param_kwargs: additional keyword arguments for the policy parameter initialization
         :param use_cuda: `True` to move the policy to the GPU, `False` (default) to use the CPU
