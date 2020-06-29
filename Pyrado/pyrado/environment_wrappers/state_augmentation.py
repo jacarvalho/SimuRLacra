@@ -9,18 +9,22 @@ from pyrado.spaces.box import BoxSpace
 
 
 class StateAugmentationWrapper(EnvWrapper, Serializable):
-    """ TODO """
+    """
+    StateAugmentationWrapper
+
+    Augments the observation of the wrapped environment by its physics configuration
+    """
 
     def __init__(self,
                  wrapped_env: Env,
                  params=None,
                  fixed=False):
         """
-        Constructor TODO
+        Constructor
 
-        :param wrapped_env:
-        :param params:
-        :param fixed:
+        :param wrapped_env: The environment to be wrapped
+        :param params: The parameters to include in the observation
+        :param fixed: Fix the parameters
         """
         Serializable._init(self, locals())
 
