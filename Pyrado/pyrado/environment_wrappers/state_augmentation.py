@@ -30,7 +30,6 @@ class StateAugmentationWrapper(EnvWrapper, Serializable):
         else:
             self._params = list(inner_env(self.wrapped_env).domain_param.keys())
         self._nominal = inner_env(self.wrapped_env).get_nominal_domain_param()
-        self.nominal['dt'] = 1 / 100.  # TODO ATTENTION! THIS CAN BE DEADLY! @Robin, why are you doing this?
         self._nominal = np.array([self._nominal[k] for k in self._params])
         self.fixed = fixed
 
