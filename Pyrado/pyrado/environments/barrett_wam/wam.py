@@ -1,3 +1,4 @@
+import os.path as osp
 import numpy as np
 import robcom_python as robcom
 from init_args_serializer import Serializable
@@ -28,17 +29,20 @@ class WAMBallInCupReal(Env, Serializable):
     def __init__(self,
                  dt: float = 1/500.,
                  max_steps: int = pyrado.inf,
-                 ip: [str, None] = '192.168.2.2',
-                 poses_des: [np.ndarray, None] = None):
+                 ip: [str, None] = '192.168.2.2'):
         """
         Constructor
 
         :param dt: sampling time interval
         :param max_steps: maximum number of time steps
         :param ip: IP address of the PC controlling the Barrett WAM, pass `None` to skip connecting
-        :param poses_des: desired joint poses as num_steps x 3 ndarray
+        :param save_trajectory: If the trajectory recorded from Barrett WAM should be saved
         """
         Serializable._init(self, locals())
+
+        # Make sure max_steps is reachable
+        if not max_steps < pyrado.inf:
+            raise pyrado.ValueErr(given=max_steps, given_name='max_steps', l_constraint=pyrado.inf)
 
         # Call the base class constructor to initialize fundamental members
         super().__init__(dt, max_steps)
@@ -48,10 +52,17 @@ class WAMBallInCupReal(Env, Serializable):
         if ip is not None:
             self._client.start(ip, 2013)  # IP address and port
             print_cbt('Connected to the Barret WAM client.', 'c', bright=True)
-        self._gt = None  # Goto command
+        self._dc = None  # Goto command
 
         # Desired joint position for the initial state
         self.init_pose_des = np.array([0.0, 0.5876, 0.0, 1.36, 0.0, -0.321, -1.57])
+
+        # Initialize params
+        self._curr_step_rr = 0
+        self.qpos_des = None
+        self.qvel_des = None
+        self.qpos = None
+        self.qvel = None
 
         # Initialize spaces
         self._state_space = None
@@ -61,12 +72,6 @@ class WAMBallInCupReal(Env, Serializable):
 
         # Initialize task
         self._task = self._create_task(dict())
-
-        # Desired trajectory
-        if poses_des is not None:
-            if not poses_des.shape[1] == 7:
-                raise pyrado.ShapeErr(given=poses_des.shape[1], expected_match=self.init_pose_des)
-        self.poses_des = poses_des
 
     @property
     def state_space(self) -> Space:
@@ -118,11 +123,21 @@ class WAMBallInCupReal(Env, Serializable):
         # Reset the task which also resets the reward function if necessary
         self._task.reset(env_spec=self.spec)
 
-        input('Hit enter to continue.')
-
         # Reset time steps
         self._curr_step = 0
+        self._curr_step_rr = 0
         self.state = np.array([self._curr_step/self.max_steps])
+
+        # Reset trajectory params
+        self.qpos_des = np.tile(self.init_pose_des, (self.max_steps, 1))
+        self.qvel_des = np.zeros_like(self.qpos_des)
+        self.qpos = np.zeros_like(self.qpos_des)
+        self.qvel = np.zeros_like(self.qpos_des)
+
+        input('Hit enter to continue.')
+
+        # Create robcom direct-control process
+        self._dc = self._client.create(robcom.ClosedLoopDirectControl, 'RIGHT_ARM', '')
 
         return self.observe(self.state)
 
@@ -133,35 +148,27 @@ class WAMBallInCupReal(Env, Serializable):
         remaining_steps = self._max_steps - (self._curr_step + 1) if self._max_steps is not pyrado.inf else 0
         self._curr_rew = self._task.step_rew(self.state, act, remaining_steps)  # always 0 for wam-bic-real
 
+        # Limit the action
         act = self.limit_act(act)
 
-        if self.poses_des is not None and self._curr_step < self.poses_des.shape[0]:
-            # Use given desired trajectory if given and time step does no exceed its length
-            qpos_des = self.poses_des[self._curr_step]
-        else:
-            # Otherwise use the action given by a policy
-            qpos_des = self.init_pose_des.copy()  # keep the initial joint angles deselected joints
-            np.add.at(qpos_des, [1, 3, 5], act[:3])  # the policy operates on joint 1, 3 and 5
+        # the policy operates on joint 1, 3 and 5
+        np.add.at(self.qpos_des[self._curr_step], [1, 3, 5], act[:3])
+        np.add.at(self.qvel_des[self._curr_step], [1, 3, 5], act[3:])
 
-        # Create robcom GoTo process at the first time step TODO @Christian: possible move to the end of reset()?
-        if self._curr_step == 0:
-            self._gt = self._client.create(robcom.Goto, 'RIGHT_ARM', '')
-
-        # Add desired joint position as step to the process
-        self._gt.add_step(self.dt, qpos_des)
+        # Update current step and state
         self._curr_step += 1
         self.state = np.array([self._curr_step/self.max_steps])
 
         # A GoallessTask only signals done when has_failed() is true, i.e. the the state is out of bounds
         done = self._task.is_done(self.state)  # always false for wam-bic-real
 
-        # Only start execution of process when all desired poses have been added to process
+        # Only start execution of process when all desired poses have been sampled from the policy
         # i.e. `max_steps` has been reached
         if self._curr_step >= self._max_steps:
             done = True
             print_cbt('Executing trajectory on Barret WAM.', 'c', bright=True)
-            self._gt.start()
-            self._gt.wait_for_completion()
+            self._dc.start(False, 1, self._callback, ['POS', 'VEL'], [], [])
+            self._dc.wait_for_completion()
             print_cbt('Finished execution.', 'c')
 
         # Add final reward if done
@@ -170,6 +177,34 @@ class WAMBallInCupReal(Env, Serializable):
             self._curr_rew += self._task.final_rew(self.state, remaining_steps)
 
         return self.observe(self.state), self._curr_rew, done, info
+
+    def _callback(self, jg, eg, data_provider):
+        """
+        This function is called from robcom as callback and should never be called manually
+
+        :param jg: joint group
+        :param eg: endeffector group
+        :param data_provider: additional datastream
+        """
+
+        # Check if max_steps is reached
+        if self._curr_step_rr >= self.max_steps:
+            return True
+
+        # Get current joint position and velocity
+        self.qpos[self._curr_step_rr] = np.array(jg.get(robcom.JointState.POS))
+        self.qvel[self._curr_step_rr] = np.array(jg.get(robcom.JointState.VEL))
+
+        # Set desired joint position and velocity
+        dpos = self.qpos_des[self._curr_step_rr].tolist()
+        dvel = self.qvel_des[self._curr_step_rr].tolist()
+        jg.set(robcom.JointDesState.POS, dpos)
+        jg.set(robcom.JointDesState.VEL, dvel)
+
+        # Update current step at real robot
+        self._curr_step_rr += 1
+
+        return False
 
     def render(self, mode: RenderMode, render_step: int = 1):
         # Skip all rendering
