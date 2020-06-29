@@ -1,6 +1,9 @@
 """
 Run a policy (trained in simulation) on real Barret WAM.
 """
+import os.path as osp
+import numpy as np
+
 import pyrado
 from pyrado.environment_wrappers.utils import inner_env
 from pyrado.environments.barrett_wam.wam import WAMBallInCupReal
@@ -39,4 +42,6 @@ if __name__ == '__main__':
     while not done:
         ro = rollout(env_real, policy, eval=True)
         print_cbt(f'Return: {ro.undiscounted_return()}', 'g', bright=True)
+        np.save(osp.join(ex_dir, 'qpos_real.npy'), env_real.qpos)
+        np.save(osp.join(ex_dir, 'qvel_real.npy'), env_real.qvel)
         done, _, _ = after_rollout_query(env_real, policy, ro)

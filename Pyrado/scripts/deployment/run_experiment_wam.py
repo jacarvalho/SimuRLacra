@@ -94,38 +94,6 @@ def run_direct_control(ex_dir, qpos_des, qvel_des, start_pos):
     print('Connection closed.')
 
 
-def run_goto(qpos_des, start_pos, dt=1/500.):
-    # Connect to client
-    c = r.Client()
-    c.start('192.168.2.2', 2013)  # ip adress and port
-    print("Connected to client.")
-
-    # Reset the robot to the initial position
-    gt = c.create(r.Goto, "RIGHT_ARM", "")
-    gt.add_step(5.0, start_pos)
-    print("Moving to initial position")
-    gt.start()
-    gt.wait_for_completion()
-    print("Reached initial position")
-
-    group = c.robot.get_group(["RIGHT_ARM"])
-    home_qpos = np.array(group.get(r.JointState.POS))
-    print("Initial (actual) qpos:", home_qpos)
-
-    input('Hit enter to continue.')
-
-    gt = c.create(r.Goto, "RIGHT_ARM", "")
-    for i in range(0, qpos_des.shape[0]):
-        gt.add_step(dt, qpos_des[i, :])
-    print("Executing trajectory")
-    gt.start()
-    gt.wait_for_completion()
-    print("Finished execution.")
-
-    c.stop()
-    print('Connection closed.')
-
-
 if __name__ == '__main__':
     # Parse command line arguments
     args = get_argparser().parse_args()

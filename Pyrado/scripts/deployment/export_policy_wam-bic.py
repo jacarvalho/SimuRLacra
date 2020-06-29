@@ -10,12 +10,11 @@ import matplotlib.pyplot as plt
 import pyrado
 from pyrado.domain_randomization.utils import print_domain_params
 from pyrado.environment_wrappers.domain_randomization import remove_all_dr_wrappers
-from pyrado.environments.mujoco.wam import WAMBallInCupSim
 from pyrado.logger.experiment import ask_for_experiment
 from pyrado.sampling.rollout import rollout
 from pyrado.utils.argparser import get_argparser
 from pyrado.utils.data_types import RenderMode
-from pyrado.utils.experiments import load_experiment, wrap_like_other_env
+from pyrado.utils.experiments import load_experiment
 from pyrado.utils.input_output import print_cbt
 
 
@@ -30,7 +29,7 @@ if __name__ == '__main__':
     env, policy, _ = load_experiment(ex_dir, args)
     env = remove_all_dr_wrappers(env)
     env.domain_param = env.get_nominal_domain_param()
-    print_cbt(f'Set up the env_real environment with dt={env.dt} max_steps={env.max_steps}.', 'c')
+    print_cbt(f'Set up the environment with dt={env.dt} max_steps={env.max_steps}.', 'c')
     print_domain_params(env.domain_param)
 
     # Get the initial state from the command line, if given. Else, set None to delegate to the environment.
@@ -64,11 +63,16 @@ if __name__ == '__main__':
     fig, ax = plt.subplots(3, 2, sharex='all')
     fig.suptitle('Desired Trajectory')
     for i, idx in enumerate([1, 3, 5]):
-        ax[i, 0].plot(t, qpos_des[:, idx])
-        ax[i, 1].plot(t, qvel_des[:, idx])
+        ax[i, 0].plot(t, 180/np.pi*qpos_des[:, idx], label='Desired')
+        ax[i, 0].plot(t, 180/np.pi*qpos[:, idx], label='Actual')
+        ax[i, 1].plot(t, 180/np.pi*qvel_des[:, idx], label='Desired')
+        ax[i, 1].plot(t, 180/np.pi*qvel[:, idx], label='Actual')
         ax[i, 0].set_ylabel(f'joint {idx}')
+        if i == 0:
+            ax[i, 0].legend()
+            ax[i, 1].legend()
     ax[2, 0].set_xlabel('time [s]')
     ax[2, 1].set_xlabel('time [s]')
-    ax[0, 0].set_title('joint pos [rad]')
-    ax[0, 1].set_title('joint vel [rad/s]')
+    ax[0, 0].set_title('joint pos [deg]')
+    ax[0, 1].set_title('joint vel [deg/s]')
     plt.show()
