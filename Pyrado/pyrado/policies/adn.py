@@ -236,7 +236,6 @@ class ADNPolicy(RecurrentPolicy):
 
     @property
     def hidden_size(self) -> int:
-        """ Get the total number of hidden parameters is the hidden layer size times the hidden layer count. """
         assert self._num_recurrent_layers == 1
         return self._num_recurrent_layers*self._hidden_size + self._hidden_size  # previous potentials and actions
 
@@ -318,13 +317,30 @@ class ADNPolicy(RecurrentPolicy):
             self.param_values = init_values
 
     def init_hidden(self, batch_size: int = None) -> to.Tensor:
-        """
-        Provide initial values for the hidden parameters. This should usually be a zero tensor.
-
-        :param batch_size: number of states to track in parallel
-        :return: Tensor of batch_size x hidden_size
-        """
         return self._pack_hidden(*self._init_hidden_unpacked(batch_size), batch_size=batch_size)
+
+    def _init_hidden_unpacked(self, batch_size: int = None):
+        """ Get initial hidden variables in unpacked state. """
+        # Obtain values
+        prev_act = to.zeros(self._num_recurrent_layers*self._hidden_size)  # as many potential-based neurons as actions
+        potentials = self._init_potentials.clone()
+
+        # Batch if needed
+        if batch_size is not None:
+            prev_act = prev_act.unsqueeze(0).expand(batch_size, -1)
+            potentials = potentials.unsqueeze(0).expand(batch_size, -1)
+
+        return prev_act, potentials
+
+    def _unpack_hidden(self, packed: to.Tensor, batch_size: int = None):
+        """ Unpack hidden values from argument. """
+        n_rh = self._num_recurrent_layers*self._hidden_size
+        # Split into previous actions and potentials
+        return packed[..., :n_rh], packed[..., n_rh:]
+
+    def _pack_hidden(self, prev_act: to.Tensor, potentials: to.Tensor, batch_size: int = None):
+        """ Pack hidden values. """
+        return to.cat([prev_act, potentials], dim=-1)
 
     def forward(self, obs: to.Tensor, hidden: to.Tensor = None) -> (to.Tensor, to.Tensor):
         """
@@ -388,26 +404,3 @@ class ADNPolicy(RecurrentPolicy):
 
         # Return the next action and store the last one as a hidden variable
         return act, hidden_out
-
-    def _init_hidden_unpacked(self, batch_size: int = None):
-        """ Get initial hidden variables in unpacked state """
-        # Obtain values
-        prev_act = to.zeros(self._num_recurrent_layers*self._hidden_size)  # as many potential-based neurons as actions
-        potentials = self._init_potentials.clone()
-
-        # Batch if needed
-        if batch_size is not None:
-            prev_act = prev_act.unsqueeze(0).expand(batch_size, -1)
-            potentials = potentials.unsqueeze(0).expand(batch_size, -1)
-
-        return prev_act, potentials
-
-    def _unpack_hidden(self, packed: to.Tensor, batch_size: int = None):
-        """ Unpack hidden values from argument """
-        n_rh = self._num_recurrent_layers*self._hidden_size
-        # Split into previous actions and potentials
-        return packed[..., :n_rh], packed[..., n_rh:]
-
-    def _pack_hidden(self, prev_act: to.Tensor, potentials: to.Tensor, batch_size: int = None):
-        """ Pack hidden values """
-        return to.cat([prev_act, potentials], dim=-1)

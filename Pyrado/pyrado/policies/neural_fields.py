@@ -177,9 +177,14 @@ class NFPolicy(RecurrentPolicy):
 
     @property
     def hidden_size(self) -> int:
-        """ Get the total number of hidden parameters is the hidden layer size times the hidden layer count. """
         assert self._num_recurrent_layers == 1
         return self._num_recurrent_layers*self._hidden_size
+
+    def init_hidden(self, batch_size: int = None) -> to.Tensor:
+        if batch_size is None:
+            return self._init_potentials
+        else:
+            return self._init_potentials.repeat(batch_size, 1)
 
     @property
     def potentials(self) -> to.Tensor:
@@ -224,7 +229,7 @@ class NFPolicy(RecurrentPolicy):
             init_param(self.obs_layer, **kwargs)
             # self.obs_layer.weight.data /= 100.
             # self.obs_layer.bias.data /= 100.
-            self.resting_level.data.fill_(0.)
+            self.resting_level.data = to.randn_like(self.resting_level.data)#*1e-3
             init_param(self.conv_layer, **kwargs)
             # init_param(self.post_conv_layer, **kwargs)
             init_param(self.nonlin_layer, **kwargs)
@@ -236,6 +241,48 @@ class NFPolicy(RecurrentPolicy):
 
         else:
             self.param_values = init_values
+
+    def _unpack_hidden(self, hidden: to.Tensor, batch_size: int = None):
+        """
+        Unpack the flat hidden state vector into a form the actual network module can use.
+        Since hidden usually comes from some outer source, this method should validate it's shape.
+
+        :param hidden: flat hidden state
+        :param batch_size: if not `None`, hidden is 2-dim and the first dim represents parts of a data batch
+        :return: unpacked hidden state of shape batch_size x channels_in x length_in, ready for the `Conv1d` module
+        """
+        if len(hidden.shape) == 1:
+            assert hidden.shape[0] == self._num_recurrent_layers*self._hidden_size, \
+                "Passed hidden variable's size doesn't match the one required by the network."
+            assert batch_size is None, 'Cannot use batched observations with unbatched hidden state'
+            return hidden.view(self._num_recurrent_layers*self._hidden_size)
+
+        elif len(hidden.shape) == 2:
+            assert hidden.shape[1] == self._num_recurrent_layers*self._hidden_size, \
+                "Passed hidden variable's size doesn't match the one required by the network."
+            assert hidden.shape[0] == batch_size, \
+                f'Batch size of hidden state ({hidden.shape[0]}) must match batch size of observations ({batch_size})'
+            return hidden.view(batch_size, self._num_recurrent_layers*self._hidden_size)
+
+        else:
+            raise RuntimeError(f"Improper shape of 'hidden'. Policy received {hidden.shape}, "
+                               f"but shape should be 1- or 2-dim")
+
+    def _pack_hidden(self, hidden: to.Tensor, batch_size: int = None):
+        """
+        Pack the hidden state returned by the network into an 1-dim state vector.
+        This should be the reverse operation of `_unpack_hidden`.
+
+        :param hidden: hidden state as returned by the network
+        :param batch_size: if not `None`, the result should be 2-dim and the first dim represents parts of a data batch
+        :return: packed hidden state
+        """
+        if batch_size is None:
+            # Simply flatten the hidden state
+            return hidden.view(self._num_recurrent_layers*self._hidden_size)
+        else:
+            # Make sure that the batch dimension is the first element
+            return hidden.view(batch_size, self._num_recurrent_layers*self._hidden_size)
 
     def forward(self, obs: to.Tensor, hidden: to.Tensor = None) -> (to.Tensor, to.Tensor):
         """
@@ -305,45 +352,3 @@ class NFPolicy(RecurrentPolicy):
 
         # Return the next action and store the current potentials as a hidden variable
         return act, hidden_out
-
-    def _unpack_hidden(self, hidden: to.Tensor, batch_size: int = None):
-        """
-        Unpack the flat hidden state vector into a form the actual network module can use.
-        Since hidden usually comes from some outer source, this method should validate it's shape.
-
-        :param hidden: flat hidden state
-        :param batch_size: if not `None`, hidden is 2-dim and the first dim represents parts of a data batch
-        :return: unpacked hidden state of shape batch_size x channels_in x length_in, ready for the `Conv1d` module
-        """
-        if len(hidden.shape) == 1:
-            assert hidden.shape[0] == self._num_recurrent_layers*self._hidden_size, \
-                "Passed hidden variable's size doesn't match the one required by the network."
-            assert batch_size is None, 'Cannot use batched observations with unbatched hidden state'
-            return hidden.view(self._num_recurrent_layers*self._hidden_size)
-
-        elif len(hidden.shape) == 2:
-            assert hidden.shape[1] == self._num_recurrent_layers*self._hidden_size, \
-                "Passed hidden variable's size doesn't match the one required by the network."
-            assert hidden.shape[0] == batch_size, \
-                f'Batch size of hidden state ({hidden.shape[0]}) must match batch size of observations ({batch_size})'
-            return hidden.view(batch_size, self._num_recurrent_layers*self._hidden_size)
-
-        else:
-            raise RuntimeError(f"Improper shape of 'hidden'. Policy received {hidden.shape}, "
-                               f"but shape should be 1- or 2-dim")
-
-    def _pack_hidden(self, hidden: to.Tensor, batch_size: int = None):
-        """
-        Pack the hidden state returned by the network into an 1-dim state vector.
-        This should be the reverse operation of `_unpack_hidden`.
-
-        :param hidden: hidden state as returned by the network
-        :param batch_size: if not `None`, the result should be 2-dim and the first dim represents parts of a data batch
-        :return: packed hidden state
-        """
-        if batch_size is None:
-            # Simply flatten the hidden state
-            return hidden.view(self._num_recurrent_layers*self._hidden_size)
-        else:
-            # Make sure that the batch dimension is the first element
-            return hidden.view(batch_size, self._num_recurrent_layers*self._hidden_size)
