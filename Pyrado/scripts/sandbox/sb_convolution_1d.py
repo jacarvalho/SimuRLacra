@@ -10,23 +10,25 @@ import torch.nn as nn
 from matplotlib import pyplot as plt
 
 import pyrado
+from pyrado.policies.initialization import init_param
 from pyrado.utils.nn_layers import MirrConv1d
 
 
 if __name__ == '__main__':
-    pyrado.set_seed(10)
+    pyrado.set_seed(0)
 
     hand_coded_filter = False  # use a ramp from 0 to 1 instead of random weights
     use_depth_wise_conv = False
-    use_custom_symm_init = True
+    use_custom_mirr_layer = False
+    use_custom_bell_init = True
 
     batch_size = 1
     num_neurons = 360  # each potential-based neuron is basically like time steps of a signal
-    in_channels = 2  # number of input signals
+    in_channels = 1  # number of input signals
     out_channels = 6  # number of filters
     if hand_coded_filter:
         out_channels = 1
-    kernel_size = 17  # larger number smooth out and reduce the length of the output signal, use odd numbers
+    kernel_size = 16  # larger number smooth out and reduce the length of the output signal, use odd numbers
     padding_mode = 'circular'  # circular, reflective, zeros
     padding = kernel_size//2 if padding_mode != 'circular' else kernel_size - 1
 
@@ -48,15 +50,19 @@ if __name__ == '__main__':
         # Standard way
         conv_layer = nn.Conv1d(in_channels, out_channels, kernel_size, stride=1, padding=padding,
                                   dilation=1, groups=1, bias=False, padding_mode=padding_mode)
+        init_param(conv_layer, bell=use_custom_bell_init)
         print(f'conv_layer weights shape: {conv_layer.weight.shape}')
 
+        # A ramp filter
         if hand_coded_filter:
             conv_layer.weight.data = to.linspace(0, 1, kernel_size).repeat(2, 1).unsqueeze(0)
 
-        elif use_custom_symm_init:
+        # Mirrored weighs
+        elif use_custom_mirr_layer:
             conv_layer = MirrConv1d(in_channels, out_channels, kernel_size, stride=1, padding=padding,
                                     dilation=1, groups=1, bias=False, padding_mode=padding_mode)
-        print(f'mirr conv_layer weights shape: {conv_layer.weight.shape}')
+            init_param(conv_layer, bell=use_custom_bell_init)
+            print(f'mirr conv_layer weights shape: {conv_layer.weight.shape}')
 
     print(f'input shape:  {signal.shape}')
 

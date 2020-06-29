@@ -1,11 +1,11 @@
 import torch as to
 import torch.nn as nn
 import torch.nn.init as init
-from math import sqrt
+from math import sqrt, ceil
 from warnings import warn
 
 import pyrado
-from pyrado.utils.nn_layers import ScaleLayer, PositiveScaleLayer, IndiNonlinLayer
+from pyrado.utils.nn_layers import ScaleLayer, PositiveScaleLayer, IndiNonlinLayer, MirrConv1d
 
 
 def init_param(m, **kwargs):
@@ -87,8 +87,34 @@ def init_param(m, **kwargs):
                     param.data[m.hidden_size:m.hidden_size*2].fill_(1)
 
     elif isinstance(m, nn.Conv1d):
-        # Not implemented
-        pass
+        if kwargs.get('bell', False):
+            # Initialize the kernel weights with a shifted of shape exp(-x^2 / sigma^2).
+            # The biases are left unchanged.
+            if m.weight.data.shape[2]%2 == 0:
+                ks_half = m.weight.data.shape[2] // 2
+                ls_half = to.linspace(ks_half, 0, ks_half)  # descending
+                ls = to.cat([ls_half, reversed(ls_half)])
+            else:
+                ks_half = ceil(m.weight.data.shape[2] / 2)
+                ls_half = to.linspace(ks_half, 0, ks_half)  # descending
+                ls = to.cat([ls_half, reversed(ls_half[:-1])])
+            dim_ch_out, dim_ch_in = m.weight.data.shape[0], m.weight.data.shape[1]
+            amp = to.rand(dim_ch_out*dim_ch_in)
+            for i in range(dim_ch_out):
+                for j in range(dim_ch_in):
+                    m.weight.data[i, j, :] = amp[i*dim_ch_in+j]*2*(to.exp(-to.pow(ls, 2) / (ks_half/2)**2) - 0.5)
+
+    elif isinstance(m, MirrConv1d):
+        if kwargs.get('bell', False):
+            # Initialize the kernel weights with a shifted of shape exp(-x^2 / sigma^2).
+            # The biases are left unchanged (does not exist by default).
+            ks = m.weight.data.shape[2]  # ks_mirr = ceil(ks_conv1d / 2)
+            ls = to.linspace(ks, 0, ks)  # descending
+            dim_ch_out, dim_ch_in = m.weight.data.shape[0], m.weight.data.shape[1]
+            amp = to.rand(dim_ch_out*dim_ch_in)
+            for i in range(dim_ch_out):
+                for j in range(dim_ch_in):
+                    m.weight.data[i, j, :] = amp[i*dim_ch_in+j]*2*(to.exp(-to.pow(ls, 2) / (ks/2)**2) - 0.5)
 
     elif isinstance(m, ScaleLayer):
         # Initialize all weights to 1
