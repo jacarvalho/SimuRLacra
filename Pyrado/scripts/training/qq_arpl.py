@@ -63,16 +63,12 @@ if __name__ == '__main__':
     )
     arpl_hparam = dict(
         max_iter=500,
-        num_envs=12,
         steps_num=23*env.max_steps,
         halfspan=0.05,
-        # dyn=True,  # TODO @ Robin: this was NOT commented out, but if is not expected by ARPL
         dyn_eps=0.07,
         dyn_phi=0.25,
-        # obs=True,
         obs_phi=0.1,
         obs_eps=0.05,
-        # proc=True,  # TODO @ Robin: this was NOT commented out, but if is not expected by ARPL
         proc_phi=0.1,
         proc_eps=0.03,
         torch_observation=True
