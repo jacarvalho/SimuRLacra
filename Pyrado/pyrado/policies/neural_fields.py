@@ -20,6 +20,8 @@ class NFPolicy(RecurrentPolicy):
         Biological Cybernetics, 1977
     """
 
+    name: str = 'nf'
+
     def __init__(self,
                  spec: EnvSpec,
                  dt: float,

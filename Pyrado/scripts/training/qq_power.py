@@ -12,9 +12,8 @@ from pyrado.policies.linear import LinearPolicy
 
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
-    # ex_dir = setup_experiment(QQubeSim.name, PoWER.name, 'lin-ident-sign-abs-sq-3mf_actnorm', seed=1)
-    # ex_dir = setup_experiment(QQubeSim.name, PoWER.name, 'fourier_actnorm', seed=1)
-    ex_dir = setup_experiment(QQubeSim.name, PoWER.name, 'ectrl', seed=1)
+    # ex_dir = setup_experiment(QQubeSim.name, PoWER.name, f'{LinearPolicy}_actnorm', seed=1)
+    ex_dir = setup_experiment(QQubeSim.name, PoWER.name, QQubeSwingUpAndBalanceCtrl.name, seed=1)
 
     # Environment
     env_hparams = dict(dt=1/250., max_steps=1500)

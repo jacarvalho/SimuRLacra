@@ -133,6 +133,8 @@ class ADNPolicy(RecurrentPolicy):
         on Hierarchical Dynamical Systems", IROS, 2012
     """
 
+    name: str = 'adn'
+
     def __init__(self,
                  spec: EnvSpec,
                  dt: float,
