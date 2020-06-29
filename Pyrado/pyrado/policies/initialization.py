@@ -1,7 +1,7 @@
 import torch as to
 import torch.nn as nn
 import torch.nn.init as init
-from math import sqrt, ceil
+from math import sqrt
 from warnings import warn
 
 import pyrado

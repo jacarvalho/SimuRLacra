@@ -22,7 +22,8 @@ from pyrado.utils.experiments import wrap_like_other_env
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
     # ex_dir = setup_experiment(QQubeSim.name, f'{BayRn.name}_{PoWER.name}-sim2sim', '100Hz_lin_dr-Mp+', seed=111)
-    ex_dir = setup_experiment(QQubeSim.name, f'{BayRn.name}_{PoWER.name}-sim2sim', '100Hz_ectrl_dr-Mp+Mr+', seed=1111)
+    ex_dir = setup_experiment(QQubeSim.name, f'{BayRn.name}_{PoWER.name}-sim2sim',
+                              f'{QQubeSwingUpAndBalanceCtrl.name}_100Hz_dr-Mp+Mr+', seed=1111)
 
     # Environments
     env_hparams = dict(dt=1/100., max_steps=600)

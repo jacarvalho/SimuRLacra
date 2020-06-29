@@ -28,6 +28,8 @@ class TwoHeadedPolicy(Policy, ABC):
 class TwoHeadedFNNPolicy(TwoHeadedPolicy):
     """ Policy architecture which has a common body and two heads that have a separate last layer """
 
+    name: str = '2h_fnn'
+
     def __init__(self,
                  spec: EnvSpec,
                  shared_hidden_sizes: Sequence[int],
@@ -102,6 +104,8 @@ class TwoHeadedFNNPolicy(TwoHeadedPolicy):
 
 class TwoHeadedGRUPolicy(TwoHeadedPolicy, RecurrentPolicy):
     """ Policy architecture which has a common body and two heads that have a separate last layer """
+
+    name: str = '2h_gru'
 
     def __init__(self,
                  spec: EnvSpec,

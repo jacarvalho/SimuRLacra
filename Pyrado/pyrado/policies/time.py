@@ -11,6 +11,8 @@ from pyrado.policies.base import Policy
 class TimePolicy(Policy):
     """ A purely time-based policy, mainly useful for testing """
 
+    name: str = 'time'
+
     def __init__(self, spec: EnvSpec, fcn_of_time: Callable[[float], List[float]], dt: float, use_cuda: bool = False):
         """
         Constructor

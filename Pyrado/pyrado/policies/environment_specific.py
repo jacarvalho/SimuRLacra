@@ -25,6 +25,8 @@ class DualRBFLinearPolicy(LinearPolicy):
     time get the velocity information from the features, i.e. the derivative of the normalized Gaussians.
     """
 
+    name: str = 'dual_rbf'
+
     def __init__(self,
                  spec: EnvSpec,
                  rbf_hparam: dict,
@@ -112,6 +114,8 @@ class QBallBalancerPDCtrl(Policy):
         This class's desired state specification deviates from the Pyrado policies which interact with a `Task`.
     """
 
+    name: str = 'qbb_pd'
+
     def __init__(self,
                  env_spec: EnvSpec,
                  state_des: to.Tensor = to.zeros(2),
@@ -190,6 +194,8 @@ class QBallBalancerPDCtrl(Policy):
 class QCartPoleSwingUpAndBalanceCtrl(Policy):
     """ Swing-up and balancing controller for the Quanser Cart-Pole """
 
+    name: str = 'qcp_sub'
+
     def __init__(self,
                  env_spec: EnvSpec,
                  u_max: float = 18.,
@@ -267,6 +273,8 @@ class QCartPoleSwingUpAndBalanceCtrl(Policy):
 
 class QQubeSwingUpAndBalanceCtrl(Policy):
     """ Hybrid controller (QQubeEnergyCtrl, QQubePDCtrl) switching based on the pendulum pole angle alpha """
+
+    name: str = 'qq_sub'
 
     def __init__(self,
                  env_spec: EnvSpec,

@@ -25,7 +25,7 @@ from pyrado.utils.experiments import wrap_like_other_env
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
     ex_dir = setup_experiment(QQubeSim.name, f'{BayRn.name}_{PPO.name}',
-                              'fnn_actnorm_dr-masses-lengths--newhparam', seed=111)
+                              f'{FNNPolicy.name}_actnorm_dr-Mp-Mr-Lp-Lr', seed=111)
 
     # Environments
     env_hparams = dict(dt=1/100., max_steps=600)
