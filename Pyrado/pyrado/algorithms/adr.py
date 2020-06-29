@@ -54,27 +54,26 @@ class ADR(Algorithm):
         """
         Constructor
 
-        TODO @Robin: add doc
         :param save_dir: directory to save the snapshots i.e. the results in
-        :param env:
+        :param env: the environment to train in
         :param subroutine: algorithm which performs the policy / value-function optimization
-        :param max_iter:
-        :param svpg_particle_hparam:
-        :param num_svpg_particles:
-        :param num_discriminator_epoch:
-        :param batch_size:
-        :param svpg_learning_rate:
-        :param svpg_temperature:
-        :param svpg_evaluation_steps:
-        :param svpg_horizon:
-        :param svpg_kl_factor:
-        :param svpg_warmup:
-        :param svpg_serial:
-        :param num_sampler_envs:
-        :param num_trajs_per_config:
-        :param max_step_length:
-        :param randomized_params:
-        :param logger:
+        :param max_iter: maximum number of iterations
+        :param svpg_particle_hparam: SVPG particle hyperparameters
+        :param num_svpg_particles: number of SVPG particles
+        :param num_discriminator_epoch: epochs in discriminator training
+        :param batch_size: batch size for training
+        :param svpg_learning_rate: SVPG particle optimizers' learning rate
+        :param svpg_temperature: SVPG temperature coefficient (how strong is the influence of the particles on each other)
+        :param svpg_evaluation_steps: how many configurations to sample between training
+        :param svpg_horizon: how many steps until the particles are reset
+        :param svpg_kl_factor: kl reward coefficient
+        :param svpg_warmup: number of iterations without SVPG training in the beginning
+        :param svpg_serial: serial mode (see SVPG)
+        :param num_sampler_envs: number of parallel sampling environments for the physics configs
+        :param num_trajs_per_config: number of trajectories to sample from each config
+        :param max_step_length: maximum change of physics parameters per step
+        :param randomized_params: which parameters to randomize
+        :param logger: see Logger
         """
         if not isinstance(env, Env):
             raise pyrado.TypeErr(given=env, expected_type=Env)
@@ -103,7 +102,7 @@ class ADR(Algorithm):
         self.svpg_kl_factor = svpg_kl_factor
 
         # Get the number of params
-        self.params = self.PhysicsParameters(env, randomized_params)   # TODO @Robin: check out how DomainRandomizer holds DomainParam. Do we realyl need to implement PhysicsParameters?
+        self.params = self.PhysicsParameters(env, randomized_params)   # TODO Refactor to get rid of 'PhysicsParameters'
         self.num_params = self.params.length
 
         # Initialize the sampler
@@ -153,11 +152,11 @@ class ADR(Algorithm):
 
     def compute_params(self, sim_instances: to.Tensor, t: int):
         """
-        TODO @Robin: add doc
+        Computes the parameters
 
-        :param sim_instances:
-        :param t:
-        :return:
+        :param sim_instances: Physics configurations trajectory
+        :param t: time step to chose
+        :return: parameters at the time
         """
         nominal = self.params.nominal_dict
         keys = nominal.keys()
