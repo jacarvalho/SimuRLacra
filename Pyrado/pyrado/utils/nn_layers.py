@@ -60,6 +60,7 @@ class IndiNonlinLayer(nn.Module):
                  in_features: int,
                  nonlin: Callable,
                  bias: bool,
+                 weight: bool = True,
                  init_weight: float = 1.,
                  init_bias: float = 0.):
         """
@@ -68,6 +69,7 @@ class IndiNonlinLayer(nn.Module):
         :param in_features: size of each input sample
         :param nonlin: nonlinearity
         :param bias: if `True`, a learnable bias is subtracted, else no bias is used
+        :param weight: if `True` (default), the input is multiplied with a learnable scaling factor
         :param init_weight: initial scaling factor
         :param init_bias: initial bias
         """
@@ -76,20 +78,24 @@ class IndiNonlinLayer(nn.Module):
 
         super().__init__()
         self._nonlin = nonlin
-        self.log_weight = nn.Parameter(to.log(init_weight*to.ones(in_features, dtype=to.get_default_dtype())),
-                                       requires_grad=True)
+        if weight:
+            self.log_weight = nn.Parameter(to.log(init_weight*to.ones(in_features, dtype=to.get_default_dtype())),
+                                           requires_grad=True)
+        else:
+            self.log_weight = None
         if bias:
             self.bias = nn.Parameter(init_bias*to.ones(in_features, dtype=to.get_default_dtype()), requires_grad=True)
         else:
             self.bias = None
 
     def forward(self, inp: to.Tensor) -> to.Tensor:
-        if self.bias is None:
-            # y = f_nlin( w * x )
-            return self._nonlin(to.exp(self.log_weight)*inp)
-        else:
-            # y = f_nlin( w * (x-b) )
-            return self._nonlin(to.exp(self.log_weight)*(inp - self.bias))
+        # Apply bias if desired
+        tmp = inp - self.bias if self.bias is not None else inp
+        # Apply weights if desired
+        tmp = to.exp(self.log_weight)*tmp if self.log_weight is not None else tmp
+
+        # y = f_nlin( w * (x-b) )
+        return self._nonlin(tmp)
 
 
 class MirrConv1d(_ConvNd):
