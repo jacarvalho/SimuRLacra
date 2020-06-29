@@ -27,6 +27,8 @@ def _get_or_create_grad(t):
 class Policy(nn.Module, ABC):
     """ Base class for all policies in Pyrado """
 
+    name: str = None  # unique identifier
+
     def __init__(self, spec: EnvSpec, use_cuda: bool = False):
         """
         Constructor

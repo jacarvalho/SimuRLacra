@@ -16,7 +16,7 @@ from pyrado.policies.fnn import FNN
 
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
-    ex_dir = setup_experiment(PlanarInsertSim.name, f'adn-{NES.name}', 'fnn_obsnorm_actdelay-4', seed=1001)
+    ex_dir = setup_experiment(PlanarInsertSim.name, NES.name, f'{ADNPolicy}_obsnorm_actdelay-4', seed=1001)
 
     # Environment
     env_hparams = dict(

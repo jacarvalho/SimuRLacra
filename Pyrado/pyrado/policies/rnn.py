@@ -221,6 +221,9 @@ class RNNPolicyBase(RecurrentPolicy):
 
 class RNNPolicy(RNNPolicyBase):
     """ Policy backed by a multi-layer RNN """
+
+    name: str = 'rnn'
+
     recurrent_network_type = nn.RNN
 
     def __init__(self,
@@ -259,11 +262,17 @@ class RNNPolicy(RNNPolicyBase):
 
 class GRUPolicy(RNNPolicyBase):
     """ Policy backed by a multi-layer GRU """
+
+    name: str = 'gru'
+
     recurrent_network_type = nn.GRU
 
 
 class LSTMPolicy(RNNPolicyBase):
     """ Policy backed by a multi-layer LSTM """
+
+    name: str = 'lstm'
+
     recurrent_network_type = nn.LSTM
 
     @property

@@ -23,7 +23,7 @@ from pyrado.sampling.sequences import *
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
     ex_dir = setup_experiment(QBallBalancerSim.name, f'{SPOTA.name}-{HCNormal.name}',
-                              'lin-ident_obsnoise-s_actedlay-10', seed=1001)
+                              f'{LinearPolicy.name}_obsnoise-s_actedlay-10', seed=1001)
 
     # Environment and domain randomization
     env_hparams = dict(dt=1/100., max_steps=500)

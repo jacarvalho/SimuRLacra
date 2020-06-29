@@ -13,7 +13,7 @@ from pyrado.policies.linear import LinearPolicy
 
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
-    ex_dir = setup_experiment(OneMassOscillatorSim.name, PEPG.name, 'const-lin', seed=1001)
+    ex_dir = setup_experiment(OneMassOscillatorSim.name, PEPG.name, LinearPolicy.name, seed=1001)
 
     # Environment
     env_hparams = dict(dt=1/50., max_steps=200)

@@ -154,6 +154,8 @@ class FNN(nn.Module):
 class FNNPolicy(Policy):
     """ Feed-forward neural network policy """
 
+    name: str = 'fnn'
+
     def __init__(self,
                  spec: EnvSpec,
                  hidden_sizes: Sequence[int],
@@ -203,6 +205,8 @@ class FNNPolicy(Policy):
 
 class DiscrActQValFNNPolicy(Policy):
     """ State-action value (Q-value) feed-forward neural network policy for discrete actions """
+
+    name: str = 'd_fnn'
 
     def __init__(self,
                  spec: EnvSpec,
