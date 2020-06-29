@@ -109,9 +109,9 @@ def plot_observations(ro: StepSequence, idcs_sel: Sequence[int] = None):
                 for j in range(num_cols):
                     if j + i*num_cols < len(dim_obs):
                         # Omit the last observation for simplicity
-                        axs[i, j].plot(t, ro.observations[:-1, j + i*num_cols],
-                                       label=_get_obs_label(ro, j + i*num_cols), c=colors[j + i*num_cols])
-                        axs[i, j].legend()
+                        axs[j + i*num_cols].plot(t, ro.observations[:-1, j + i*num_cols], c=colors[j + i*num_cols],
+                                                 label=_get_obs_label(ro, j + i*num_cols))
+                        axs[j + i*num_cols].legend()
                     else:
                         # We might create more subplots than there are observations
                         pass
@@ -190,7 +190,7 @@ def plot_actions(ro: StepSequence, env: Env):
         act_norm_wrapper = typed_env(env, ActNormWrapper)
         if act_norm_wrapper is not None:
             lb, ub = inner_env(env).act_space.bounds
-            act_denorm = lb + (ro.actions[:] + 1.) * (ub - lb) / 2
+            act_denorm = lb + (ro.actions[:] + 1.)*(ub - lb)/2
             act_clipped = np.array([inner_env(env).limit_act(a) for a in act_denorm])
         else:
             act_denorm = ro.actions
