@@ -34,6 +34,7 @@ class NFPolicy(RecurrentPolicy):
                  conv_padding_mode: str = 'circular',
                  tau_init: float = 1.,
                  tau_learnable: bool = True,
+                 potential_init_learnable: bool = True,
                  init_param_kwargs: dict = None,
                  use_cuda: bool = False):
         """
@@ -97,16 +98,18 @@ class NFPolicy(RecurrentPolicy):
 
         # Call custom initialization function after PyTorch network parameter initialization
         self._potentials = to.zeros(self._hidden_size)
-        self._init_potentials = to.zeros_like(self._potentials)
+        self.potential_init_learnable = potential_init_learnable
+        self._potentials_init = nn.Parameter(to.zeros_like(self._potentials), requires_grad=True)\
+            if potential_init_learnable else to.zeros_like(self._potentials)
         self._potentials_max = 100.  # clip potentials symmetrically
         self._stimuli_internal = to.zeros_like(self._potentials)
         self._stimuli_external = to.zeros_like(self._potentials)
 
         # Potential dynamics's time constant
-        self._tau_learnable = tau_learnable
+        self.tau_learnable = tau_learnable
         self._log_tau_init = to.log(to.tensor([tau_init], dtype=to.get_default_dtype()))
-        self._log_tau = nn.Parameter(self._log_tau_init,
-                                     requires_grad=True) if self._tau_learnable else self._log_tau_init
+        self._log_tau = nn.Parameter(self._log_tau_init, requires_grad=True)\
+            if self.tau_learnable else self._log_tau_init
 
         # Initialize policy parameters
         init_param_kwargs = init_param_kwargs if init_param_kwargs is not None else dict()
@@ -120,9 +123,9 @@ class NFPolicy(RecurrentPolicy):
 
     def init_hidden(self, batch_size: int = None) -> to.Tensor:
         if batch_size is None:
-            return self._init_potentials
+            return self._potentials_init
         else:
-            return self._init_potentials.repeat(batch_size, 1)
+            return self._potentials_init.repeat(batch_size, 1)
 
     @property
     def potentials(self) -> to.Tensor:
@@ -174,7 +177,7 @@ class NFPolicy(RecurrentPolicy):
             init_param(self.act_layer, **kwargs)
 
             # Initialize time constant if modifiable
-            if self._tau_learnable:
+            if self.tau_learnable:
                 self._log_tau.data = self._log_tau_init
 
         else:

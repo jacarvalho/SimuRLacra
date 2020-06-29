@@ -193,39 +193,39 @@ class ADNPolicy(RecurrentPolicy):
 
         # Call custom initialization function after PyTorch network parameter initialization
         self._potentials = to.zeros(self._hidden_size)
-        self._init_potentials = to.zeros_like(self._potentials)
+        self._potentials_init = to.zeros_like(self._potentials)
         self._potentials_max = 100.  # clip potentials symmetrically
         self._stimuli_external = to.zeros_like(self._potentials)
         self._stimuli_internal = to.zeros_like(self._potentials)
 
         # Potential dynamics
         # time constant
-        self._tau_learnable = tau_learnable
+        self.tau_learnable = tau_learnable
         self._log_tau_init = to.log(to.tensor([tau_init], dtype=to.get_default_dtype()))
         self._log_tau = nn.Parameter(self._log_tau_init,
-                                     requires_grad=True) if self._tau_learnable else self._log_tau_init
+                                     requires_grad=True) if self.tau_learnable else self._log_tau_init
         # cubic decay
         if potentials_dyn_fcn == pd_cubic:
-            self._kappa_learnable = kappa_learnable
+            self.kappa_learnable = kappa_learnable
             self._log_kappa_init = to.log(to.tensor([kappa_init], dtype=to.get_default_dtype()))
             self._log_kappa = nn.Parameter(self._log_kappa_init,
-                                           requires_grad=True) if self._kappa_learnable else self._log_kappa_init
+                                           requires_grad=True) if self.kappa_learnable else self._log_kappa_init
         else:
             self._log_kappa = None
         # capacity
-        self._capacity_learnable = capacity_learnable
+        self.capacity_learnable = capacity_learnable
         if potentials_dyn_fcn in [pd_capacity_21, pd_capacity_21_abs, pd_capacity_32, pd_capacity_32_abs]:
             if self.activation_nonlin is to.sigmoid:
                 # sigmoid(7.) approx 0.999
                 self._log_capacity_init = to.log(to.tensor([7.], dtype=to.get_default_dtype()))
                 self._log_capacity = nn.Parameter(self._log_capacity_init, requires_grad=True) \
-                    if self._capacity_learnable else self._log_capacity_init
-                self._init_potentials = -7.*to.ones_like(self._potentials)
+                    if self.capacity_learnable else self._log_capacity_init
+                self._potentials_init = -7.*to.ones_like(self._potentials)
             elif self.activation_nonlin is to.tanh:
                 # tanh(3.8) approx 0.999
                 self._log_capacity_init = to.log(to.tensor([3.8], dtype=to.get_default_dtype()))
                 self._log_capacity = nn.Parameter(self._log_capacity_init, requires_grad=True) \
-                    if self._capacity_learnable else self._log_capacity_init
+                    if self.capacity_learnable else self._log_capacity_init
             else:
                 raise pyrado.TypeErr(msg='Only output nonlinearities of type torch.sigmoid and torch.tanh are supported'
                                          'for capacity-based potential dynamics.')
@@ -305,15 +305,15 @@ class ADNPolicy(RecurrentPolicy):
             init_param(self.scaling_layer, **kwargs)
 
             # Initialize time constant if modifiable
-            if self._tau_learnable:
+            if self.tau_learnable:
                 self._log_tau.data = self._log_tau_init
             # Initialize cubic decay if modifiable
             if self.potentials_dot_fcn == pd_cubic:
-                if self._kappa_learnable:
+                if self.kappa_learnable:
                     self._log_kappa.data = self._log_kappa_init
             # Initialize capacity if modifiable
             elif self.potentials_dot_fcn in [pd_capacity_21, pd_capacity_21_abs, pd_capacity_32, pd_capacity_32_abs]:
-                if self._capacity_learnable:
+                if self.capacity_learnable:
                     self._log_capacity.data = self._log_capacity_init
 
         else:
@@ -326,7 +326,7 @@ class ADNPolicy(RecurrentPolicy):
         """ Get initial hidden variables in unpacked state. """
         # Obtain values
         prev_act = to.zeros(self._num_recurrent_layers*self._hidden_size)  # as many potential-based neurons as actions
-        potentials = self._init_potentials.clone()
+        potentials = self._potentials_init.clone()
 
         # Batch if needed
         if batch_size is not None:
