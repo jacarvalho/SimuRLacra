@@ -101,7 +101,7 @@ class Planar3LinkSim(RcsSim, Serializable):
         p2 = self.get_body_position('Goal2', '', '')
         p3 = self.get_body_position('Goal3', '', '')
         if task_args.get('consider_velocities', False):
-            Q = np.diag([1e0, 1e0, 1e-1, 1e-1])
+            Q = np.diag([1e0, 1e0, 2e-1, 2e-1])
             state_des1 = np.array([p1[0], p1[2], 0, 0])
             state_des2 = np.array([p2[0], p2[2], 0, 0])
             state_des3 = np.array([p3[0], p3[2], 0, 0])

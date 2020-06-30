@@ -1,20 +1,23 @@
 """
-Train an agent to solve the Planar-3-Link task using Neural Fields and Hill Climbing.
+Train an agent to solve the Planar-3-Link task using Neural Fields and Proximal Policy Optimization.
 """
 import torch as to
 
-from pyrado.algorithms.cem import CEM
-from pyrado.algorithms.hc import HCNormal
+from pyrado.algorithms.advantage import GAE
+from pyrado.algorithms.ppo import PPO
 from pyrado.environment_wrappers.observation_normalization import ObsNormWrapper
 from pyrado.environment_wrappers.observation_partial import ObsPartialWrapper
 from pyrado.environments.rcspysim.planar_3_link import Planar3LinkIKSim
 from pyrado.logger.experiment import setup_experiment, save_list_of_dicts_to_yaml
+from pyrado.policies.fnn import FNNPolicy, FNN
 from pyrado.policies.neural_fields import NFPolicy
+from pyrado.spaces import ValueFunctionSpace
+from pyrado.utils.data_types import EnvSpec
 
 
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
-    ex_dir = setup_experiment(Planar3LinkIKSim.name, HCNormal.name, NFPolicy.name, seed=101)
+    ex_dir = setup_experiment(Planar3LinkIKSim.name, PPO.name, NFPolicy.name, seed=101)
 
     # Environment
     env_hparams = dict(
@@ -46,10 +49,14 @@ if __name__ == '__main__':
 
     # Policy
     policy_hparam = dict(
-        hidden_size=5,
+        # obs_layer=FNN(input_size=env.obs_space.flat_dim,
+        #               output_size=25,
+        #               hidden_sizes=[16, 16],
+        #               hidden_nonlin=to.tanh),
+        hidden_size=25,
         conv_out_channels=1,
         mirrored_conv_weights=True,
-        conv_kernel_size=3,
+        conv_kernel_size=25,
         conv_padding_mode='circular',
         init_param_kwargs=dict(bell=True),
         activation_nonlin=to.sigmoid,
@@ -60,33 +67,36 @@ if __name__ == '__main__':
         potential_init_learnable=True,
     )
     policy = NFPolicy(spec=env.spec, dt=env.dt, **policy_hparam)
-    # policy.param_values = to.load('/home/muratore/Software/SimuRLacra/Pyrado/data/temp/p3l-ik/hc/2020-06-30_15-06-57--nf/policy.pt').param_values
     print(policy)
 
-    # Algorithm
-    # algo_hparam = dict(
-    #     max_iter=50,
-    #     pop_size=policy.num_param,
-    #     num_rollouts=1,
-    #     num_is_samples=policy.num_param//10,
-    #     expl_std_init=1.0,
-    #     expl_std_min=0.02,
-    #     extra_expl_std_init=0.5,
-    #     extra_expl_decay_iter=5,
-    #     full_cov=False,
-    #     symm_sampling=False,
-    #     num_sampler_envs=6,
-    # )
-    # algo = CEM(ex_dir, env, policy, **algo_hparam)
-    algo_hparam = dict(
-        max_iter=100,
-        pop_size=policy.num_param,
-        expl_factor=1.05,
-        num_rollouts=1,
-        expl_std_init=0.5,
-        num_sampler_envs=6,
+    # Critic
+    value_fcn_hparam = dict(hidden_sizes=[32, 32], hidden_nonlin=to.tanh)
+    value_fcn = FNNPolicy(spec=EnvSpec(env.obs_space, ValueFunctionSpace), **value_fcn_hparam)
+    critic_hparam = dict(
+        gamma=0.998,
+        lamda=0.95,
+        num_epoch=10,
+        batch_size=512,
+        standardize_adv=False,
+        standardizer=None,
+        max_grad_norm=5.,
+        lr=5e-4,
     )
-    algo = HCNormal(ex_dir, env, policy, **algo_hparam)
+    critic = GAE(value_fcn, **critic_hparam)
+
+    # Algorithm
+    algo_hparam = dict(
+        max_iter=500,
+        min_steps=20*env.max_steps,
+        num_epoch=5,
+        eps_clip=0.15,
+        batch_size=512,
+        std_init=0.6,
+        max_grad_norm=5.,
+        lr=3e-4,
+        num_sampler_envs=8,
+    )
+    algo = PPO(ex_dir, env, policy, critic, **algo_hparam)
 
     # Save the hyper-parameters
     save_list_of_dicts_to_yaml([
