@@ -34,6 +34,8 @@ class NFPolicy(RecurrentPolicy):
                  conv_padding_mode: str = 'circular',
                  tau_init: float = 1.,
                  tau_learnable: bool = True,
+                 kappa_init: float = None,
+                 kappa_learnable: bool = True,
                  potential_init_learnable: bool = False,
                  init_param_kwargs: dict = None,
                  use_cuda: bool = False):
@@ -51,6 +53,8 @@ class NFPolicy(RecurrentPolicy):
         :param conv_kernel_size: size of the kernel for the 1-dim convolution along the potential-based neurons
         :param tau_init: initial value for the shared time constant of the potentials
         :param tau_learnable: flag to determine if the time constant is a learnable parameter or fixed
+        :param kappa_init: initial value for the cubic decay, pass `None` (default) to disable cubic decay
+        :param kappa_learnable: flag to determine if cubic decay is a learnable parameter or fixed
         :param potential_init_learnable: flag to determine if the initial potentials are a learnable parameter or fixed
         :param init_param_kwargs: additional keyword arguments for the policy parameter initialization
         :param use_cuda: `True` to move the policy to the GPU, `False` (default) to use the CPU
@@ -112,6 +116,14 @@ class NFPolicy(RecurrentPolicy):
         self._log_tau = nn.Parameter(self._log_tau_init, requires_grad=True)\
             if self.tau_learnable else self._log_tau_init
 
+        if kappa_init is not None:
+            self.kappa_learnable = kappa_learnable
+            self._log_kappa_init = to.log(to.tensor([kappa_init], dtype=to.get_default_dtype()))
+            self._log_kappa = nn.Parameter(self._log_kappa_init, requires_grad=True)\
+                if self.kappa_learnable else self._log_kappa_init
+        else:
+            self._log_kappa = None
+
         # Initialize policy parameters
         init_param_kwargs = init_param_kwargs if init_param_kwargs is not None else dict()
         self.init_param(None, **init_param_kwargs)
@@ -154,16 +166,22 @@ class NFPolicy(RecurrentPolicy):
         """ Get the time scale parameter (exists for all potential dynamics functions). """
         return to.exp(self._log_tau)
 
+    @property
+    def kappa(self) -> to.Tensor:
+        """ Get the cubic decay parameter if specified in the constructor, else return zero. """
+        return to.zeros(1) if self._log_kappa is None else to.exp(self._log_kappa)
+
     def potentials_dot(self, stimuli: to.Tensor) -> to.Tensor:
-        """
+        r"""
         Compute the derivative of the neurons' potentials per time step.
+        $/tau /dot{u} = s + h - u - /kappa u^3, /quad /text{with} s = s_{int} + s_{ext} = W*o + /int{w(u, v) f(u) dv}$
 
         :param stimuli: sum of external and internal stimuli at the current point in time
         :return: time derivative of the potentials
         """
         if not all(self.tau > 0):
             raise pyrado.ValueErr(given=self.tau, g_constraint='0')
-        return (stimuli + self.resting_level - self._potentials)/self.tau
+        return (stimuli + self.resting_level - self._potentials - self.kappa*to.pow(self._potentials, 3))/self.tau
 
     def init_param(self, init_values: to.Tensor = None, **kwargs):
         if init_values is None:
