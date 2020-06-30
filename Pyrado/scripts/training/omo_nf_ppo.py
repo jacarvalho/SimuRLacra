@@ -1,5 +1,5 @@
 """
-Train an agent to solve the Box Shelving task task using Activation Dynamics Networks and Cross-Entropy Method.
+Train an agent to solve the Box Shelving task task using Neural Fields and Proximal Policy Optimization.
 """
 import numpy as np
 import torch as to
@@ -17,7 +17,7 @@ from pyrado.utils.data_types import EnvSpec
 
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
-    ex_dir = setup_experiment(OneMassOscillatorSim.name, f'nf-{PPO.name}', 'const-lin', seed=1001)
+    ex_dir = setup_experiment(OneMassOscillatorSim.name, PPO.name, NFPolicy.name, seed=1001)
 
     # Environment
     env_hparams = dict(dt=1/50., max_steps=200)
@@ -28,39 +28,45 @@ if __name__ == '__main__':
     policy_hparam = dict(
         hidden_size=5,
         conv_out_channels=1,
-        conv_kernel_size=5,
+        mirrored_conv_weights=True,
+        conv_kernel_size=3,
         conv_padding_mode='circular',
-        activation_nonlin=to.tanh,
+        init_param_kwargs=dict(bell=True),
+        activation_nonlin=to.sigmoid,
         tau_init=1e-1,
-        tau_learnable=True,
+        tau_learnable=False,
+        kappa_init=1e-3,
+        kappa_learnable=True,
+        potential_init_learnable=True,
     )
     policy = NFPolicy(spec=env.spec, dt=env.dt, **policy_hparam)
 
     # Critic
-    value_fcn_hparam = dict(hidden_sizes=[64, 64], hidden_nonlin=to.tanh)
+    value_fcn_hparam = dict(hidden_sizes=[16, 16], hidden_nonlin=to.tanh)
     value_fcn = FNNPolicy(spec=EnvSpec(env.obs_space, ValueFunctionSpace), **value_fcn_hparam)
     critic_hparam = dict(
         gamma=0.995,
         lamda=0.95,
         num_epoch=10,
-        batch_size=512,
+        batch_size=256,
         standardize_adv=False,
         standardizer=None,
-        max_grad_norm=1.,
-        lr=5e-4,
+        # max_grad_norm=5.,
+        lr=1e-3,
     )
     critic = GAE(value_fcn, **critic_hparam)
 
     # Algorithm
     algo_hparam = dict(
         max_iter=500,
-        min_steps=20*env.max_steps,
-        num_epoch=10,
+        min_steps=10*env.max_steps,
+        num_epoch=5,
         eps_clip=0.15,
-        batch_size=512,
-        max_grad_norm=1.,
+        batch_size=256,
+        std_init=0.6,
+        # max_grad_norm=5.,
         lr=5e-4,
-        num_sampler_envs=8,
+        num_sampler_envs=6,
     )
     algo = PPO(ex_dir, env, policy, critic, **algo_hparam)
 
