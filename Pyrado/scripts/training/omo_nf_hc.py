@@ -31,6 +31,8 @@ if __name__ == '__main__':
         activation_nonlin=to.sigmoid,
         tau_init=1e-1,
         tau_learnable=False,
+        kappa_init=1e-3,
+        kappa_learnable=True,
         potential_init_learnable=True,
     )
     policy = NFPolicy(spec=env.spec, dt=env.dt, **policy_hparam)

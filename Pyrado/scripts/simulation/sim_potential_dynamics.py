@@ -5,7 +5,6 @@ import numpy as np
 import torch as to
 import os.path as osp
 from matplotlib import pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 
 import pyrado
 from pyrado.logger.experiment import ask_for_experiment
@@ -72,6 +71,7 @@ if __name__ == '__main__':
 
             # Plot
             plt.plot(time.numpy(), p_0.repeat(num_steps).numpy(), p[:, a].detach().numpy())
+        plt.title(f'Final value {p[-1, a].numpy().round(4)}',  y=1.05)
 
     # Save
     if args.save_figures:
