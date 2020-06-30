@@ -375,9 +375,6 @@ class ADNPolicy(RecurrentPolicy):
         potentials = potentials.detach()
         self._potentials = potentials.clone()  # saved in rollout()
 
-        # Clip the potentials
-        potentials = potentials.clamp(min=-self._potentials_max, max=self._potentials_max)
-
         # ----------------
         # Activation Logic
         # ----------------
@@ -388,6 +385,9 @@ class ADNPolicy(RecurrentPolicy):
 
         # Potential dynamics forward integration
         potentials = potentials + self._dt*self.potentials_dot(self._stimuli_external + self._stimuli_internal)
+
+        # Clip the potentials
+        potentials = potentials.clamp(min=-self._potentials_max, max=self._potentials_max)
 
         # Optionally scale the potentials (individually)
         act = self.scaling_layer(potentials) if self.scaling_layer is not None else potentials

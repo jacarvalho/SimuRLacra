@@ -254,9 +254,6 @@ class NFPolicy(RecurrentPolicy):
         potentials = potentials.detach()
         self._potentials = potentials.clone()  # saved in rollout()
 
-        # Clip the potentials
-        potentials = potentials.clamp(min=-self._potentials_max, max=self._potentials_max)
-
         # ----------------
         # Activation Logic
         # ----------------
@@ -282,6 +279,9 @@ class NFPolicy(RecurrentPolicy):
 
         # Potential dynamics forward integration
         potentials = potentials + self._dt*self.potentials_dot(self._stimuli_external + self._stimuli_internal)
+
+        # Clip the potentials
+        potentials = potentials.clamp(min=-self._potentials_max, max=self._potentials_max)
 
         # Scale the potentials, subtract a bias, and pass them through a nonlinearity
         activations = self.nonlin_layer(potentials)
