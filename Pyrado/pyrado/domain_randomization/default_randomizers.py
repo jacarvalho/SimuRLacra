@@ -377,10 +377,12 @@ def get_default_randomizer_wambic() -> DomainRandomizer:
         # Ball needs to fit into the cup
         NormalDomainParam(name='cup_scale', mean=dp_nom['cup_scale'], std=dp_nom['cup_scale']/5, clip_lo=0.65),
         # Rope won't be more than 5cm off
-        NormalDomainParam(name='rope_length', mean=dp_nom['rope_length'], std=dp_nom['rope_length']/10,
+        NormalDomainParam(name='rope_length', mean=dp_nom['rope_length'], std=dp_nom['rope_length']/20,
                           clip_lo=0.25, clip_up=0.35),
-        NormalDomainParam(name='ball_mass', mean=dp_nom['ball_mass'], std=dp_nom['ball_mass']/20, clip_lo=1e-2),
+        NormalDomainParam(name='ball_mass', mean=dp_nom['ball_mass'], std=dp_nom['ball_mass']/10, clip_lo=1e-2),
         UniformDomainParam(name='joint_damping', mean=dp_nom['joint_damping'], halfspan=dp_nom['joint_damping']/2,
+                           clip_lo=0.),
+        UniformDomainParam(name='joint_stiction', mean=dp_nom['joint_stiction'], halfspan=dp_nom['joint_stiction'],
                            clip_lo=0.),
     )
 
@@ -451,4 +453,6 @@ def get_default_domain_param_map_wambic() -> Dict[int, Tuple[str, str]]:
         5: ('ball_mass', 'std'),
         6: ('joint_damping', 'mean'),
         7: ('joint_damping', 'halfspan'),
+        8: ('joint_stiction', 'mean'),
+        9: ('joint_stiction', 'halfspan'),
     }

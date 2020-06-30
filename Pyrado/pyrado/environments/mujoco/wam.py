@@ -159,7 +159,7 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
             rope_length=0.3,  # length of the rope [m] (previously 0.3103)
             ball_mass=0.021,  # mass of the ball [kg]
             joint_damping=0.05,  # damping of motor joints [N/s] (default value is small)
-            joint_stiction=0.1,  # dry friction coefficient of motor joints (reasonable values are 0.1 to 0.6)
+            joint_stiction=0.2,  # dry friction coefficient of motor joints (reasonable values are 0.1 to 0.6)
         )
 
     def _create_spaces(self):
