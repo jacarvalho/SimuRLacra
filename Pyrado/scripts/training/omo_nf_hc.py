@@ -1,5 +1,5 @@
 """
-Train an agent to solve the Box Shelving task task using Activation Dynamics Networks and Cross-Entropy Method.
+Train an agent to solve the One-Mass-Oscillator environment using Activation Dynamics Networks and Cross-Entropy Method.
 """
 import numpy as np
 import torch as to

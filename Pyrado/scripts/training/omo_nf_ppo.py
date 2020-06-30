@@ -1,5 +1,5 @@
 """
-Train an agent to solve the Box Shelving task task using Neural Fields and Proximal Policy Optimization.
+Train an agent to solve the One-Mass-Oscillator environment using Neural Fields and Proximal Policy Optimization.
 """
 import numpy as np
 import torch as to

@@ -95,7 +95,7 @@ class IndiNonlinLayer(nn.Module):
             self.bias = None
 
     def extra_repr(self) -> str:
-        return f'in_features={self.log_weight.numel()}, log_weight={self.log_weight is not None}, ' \
+        return f'in_features={self.log_weight.numel()}, weight={self.log_weight is not None}, ' \
                f'bias={self.bias is not None}'
 
     def forward(self, inp: to.Tensor) -> to.Tensor:
