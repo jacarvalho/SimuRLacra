@@ -51,9 +51,8 @@ def plot_observations_actions_rewards(ro: StepSequence):
         # Use recorded time stamps if possible
         t = ro.env_infos.get('t', np.arange(0, ro.length)) if hasattr(ro, 'env_infos') else np.arange(0, ro.length)
 
-        fig, axs = plt.subplots(dim_obs + dim_act + 1, 1, figsize=(8, 12), constrained_layout=True)
+        fig, axs = plt.subplots(dim_obs + dim_act + 1, 1, figsize=(8, 12))
         fig.suptitle('Observations, Actions, and Reward over Time')
-        plt.subplots_adjust(hspace=.5)
         colors = plt.get_cmap('tab20')(np.linspace(0, 1, dim_obs if dim_obs > dim_act else dim_act))
 
         # Observations (without the last time step)
@@ -70,6 +69,7 @@ def plot_observations_actions_rewards(ro: StepSequence):
         # Rewards
         axs[-1].plot(t, ro.rewards, label='reward', c='k')
         axs[-1].legend()
+        plt.subplots_adjust(hspace=.5)
         plt.show()
 
 
@@ -182,9 +182,8 @@ def plot_actions(ro: StepSequence, env: Env):
         # Use recorded time stamps if possible
         t = ro.env_infos.get('t', np.arange(0, ro.length)) if hasattr(ro, 'env_infos') else np.arange(0, ro.length)
 
-        fig, axs = plt.subplots(dim_act, figsize=(8, 12), constrained_layout=True)
+        fig, axs = plt.subplots(dim_act, figsize=(8, 12))
         fig.suptitle('Actions over Time')
-        plt.subplots_adjust(hspace=.5)
         colors = plt.get_cmap('tab20')(np.linspace(0, 1, dim_act))
 
         act_norm_wrapper = typed_env(env, ActNormWrapper)
@@ -244,7 +243,7 @@ def plot_potentials(ro: StepSequence, layout: str = 'joint'):
 
         if layout == 'separate':
             fig = plt.figure(figsize=(16, 10))
-            gs = fig.add_gridspec(nrows=num_pot, ncols=4, constrained_layout=True)
+            gs = fig.add_gridspec(nrows=num_pot, ncols=4)
             for i in range(num_pot):
                 ax0 = fig.add_subplot(gs[i, 0])
                 ax0.plot(t, ro.stimuli_external[:, i], label=rf'$s_{{ext,{i}}}$', c=colors_pot[i])
@@ -270,7 +269,7 @@ def plot_potentials(ro: StepSequence, layout: str = 'joint'):
             plt.subplots_adjust(wspace=.8)
 
         elif layout == 'joint':
-            fig, axs = plt.subplots(nrows=4, ncols=1, figsize=(12, 10), sharex='all', constrained_layout=True)
+            fig, axs = plt.subplots(nrows=4, ncols=1, figsize=(12, 10), sharex='all')
 
             for i in range(num_pot):
                 axs[0].plot(t, ro.stimuli_external[:, i], label=rf'$s_{{ext,{i}}}$', c=colors_pot[i])
