@@ -271,18 +271,12 @@ class ADNPolicy(RecurrentPolicy):
     @property
     def kappa(self) -> [None, to.Tensor]:
         """ Get the cubic decay parameter (exists for cubic decay-based dynamics functions), else return `None`. """
-        if self._log_kappa is None:
-            return None
-        else:
-            return to.exp(self._log_kappa)
+        return None if self._log_kappa is None else to.exp(self._log_kappa)
 
     @property
     def capacity(self) -> [None, to.Tensor]:
         """ Get the time scale parameter (exists for capacity-based dynamics functions), else return `None`. """
-        if self._log_capacity is None:
-            return None
-        else:
-            return to.exp(self._log_capacity)
+        return None if self._log_capacity is None else to.exp(self._log_capacity)
 
     def potentials_dot(self, stimuli: to.Tensor) -> to.Tensor:
         """
