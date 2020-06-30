@@ -171,9 +171,9 @@ class NFPolicy(RecurrentPolicy):
         return to.exp(self._log_tau)
 
     @property
-    def kappa(self) -> to.Tensor:
+    def kappa(self) -> [None, to.Tensor]:
         """ Get the cubic decay parameter if specified in the constructor, else return zero. """
-        return to.zeros(1) if self._log_kappa is None else to.exp(self._log_kappa)
+        return None if self._log_kappa is None else to.exp(self._log_kappa)
 
     def potentials_dot(self, stimuli: to.Tensor) -> to.Tensor:
         r"""
@@ -184,10 +184,10 @@ class NFPolicy(RecurrentPolicy):
         :param stimuli: sum of external and internal stimuli at the current point in time
         :return: time derivative of the potentials
         """
-        if not all(self.tau > 0):
-            raise pyrado.ValueErr(given=self.tau, g_constraint='0')
-        return (stimuli + self.resting_level - self._potentials +
-                self.kappa*to.pow(self.resting_level - self._potentials, 3))/self.tau
+        rhs = stimuli + self.resting_level - self._potentials
+        if self._log_kappa is not None:
+            rhs += self.kappa*to.pow(self.resting_level - self._potentials, 3)
+        return rhs/self.tau
 
     def init_param(self, init_values: to.Tensor = None, **kwargs):
         if init_values is None:
