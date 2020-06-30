@@ -262,14 +262,15 @@ def plot_potentials(ro: StepSequence, layout: str = 'joint'):
                     ax2.set_title(f'{ro.potentials.shape[1]} Potentials over time')
                     ax3.set_title(f'{ro.actions.shape[1]} Actions over time')
 
-            # for a in fig.get_axes():
-            #     a.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+            if num_pot < 8:  # otherwise it gets too cluttered
+                for a in fig.get_axes():
+                    a.legend(loc='center left', bbox_to_anchor=(1, 0.5))
 
             plt.subplots_adjust(hspace=.5)
             plt.subplots_adjust(wspace=.8)
 
         elif layout == 'joint':
-            fig, axs = plt.subplots(nrows=4, ncols=1, sharex=True, figsize=(8, 12))
+            fig, axs = plt.subplots(nrows=4, ncols=1, figsize=(12, 10), sharex='all', constrained_layout=True)
 
             for i in range(num_pot):
                 axs[0].plot(t, ro.stimuli_external[:, i], label=rf'$s_{{ext,{i}}}$', c=colors_pot[i])
@@ -284,8 +285,8 @@ def plot_potentials(ro: StepSequence, layout: str = 'joint'):
             axs[2].set_title(f'{ro.potentials.shape[1]} Potentials over time')
             axs[3].set_title(f'{ro.actions.shape[1]} Actions over time')
 
-            # for a in fig.get_axes():
-            #     a.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+            for a in fig.get_axes():
+                a.legend(loc='center left', bbox_to_anchor=(1, 0.5))
 
             plt.subplots_adjust(wspace=.8)
 
