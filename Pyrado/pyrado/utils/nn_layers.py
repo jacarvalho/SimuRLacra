@@ -23,6 +23,9 @@ class ScaleLayer(nn.Module):
         super().__init__()
         self.weight = nn.Parameter(init_weight*to.ones(in_features, dtype=to.get_default_dtype()), requires_grad=True)
 
+    def extra_repr(self) -> str:
+        return f'in_features={self.weight.numel()}'
+
     def forward(self, inp: to.Tensor) -> to.Tensor:
         # Element-wise product
         return inp*self.weight
@@ -44,6 +47,9 @@ class PositiveScaleLayer(nn.Module):
         super().__init__()
         self.log_weight = nn.Parameter(to.log(init_weight*to.ones(in_features, dtype=to.get_default_dtype())),
                                        requires_grad=True)
+
+    def extra_repr(self) -> str:
+        return f'in_features={self.log_weight.numel()}'
 
     def forward(self, inp: to.Tensor) -> to.Tensor:
         # Element-wise product
@@ -87,6 +93,10 @@ class IndiNonlinLayer(nn.Module):
             self.bias = nn.Parameter(init_bias*to.ones(in_features, dtype=to.get_default_dtype()), requires_grad=True)
         else:
             self.bias = None
+
+    def extra_repr(self) -> str:
+        return f'in_features={self.log_weight.numel()}, log_weight={self.log_weight is not None}, ' \
+               f'bias={self.bias is not None}'
 
     def forward(self, inp: to.Tensor) -> to.Tensor:
         # Apply bias if desired

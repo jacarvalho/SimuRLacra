@@ -129,6 +129,10 @@ class NFPolicy(RecurrentPolicy):
         self.init_param(None, **init_param_kwargs)
         self.to(self.device)
 
+    def extra_repr(self) -> str:
+        return f'tau_learnable={self.tau_learnable}, use_kappa={self._log_kappa is not None}, learn_init_potentials=' \
+               f'{isinstance(self._potentials_init, nn.Parameter)}'
+
     @property
     def hidden_size(self) -> int:
         assert self._num_recurrent_layers == 1

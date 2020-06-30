@@ -205,8 +205,8 @@ class ADNPolicy(RecurrentPolicy):
         self._log_tau = nn.Parameter(self._log_tau_init,
                                      requires_grad=True) if self.tau_learnable else self._log_tau_init
         # cubic decay
+        self.kappa_learnable = kappa_learnable
         if potentials_dyn_fcn == pd_cubic:
-            self.kappa_learnable = kappa_learnable
             self._log_kappa_init = to.log(to.tensor([kappa_init], dtype=to.get_default_dtype()))
             self._log_kappa = nn.Parameter(self._log_kappa_init,
                                            requires_grad=True) if self.kappa_learnable else self._log_kappa_init
@@ -236,6 +236,10 @@ class ADNPolicy(RecurrentPolicy):
         init_param_kwargs = init_param_kwargs if init_param_kwargs is not None else dict()
         self.init_param(None, **init_param_kwargs)
         self.to(self.device)
+
+    def extra_repr(self) -> str:
+        return f'tau_learnable={self.tau_learnable}, kappa_learnable={self.kappa_learnable},' \
+               f'capacity_learnable={self.capacity_learnable}, activation_nonlin= {self.activation_nonlin}'
 
     @property
     def hidden_size(self) -> int:
