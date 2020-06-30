@@ -98,13 +98,13 @@ class NFPolicy(RecurrentPolicy):
             stride=1, dilation=1, groups=1  # defaults
         )
         # self.post_conv_layer = nn.Linear(conv_out_channels, spec.act_space.flat_dim, bias=False)
-        self.nonlin_layer = IndiNonlinLayer(self._hidden_size, nonlin=activation_nonlin, bias=True, weight=False)
+        self.nonlin_layer = IndiNonlinLayer(self._hidden_size, nonlin=activation_nonlin, bias=False, weight=True)
         self.act_layer = nn.Linear(self._hidden_size, spec.act_space.flat_dim, bias=False)
 
         # Call custom initialization function after PyTorch network parameter initialization
         self._potentials = to.zeros(self._hidden_size)
         self.potential_init_learnable = potential_init_learnable
-        self._potentials_init = nn.Parameter(to.zeros_like(self._potentials), requires_grad=True)\
+        self._potentials_init = nn.Parameter(to.randn_like(self._potentials), requires_grad=True)\
             if potential_init_learnable else to.zeros_like(self._potentials)
         self._potentials_max = 100.  # clip potentials symmetrically
         self._stimuli_internal = to.zeros_like(self._potentials)
@@ -174,14 +174,15 @@ class NFPolicy(RecurrentPolicy):
     def potentials_dot(self, stimuli: to.Tensor) -> to.Tensor:
         r"""
         Compute the derivative of the neurons' potentials per time step.
-        $/tau /dot{u} = s + h - u - /kappa u^3, /quad /text{with} s = s_{int} + s_{ext} = W*o + /int{w(u, v) f(u) dv}$
+        $/tau /dot{u} = s + h - u + /kappa (h - u)^3,
+        /quad /text{with} s = s_{int} + s_{ext} = W*o + /int{w(u, v) f(u) dv}$
 
         :param stimuli: sum of external and internal stimuli at the current point in time
         :return: time derivative of the potentials
         """
         if not all(self.tau > 0):
             raise pyrado.ValueErr(given=self.tau, g_constraint='0')
-        return (stimuli + self.resting_level - self._potentials -
+        return (stimuli + self.resting_level - self._potentials +
                 self.kappa*to.pow(self.resting_level - self._potentials, 3))/self.tau
 
     def init_param(self, init_values: to.Tensor = None, **kwargs):
@@ -190,7 +191,7 @@ class NFPolicy(RecurrentPolicy):
             init_param(self.obs_layer, **kwargs)
             # self.obs_layer.weight.data /= 100.
             # self.obs_layer.bias.data /= 100.
-            self.resting_level.data = to.randn_like(self.resting_level.data)#*1e-3
+            self.resting_level.data = to.randn_like(self.resting_level.data)
             init_param(self.conv_layer, **kwargs)
             # init_param(self.post_conv_layer, **kwargs)
             init_param(self.nonlin_layer, **kwargs)
@@ -279,6 +280,7 @@ class NFPolicy(RecurrentPolicy):
 
         # Combine the current inputs
         self._stimuli_external = self.obs_layer(obs)
+        # self._stimuli_external = to.zeros_like(self._potentials)
 
         # Scale the potentials, subtract a bias, and pass them through a nonlinearity
         activations_prev = self.nonlin_layer(potentials)
