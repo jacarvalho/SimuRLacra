@@ -3,14 +3,15 @@
     <Task name="Position_X" effector="Effector" controlVariable="X" active="true" />
     <Task name="Position_Z" effector="Effector" controlVariable="Z" active="true" />
 
-    <CollisionModel  DistanceThreshold="0.1"> <!-- [cm]; former: 0.025-->
-        <CollisionPair body1="Link1" body2="Link2"/>
+    <CollisionModel DistanceThreshold="0.1"> <!-- [cm]; former: 0.025-->
         <CollisionPair body1="Link1" body2="Link3"/>
-        <CollisionPair body1="Link1" body2="Effector"/>
         <CollisionPair body1="Link2" body2="Base"/>
-        <CollisionPair body1="Link2" body2="Link3"/>
-        <CollisionPair body1="Link2" body2="Effector"/>
         <CollisionPair body1="Link3" body2="Base"/>
+        <CollisionPair body1="Link3" body2="Goal1" DistanceThreshold="0.04"/>
+        <CollisionPair body1="Link3" body2="Goal2" DistanceThreshold="0.04"/>
+        <CollisionPair body1="Link3" body2="Goal3" DistanceThreshold="0.04"/>
+        <CollisionPair body1="Effector" body2="Link1"/>
+        <CollisionPair body1="Effector" body2="Link2"/>
         <CollisionPair body1="Effector" body2="Base"/>
     </CollisionModel>
 
