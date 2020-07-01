@@ -182,8 +182,9 @@ class ADNPolicy(RecurrentPolicy):
         self._num_recurrent_layers = 1
         self.potentials_dot_fcn = potentials_dyn_fcn
 
-        # Create the RNN's layers
+        # Create the layers
         self.obs_layer = nn.Linear(self._input_size, self._hidden_size, bias=False) if obs_layer is None else obs_layer
+        self.resting_level = nn.Parameter(to.zeros(self._hidden_size), requires_grad=True)
         self.prev_act_layer = nn.Linear(self._hidden_size, self._hidden_size, bias=False)
         self.nonlin_layer = IndiNonlinLayer(self._hidden_size, nonlin=activation_nonlin, bias=True,
                                             weight=scaling_layer)  # scaling weight equals beta in eq (4) of [1]
@@ -236,7 +237,7 @@ class ADNPolicy(RecurrentPolicy):
 
     def extra_repr(self) -> str:
         return f'tau_learnable={self.tau_learnable}, kappa_learnable={self.kappa_learnable},' \
-               f'capacity_learnable={self.capacity_learnable}, activation_nonlin= {self.activation_nonlin}'
+               f'capacity_learnable={self.capacity_learnable}'
 
     @property
     def hidden_size(self) -> int:
@@ -282,16 +283,19 @@ class ADNPolicy(RecurrentPolicy):
     def potentials_dot(self, stimuli: to.Tensor) -> to.Tensor:
         """
         Compute the derivative of the neurons' potentials per time step.
+        $/tau /dot{u} = f(u, s, h)$
 
         :param stimuli: sum of external and internal stimuli at the current point in time
         :return: time derivative of the potentials
         """
-        return self.potentials_dot_fcn(self._potentials, stimuli, self.tau, kappa=self.kappa, capacity=self.capacity)
+        return self.potentials_dot_fcn(self._potentials, stimuli + self.resting_level, self.tau,
+                                       kappa=self.kappa, capacity=self.capacity)
 
     def init_param(self, init_values: to.Tensor = None, **kwargs):
         if init_values is None:
             # Initialize RNN layers
             init_param(self.obs_layer, **kwargs)
+            self.resting_level.data = to.randn_like(self.resting_level.data)
             init_param(self.prev_act_layer, **kwargs)
             if kwargs.get('sigmoid_nlin', False):
                 self.prev_act_layer.weight.data.fill_(-0.5)  # inhibit others
