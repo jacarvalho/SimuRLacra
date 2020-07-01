@@ -10,7 +10,7 @@ from pyrado.spaces.singular import SingularStateSpace
 from pyrado.tasks.base import Task
 from pyrado.tasks.masked import MaskedTask
 from pyrado.tasks.parallel import ParallelTasks
-from pyrado.tasks.predefined import create_task_space_discrepancy_task_XZ
+from pyrado.tasks.predefined import create_task_space_discrepancy_task
 from pyrado.tasks.utils import proximity_succeeded
 from pyrado.tasks.final_reward import FinalRewTask, FinalRewMode
 from pyrado.tasks.desired_state import DesStateTask
@@ -108,7 +108,7 @@ class PlanarInsertSim(RcsSim, Serializable):
                                       R=2e-2*np.eye(self.act_space.flat_dim)),
             success_fcn=functools.partial(proximity_succeeded, thold_dist=0.07, dims=[0, 1, 2])  # position and angle
         )
-        task_ts_discrepancy = create_task_space_discrepancy_task_XZ(
+        task_ts_discrepancy = create_task_space_discrepancy_task(
             self.spec, AbsErrRewFcn(q=0.1*np.ones(2), r=np.zeros(self.act_space.shape))
         )
         return ParallelTasks([task_reach_goal, task_ts_discrepancy])

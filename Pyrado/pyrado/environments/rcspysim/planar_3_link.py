@@ -9,11 +9,11 @@ from pyrado.environments.rcspysim.base import RcsSim
 from pyrado.spaces.singular import SingularStateSpace
 from pyrado.tasks.base import Task
 from pyrado.tasks.masked import MaskedTask
-from pyrado.tasks.predefined import create_check_all_boundaries_task
+from pyrado.tasks.predefined import create_check_all_boundaries_task, create_task_space_discrepancy_task
 from pyrado.tasks.utils import proximity_succeeded
 from pyrado.tasks.final_reward import FinalRewTask, FinalRewMode
 from pyrado.tasks.desired_state import DesStateTask
-from pyrado.tasks.reward_functions import ExpQuadrErrRewFcn, ZeroPerStepRewFcn
+from pyrado.tasks.reward_functions import ExpQuadrErrRewFcn, ZeroPerStepRewFcn, AbsErrRewFcn
 from pyrado.tasks.sequential import SequentialTasks
 from pyrado.tasks.parallel import ParallelTasks
 from pyrado.utils.data_types import EnvSpec
@@ -147,10 +147,14 @@ class Planar3LinkSim(RcsSim, Serializable):
         )
         masked_task = MaskedTask(self.spec, task, idcs)
 
+        # Additional tasks
         task_check_bounds = create_check_all_boundaries_task(self.spec, penalty=1e3)
+        task_ts_discrepancy = create_task_space_discrepancy_task(
+            self.spec, AbsErrRewFcn(q=0.5*np.ones(2), r=np.zeros(self.act_space.shape))
+        )
 
         # Return the masked task and and additional task that ends the episode if the unmasked state is out of bound
-        return ParallelTasks([masked_task, task_check_bounds], easily_satisfied=True)
+        return ParallelTasks([masked_task, task_check_bounds, task_ts_discrepancy], easily_satisfied=True)
 
 
 class Planar3LinkJointCtrlSim(Planar3LinkSim, Serializable):

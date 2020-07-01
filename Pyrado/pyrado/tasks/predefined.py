@@ -75,6 +75,8 @@ def create_task_space_discrepancy_task(env_spec: EnvSpec, rew_fcn: RewFcn) -> Ma
     """
     # Define the indices for selection. This needs to match the observations' names in RcsPySim.
     idcs = [idx for idx in env_spec.state_space.labels if 'DiscrepTS' in idx]
+    if not idcs:
+        raise pyrado.ValueErr(msg="No state space labels found that contain 'DiscrepTS'")
 
     # Get the masked environment specification
     spec = EnvSpec(

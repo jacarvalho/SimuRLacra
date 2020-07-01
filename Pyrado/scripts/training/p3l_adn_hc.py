@@ -7,9 +7,10 @@ import pyrado
 from pyrado.algorithms.hc import HCNormal
 from pyrado.environment_wrappers.action_normalization import ActNormWrapper
 from pyrado.environment_wrappers.observation_normalization import ObsNormWrapper
+from pyrado.environment_wrappers.observation_partial import ObsPartialWrapper
 from pyrado.environments.rcspysim.planar_3_link import Planar3LinkIKSim
 from pyrado.logger.experiment import setup_experiment, save_list_of_dicts_to_yaml
-from pyrado.policies.adn import pd_cubic, ADNPolicy
+from pyrado.policies.adn import pd_cubic, ADNPolicy, pd_linear
 
 
 if __name__ == '__main__':
@@ -33,7 +34,7 @@ if __name__ == '__main__':
         observeCurrentManipulability=True,
         observeGoalDistance=True,
         observeDynamicalSystemDiscrepancy=False,
-        observeTaskSpaceDiscrepancy=False,
+        observeTaskSpaceDiscrepancy=True,
     )
     env = Planar3LinkIKSim(**env_hparams)
     env = ActNormWrapper(env)
@@ -43,6 +44,7 @@ if __name__ == '__main__':
         'GD_DS2': 2.,
     }
     env = ObsNormWrapper(env, explicit_ub=eub)
+    env = ObsPartialWrapper(env, idcs=['DiscrepTS_X', 'DiscrepTS_Z', 'Effector_Xd', 'Effector_Zd'])
     print(env.act_space)
     print(env.obs_space)
 
@@ -53,7 +55,7 @@ if __name__ == '__main__':
         kappa_init=1e-2,
         kappa_learnable=True,
         activation_nonlin=to.tanh,
-        potentials_dyn_fcn=pd_cubic,
+        potentials_dyn_fcn=pd_linear,
     )
     policy = ADNPolicy(spec=env.spec, dt=env.dt, **policy_hparam)
 
@@ -63,7 +65,7 @@ if __name__ == '__main__':
         pop_size=10*policy.num_param,
         expl_factor=1.05,
         num_rollouts=1,
-        expl_std_init=0.05,
+        expl_std_init=0.5,
         num_sampler_envs=6,
     )
     algo = HCNormal(ex_dir, env, policy, **algo_hparam)
