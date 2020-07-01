@@ -135,7 +135,7 @@ def render_policy_params(policy: Policy,
                 ax.set_yticks(np.arange(env_spec.act_space.flat_dim))
                 ax.set_xticklabels(ensure_no_subscript(env_spec.obs_space.labels))
                 ax.set_yticklabels(ensure_math_mode(env_spec.act_space.labels))
-            elif name in ['obs_layer.bias', 'scaling_layer.log_weight']:
+            elif name in ['obs_layer.bias', 'nonlin_layer.log_weight', 'nonlin_layer.bias']:
                 ax.set_xticks(np.arange(env_spec.act_space.flat_dim))
                 ax.set_xticklabels(ensure_math_mode(env_spec.act_space.labels))
                 ax.yaxis.set_major_locator(ticker.NullLocator())
