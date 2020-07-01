@@ -40,15 +40,17 @@ if __name__ == '__main__':
 
     # For mode = standalone they are currently all the same because all neuron potential-based obey the same dynamics.
     # However, this does not necessarily have to be that way. Thus we plot the same way as for mode = policy.
-    for idx_p in range(len(policy.potentials)):
-
+    for idx_p in range(num_p):
+        # Create the figure
         fig, ax = plt.subplots(1, figsize=(12, 10), subplot_kw={'projection': '3d'})
         fig.canvas.set_window_title(f'Potential dynamics for the {idx_p}-th dimension for initial values')
         ax.set_xlabel('$t$ [s]')
         ax.set_ylabel('$p_0$')
         ax.set_zlabel('$p(t)$')
 
-        for p_0 in p_init:
+        final_values = to.zeros(num_p_init)
+
+        for idx_p_init, p_0 in enumerate(p_init):
             p = to.zeros(num_steps, num_p)
             s = to.zeros(num_steps, num_p)
 
@@ -63,9 +65,13 @@ if __name__ == '__main__':
                 _, hidden = policy(to.zeros(policy.env_spec.obs_space.shape), hidden)  # previous action is in hidden
                 p[i, :] = policy.potentials.clone()
 
+            # Extract final value
+            final_values[idx_p_init] = p[-1, idx_p]
+
             # Plot
             plt.plot(time.numpy(), p_0.repeat(num_steps).numpy(), p[:, idx_p].detach().numpy())
-        plt.title(f'Final value {p[-1, idx_p].detach().numpy().round(4)}', y=1.05)
+        plt.title(f'Final values for the different initial potentials\n'
+                  f'{final_values.detach().numpy().round(3)}', y=1.05)
 
     # Save
     if args.save_figures:
