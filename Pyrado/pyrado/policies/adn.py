@@ -10,7 +10,7 @@ from pyrado.policies.base_recurrent import RecurrentPolicy
 from pyrado.policies.initialization import init_param
 
 
-def pd_linear(p: to.Tensor, s: to.Tensor, tau: to.Tensor, **kwargs) -> to.Tensor:
+def pd_linear(p: to.Tensor, s: to.Tensor, h: to.Tensor, tau: to.Tensor, **kwargs) -> to.Tensor:
     r"""
     Basic proportional dynamics
 
@@ -18,22 +18,24 @@ def pd_linear(p: to.Tensor, s: to.Tensor, tau: to.Tensor, **kwargs) -> to.Tensor
 
     :param p: potential, higher values lead to higher activations
     :param s: stimulus, higher values lead to larger changes of the potentials (depends on the dynamics function)
+    :param h: resting level, a.k.a. constant offset
     :param tau: time scaling factor, higher values lead to slower changes of the potentials (linear dependency)
     :param kwargs: additional parameters to the potential dynamics
     """
     if not all(tau > 0):
         raise pyrado.ValueErr(given=tau, g_constraint='0')
-    return (s - p)/tau
+    return (s + h - p)/tau
 
 
-def pd_cubic(p: to.Tensor, s: to.Tensor, tau: to.Tensor, **kwargs) -> to.Tensor:
+def pd_cubic(p: to.Tensor, s: to.Tensor, h: to.Tensor, tau: to.Tensor, **kwargs) -> to.Tensor:
     r"""
     Basic proportional dynamics with additional cubic decay
 
-    $\tau \dot{p} = s - p - \kappa p^3$
+    $\tau \dot{p} = s + h - p + \kappa (h - p)^3$
 
     :param p: potential, higher values lead to higher activations
     :param s: stimulus, higher values lead to larger changes of the potentials (depends on the dynamics function)
+    :param h: resting level, a.k.a. constant offset
     :param tau: time scaling factor, higher values lead to slower changes of the potentials (linear dependency)
     :param kwargs: additional parameters to the potential dynamics
     """
@@ -41,33 +43,34 @@ def pd_cubic(p: to.Tensor, s: to.Tensor, tau: to.Tensor, **kwargs) -> to.Tensor:
         raise pyrado.ValueErr(given=tau, g_constraint='0')
     if not all(kwargs['kappa'] >= 0):
         raise pyrado.ValueErr(given=kwargs['kappa'], ge_constraint='0')
-    return (s - p - kwargs['kappa']*to.pow(p, 3))/tau
+    return (s + h - p + kwargs['kappa']*to.pow(h - p, 3))/tau
 
 
-def pd_capacity_21(p: to.Tensor, s: to.Tensor, tau: to.Tensor, **kwargs) -> to.Tensor:
+def pd_capacity_21(p: to.Tensor, s: to.Tensor, h: to.Tensor, tau: to.Tensor, **kwargs) -> to.Tensor:
     r"""
     Capacity-based dynamics with 2 stable ($p=-C$, $p=C$) and 1 unstable fix points ($p=0$) for $s=0$
 
-    $\tau \dot{p} =  s + p (1 - \frac{p^2}{C^2})$
+    $\tau \dot{p} =  s - (h - p) (1 - \frac{(h - p)^2}{C^2})$
 
     .. note::
         Intended to be used with sigmoid activation function, e.g. for the position tasks in RcsPySim.
 
     :param p: potential, higher values lead to higher activations
     :param s: stimulus, higher values lead to larger changes of the potentials (depends on the dynamics function)
+    :param h: resting level, a.k.a. constant offset
     :param tau: time scaling factor, higher values lead to slower changes of the potentials (linear dependency)
     :param kwargs: additional parameters to the potential dynamics
     """
     if not all(tau > 0):
         raise pyrado.ValueErr(given=tau, g_constraint='0')
-    return (s + p*(to.ones_like(p) - p**2/kwargs['capacity']**2))/tau
+    return (s - (h - p)*(to.ones_like(p) - (h - p)**2/kwargs['capacity']**2))/tau
 
 
-def pd_capacity_21_abs(p: to.Tensor, s: to.Tensor, tau: to.Tensor, **kwargs) -> to.Tensor:
+def pd_capacity_21_abs(p: to.Tensor, s: to.Tensor, h: to.Tensor, tau: to.Tensor, **kwargs) -> to.Tensor:
     r"""
     Capacity-based dynamics with 2 stable ($p=-C$, $p=C$) and 1 unstable fix points ($p=0$) for $s=0$
 
-    $\tau \dot{p} =  s + p (1 - \frac{\left| p \right|}{C})$
+    $\tau \dot{p} =  s - (h - p) (1 - \frac{\left| h - p \right|}{C})$
 
     The "absolute version" of `pd_capacity_21` has a lower magnitude and a lower oder of the resulting polynomial.
 
@@ -76,38 +79,42 @@ def pd_capacity_21_abs(p: to.Tensor, s: to.Tensor, tau: to.Tensor, **kwargs) -> 
 
     :param p: potential, higher values lead to higher activations
     :param s: stimulus, higher values lead to larger changes of the potentials (depends on the dynamics function)
+    :param h: resting level, a.k.a. constant offset
     :param tau: time scaling factor, higher values lead to slower changes of the potentials (linear dependency)
     :param kwargs: additional parameters to the potential dynamics
     """
     if not all(tau > 0):
         raise pyrado.ValueErr(given=tau, g_constraint='0')
-    return (s + p*(to.ones_like(p) - to.abs(p)/kwargs['capacity']))/tau
+    return (s - (h - p)*(to.ones_like(p) - to.abs(h - p)/kwargs['capacity']))/tau
 
 
-def pd_capacity_32(p: to.Tensor, s: to.Tensor, tau: to.Tensor, **kwargs) -> to.Tensor:
+def pd_capacity_32(p: to.Tensor, s: to.Tensor, h: to.Tensor, tau: to.Tensor, **kwargs) -> to.Tensor:
     r"""
     Capacity-based dynamics with 3 stable ($p=-C$, $p=0$, $p=C$) and 2 unstable fix points ($p=-C/2$, $p=C/2$) for $s=0$
 
-    $\tau \dot{p} =  s - p (1 - \frac{p^2}{C^2}) (1 - \frac{(2p)^2}{C^2})$
+    $\tau \dot{p} =  s - (h - p) (1 - \frac{(h - p)^2}{C^2}) (1 - \frac{(2(h - p))^2}{C^2})$
 
     .. note::
         Intended to be used with tanh activation function, e.g. for the velocity tasks in RcsPySim.
 
     :param p: potential, higher values lead to higher activations
     :param s: stimulus, higher values lead to larger changes of the potentials (depends on the dynamics function)
+    :param h: resting level, a.k.a. constant offset
     :param tau: time scaling factor, higher values lead to slower changes of the potentials (linear dependency)
     :param kwargs: additional parameters to the potential dynamics
     """
     if not all(tau > 0):
         raise pyrado.ValueErr(given=tau, g_constraint='0')
-    return (s - p*(to.ones_like(p) - p**2/kwargs['capacity']**2) * (to.ones_like(p) - ((2*p)**2/kwargs['capacity']**2)))/tau
+    return (s + (h - p)*(to.ones_like(p) - (h - p)**2/kwargs['capacity']**2) *
+            (to.ones_like(p) - ((2*(h - p))**2/kwargs['capacity']**2)))/tau
 
 
-def pd_capacity_32_abs(p: to.Tensor, s: to.Tensor, tau: to.Tensor, **kwargs) -> to.Tensor:
+def pd_capacity_32_abs(p: to.Tensor, s: to.Tensor, h: to.Tensor, tau: to.Tensor, **kwargs) -> to.Tensor:
     r"""
     Capacity-based dynamics with 3 stable ($p=-C$, $p=0$, $p=C$) and 2 unstable fix points ($p=-C/2$, $p=C/2$) for $s=0$
 
-    $\tau \dot{p} =  -\left( s + p(1 - \frac{\left| p \right|}{C}) (1 - \frac{2 \left|p \right|}{C}) \right)$
+    $\tau \dot{p} =  \left( s + (h - p) (1 - \frac{\left| (h - p) \right|}{C})
+    (1 - \frac{2 \left| (h - p) \right|}{C}) \right)$
 
     The "absolute version" of `pd_capacity_32` is less skewed due to a lower oder of the resulting polynomial.
 
@@ -116,12 +123,14 @@ def pd_capacity_32_abs(p: to.Tensor, s: to.Tensor, tau: to.Tensor, **kwargs) -> 
 
     :param p: potential, higher values lead to higher activations
     :param s: stimulus, higher values lead to larger changes of the potentials (depends on the dynamics function)
+    :param h: resting level, a.k.a. constant offset
     :param tau: time scaling factor, higher values lead to slower changes of the potentials (linear dependency)
     :param kwargs: additional parameters to the potential dynamics
     """
     if not all(tau > 0):
         raise pyrado.ValueErr(given=tau, g_constraint='0')
-    return (s - p*(to.ones_like(p) - to.abs(p)/kwargs['capacity']) * (to.ones_like(p) - 2*to.abs(p)/kwargs['capacity']))/tau
+    return (s + (h - p)*(to.ones_like(p) - to.abs(h - p)/kwargs['capacity']) *
+            (to.ones_like(p) - 2*to.abs(h - p)/kwargs['capacity']))/tau
 
 
 class ADNPolicy(RecurrentPolicy):
@@ -288,7 +297,7 @@ class ADNPolicy(RecurrentPolicy):
         :param stimuli: sum of external and internal stimuli at the current point in time
         :return: time derivative of the potentials
         """
-        return self.potentials_dot_fcn(self._potentials, stimuli + self.resting_level, self.tau,
+        return self.potentials_dot_fcn(self._potentials, stimuli, self.resting_level, self.tau,
                                        kappa=self.kappa, capacity=self.capacity)
 
     def init_param(self, init_values: to.Tensor = None, **kwargs):
