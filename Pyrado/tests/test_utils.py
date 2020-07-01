@@ -12,6 +12,7 @@ from pyrado.environments.pysim.ball_on_beam import BallOnBeamSim
 from pyrado.policies.dummy import DummyPolicy
 from pyrado.sampling.rollout import rollout
 from pyrado.sampling.step_sequence import StepSequence
+from pyrado.utils.nn_layers import IndiNonlinLayer
 from pyrado.utils.optimizers import GSS
 from pyrado.utils.averaging import RunningExpDecayingAverage, RunningMemoryAverage
 from pyrado.utils.standardizing import RunningStandardizer, Standardizer
@@ -53,7 +54,6 @@ def test_concat_rollouts(env, expl_strat):
     assert ro_cat.length == ro1.length + ro2.length
 
 
-@pytest.mark.util
 @pytest.mark.parametrize(
     'x, y', [
         (to.tensor([1., 2., 3.]), to.tensor([1., 2., 3.])),
@@ -71,7 +71,6 @@ def test_cosine_similarity(x, y):
     assert to.isclose(d_cos, to.tensor(0.)) or to.isclose(d_cos, to.tensor(1.)) or to.isclose(d_cos, to.tensor(-1.))
 
 
-@pytest.mark.util
 @pytest.mark.parametrize(
     'x, y', [
         ({'a': 1, 'b': 2}, {'c': 1, 'd': 4}),
@@ -90,7 +89,6 @@ def test_merge_lod_var_dtype(x, y):
     assert z['d'] == 4
 
 
-@pytest.mark.util
 @pytest.mark.parametrize(
     'batch_size, data_size', [
         (3, 30),
@@ -115,7 +113,6 @@ def test_gen_ordered_batches(batch_size, data_size):
     assert all(all(ob[i] <= ob[i + 1] for i in range(len(ob) - 1)) for ob in ordered_batches)
 
 
-@pytest.mark.util
 @pytest.mark.parametrize('dtype', ['torch', 'numpy'], ids=['to', 'np'])
 @pytest.mark.parametrize('axis', [0, 1], ids=['ax_0', 'ax_1'])
 def test_normalize(dtype, axis):
@@ -127,7 +124,6 @@ def test_normalize(dtype, axis):
         assert np.sum(x_norm, axis=axis) == pytest.approx(1.)
 
 
-@pytest.mark.util
 @pytest.mark.parametrize(
     'data_seq, axis', [
         ([np.array([1, 1, 2]), np.array([1, 6, 3]), np.array([1, 6, 3]), np.array([10, -20, 20])], 0),
@@ -162,7 +158,6 @@ def test_running_standardizer(data_seq, axis):
     assert rs._mean is None and rs._sum_sq_diffs is None and rs._iter == 0
 
 
-@pytest.mark.util
 @pytest.mark.parametrize(
     'data_seq, alpha', [
         (
@@ -208,7 +203,6 @@ def test_running_mem_average(data_seq, capacity):
     assert rma.capacity == 5 and rma.memory is None
 
 
-@pytest.mark.util
 @pytest.mark.parametrize(
     'data_seq', [
         [5*np.random.rand(25, 3), 0.1*np.random.rand(5, 3), 20*np.random.rand(70, 3)],
@@ -223,7 +217,6 @@ def test_running_normalizer(data_seq):
         assert (data_norm <= 1).all()
 
 
-@pytest.mark.util
 @pytest.mark.parametrize(
     'x', [
         to.rand(1000, 1),
@@ -258,7 +251,6 @@ def test_stateful_standardizer(x):
         assert np.allclose(x_restrd, x, rtol=1e-02, atol=1e-05)
 
 
-@pytest.mark.util
 @pytest.mark.parametrize(
     'g, ed', [
         (1., 2.),
@@ -386,3 +378,21 @@ def test_gss_optimizer_nlin_fcn():
     plt.legend()
     plt.show()
     assert noisy_nonlin_fcn(x, f=f, noise_std=noise_std) < noisy_nonlin_fcn(x_init, f=f, noise_std=noise_std)
+
+
+@pytest.mark.parametrize('in_features', [1, 3], ids=['1dim', '3dim'])
+@pytest.mark.parametrize('same_nonlin', [True, False], ids=['same_nonlin', 'different_nonlin'])
+@pytest.mark.parametrize('bias', [True, False], ids=['bias', 'no_bias'])
+@pytest.mark.parametrize('weight', [True, False], ids=['weight', 'no_weight'])
+def test_indi_nonlin_layer(in_features, same_nonlin, bias, weight):
+    if not same_nonlin and in_features > 1:
+        nonlin = in_features*[to.tanh]
+    else:
+        nonlin = to.sigmoid
+    layer = IndiNonlinLayer(in_features, nonlin, bias, weight)
+    assert isinstance(layer, nn.Module)
+
+    i = to.randn(in_features)
+    o = layer(i)
+    assert isinstance(o, to.Tensor)
+    assert i.shape == o.shape
