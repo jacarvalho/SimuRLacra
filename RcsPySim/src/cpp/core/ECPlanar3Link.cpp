@@ -80,22 +80,22 @@ protected:
             // Check if the tasks are defined on position or task level. Adapt their parameters if desired.
             if (properties->getPropertyBool("positionTasks", true))
             {
-//                RcsBody* goal1 = RcsGraph_getBodyByName(graph, "Goal1");
-//                RcsBody* goal2 = RcsGraph_getBodyByName(graph, "Goal2");
-//                RcsBody* goal3 = RcsGraph_getBodyByName(graph, "Goal3");
-//                RCHECK(goal1);
-//                RCHECK(goal2);
-//                RCHECK(goal3);
-//                tasks.emplace_back(new TaskDistance(graph, effector, goal1));
-//                tasks.emplace_back(new TaskDistance(graph, effector, goal2));
-//                tasks.emplace_back(new TaskDistance(graph, effector, goal3));
-//                tasks[0]->resetParameter(Task::Parameters(0., 1.5, 1.0, "Distance1 [m]"));
-//                tasks[1]->resetParameter(Task::Parameters(0., 1.5, 1.0, "Distance2 [m]"));
-//                tasks[2]->resetParameter(Task::Parameters(0., 1.5, 1.0, "Distance3 [m]"));
-                tasks.emplace_back(new TaskPosition1D("X", graph, effector, nullptr, nullptr));
-                tasks.emplace_back(new TaskPosition1D("Z", graph, effector, nullptr, nullptr));
-                tasks[0]->resetParameter(Task::Parameters(-0.9, 0.9, 1.0, "X Position [m]"));
-                tasks[1]->resetParameter(Task::Parameters(0., 1.3, 1.0, "Z Position [m]"));
+                RcsBody* goal1 = RcsGraph_getBodyByName(graph, "Goal1");
+                RcsBody* goal2 = RcsGraph_getBodyByName(graph, "Goal2");
+                RcsBody* goal3 = RcsGraph_getBodyByName(graph, "Goal3");
+                RCHECK(goal1);
+                RCHECK(goal2);
+                RCHECK(goal3);
+                tasks.emplace_back(new TaskDistance(graph, effector, goal1));
+                tasks.emplace_back(new TaskDistance(graph, effector, goal2));
+                tasks.emplace_back(new TaskDistance(graph, effector, goal3));
+                tasks[0]->resetParameter(Task::Parameters(0., 1.5, 1.0, "Distance1 [m]"));
+                tasks[1]->resetParameter(Task::Parameters(0., 1.5, 1.0, "Distance2 [m]"));
+                tasks[2]->resetParameter(Task::Parameters(0., 1.5, 1.0, "Distance3 [m]"));
+//                tasks.emplace_back(new TaskPosition1D("X", graph, effector, nullptr, nullptr));
+//                tasks.emplace_back(new TaskPosition1D("Z", graph, effector, nullptr, nullptr));
+//                tasks[0]->resetParameter(Task::Parameters(-0.9, 0.9, 1.0, "X Position [m]"));
+//                tasks[1]->resetParameter(Task::Parameters(0., 1.3, 1.0, "Z Position [m]"));
             }
             else
             {
@@ -106,6 +106,16 @@ protected:
             // Add the tasks
             for (auto t : tasks)
             { amIK->addTask(t); }
+
+            // Incorporate collision costs into IK
+            if (properties->getPropertyBool("collisionAvoidanceIK", true))
+            {
+                REXEC(4)
+                {
+                    std::cout << "IK considers the provided collision model" << std::endl;
+                }
+                amIK->setupCollisionModel(collisionMdl);
+            }
 
             return amIK;
         }
@@ -142,7 +152,10 @@ protected:
             // Incorporate collision costs into IK
             if (properties->getPropertyBool("collisionAvoidanceIK", true))
             {
-                std::cout << "IK considers the provided collision model" << std::endl;
+                REXEC(4)
+                {
+                    std::cout << "IK considers the provided collision model" << std::endl;
+                }
                 innerAM->setupCollisionModel(collisionMdl);
             }
             

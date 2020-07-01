@@ -85,7 +85,10 @@ namespace Rcs
                 // Incorporate collision costs into IK
                 if (properties->getPropertyBool("collisionAvoidanceIK", true))
                 {
+                    REXEC(4)
+                {
                     std::cout << "IK considers the provided collision model" << std::endl;
+                }
                     innerAM->setupCollisionModel(collisionMdl);
                 }
     
