@@ -61,7 +61,7 @@ def test_action_statistics(env, policy):
             act_expl, _ = explstrat(ro_policy.observations)
         else:
             act_expl = explstrat(ro_policy.observations)
-        hidden_states = [0.] * ro_policy.length  # just something that does not violate the format
+        hidden_states = [0.]*ro_policy.length  # just something that does not violate the format
 
     ro_expl = StepSequence(
         actions=act_expl[:-1],  # truncate act due to last obs
@@ -109,7 +109,6 @@ def test_adr_reward_generator(env):
     assert losses[len(losses) - 1] < losses[0]
 
 
-@pytest.mark.util
 @pytest.mark.parametrize('thold', [0.5], ids=['0.5'])
 @pytest.mark.parametrize('max_iter', [None, 2], ids=['relentless', 'twice'])
 def test_until_thold_exceeded(thold, max_iter):

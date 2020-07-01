@@ -1,13 +1,14 @@
-from math import ceil, sqrt
-from typing import Callable
-
 import torch as to
+from copy import deepcopy
+from math import ceil, sqrt
 from torch import nn as nn
 from torch.nn import functional as F
 from torch.nn.modules.conv import _ConvNd
 from torch.nn.modules.utils import _single
+from typing import Callable, Sequence
 
 import pyrado
+from pyrado.utils.data_types import is_iterable
 
 
 class ScaleLayer(nn.Module):
@@ -52,13 +53,14 @@ class PositiveScaleLayer(nn.Module):
 
 class IndiNonlinLayer(nn.Module):
     """
-    Layer subtracts a bias from the input, multiplies the result with a strictly positive sacaling factor, and then
-    applies the provided nonlinearity. The scaling and the bias are learnable parameters.
+    Layer subtracts a bias from the input, multiplies the result with a strictly positive scaling factor, and then
+    applies the provided nonlinearity. If a list of nonlinearities is provided, every dimension will be processed
+    separately. The scaling and the bias are learnable parameters.
     """
 
     def __init__(self,
                  in_features: int,
-                 nonlin: Callable,
+                 nonlin: [Callable, Sequence[Callable]],
                  bias: bool,
                  weight: bool = True,
                  init_weight: float = 1.,
@@ -75,9 +77,14 @@ class IndiNonlinLayer(nn.Module):
         """
         if not init_weight > 0:
             raise pyrado.ValueErr(given=init_weight, g_constraint='0')
+        if not callable(nonlin):
+            if not len(nonlin) == in_features:
+                raise pyrado.ShapeErr(given=nonlin, expected_match=in_features)
 
         super().__init__()
-        self._nonlin = nonlin
+
+        self.nonlin = deepcopy(nonlin) if is_iterable(nonlin) else nonlin
+
         if weight:
             self.log_weight = nn.Parameter(to.log(init_weight*to.ones(in_features, dtype=to.get_default_dtype())),
                                            requires_grad=True)
@@ -95,7 +102,12 @@ class IndiNonlinLayer(nn.Module):
         tmp = to.exp(self.log_weight)*tmp if self.log_weight is not None else tmp
 
         # y = f_nlin( w * (x-b) )
-        return self._nonlin(tmp)
+        if is_iterable(self.nonlin):
+            # Every dimension separately
+            return to.tensor([n(tmp[i]) for i, n in enumerate(self.nonlin)])
+        else:
+            # All dimensions identically
+            return self.nonlin(tmp)
 
 
 class MirrConv1d(_ConvNd):
