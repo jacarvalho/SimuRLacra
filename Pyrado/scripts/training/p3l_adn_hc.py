@@ -20,29 +20,29 @@ if __name__ == '__main__':
     env_hparams = dict(
         physicsEngine='Bullet',  # Bullet or Vortex
         dt=1/50.,
-        max_steps=1000,
+        max_steps=700,
+        task_args=dict(consider_velocities=True),
         max_dist_force=None,
-        task_args=dict(consider_velocities=False),
-        positionTasks=True,
         checkJointLimits=True,
         collisionAvoidanceIK=True,
-        observeVelocities=False,
+        observeVelocities=True,
         observeForceTorque=True,
         observeCollisionCost=False,
         observePredictedCollisionCost=False,
         observeManipulabilityIndex=False,
         observeCurrentManipulability=True,
-        observeTaskSpaceDiscrepancy=True,
         observeGoalDistance=True,
+        observeDynamicalSystemDiscrepancy=False,
+        observeTaskSpaceDiscrepancy=False,
     )
     env = Planar3LinkIKSim(**env_hparams)
-    # env = ActNormWrapper(env)
-    # eub = {
-    #     'GD_DS0': 2.,
-    #     'GD_DS1': 2.,
-    #     'GD_DS2': 2.,
-    # }
-    # env = ObsNormWrapper(env, explicit_ub=eub)
+    env = ActNormWrapper(env)
+    eub = {
+        'GD_DS0': 2.,
+        'GD_DS1': 2.,
+        'GD_DS2': 2.,
+    }
+    env = ObsNormWrapper(env, explicit_ub=eub)
     print(env.act_space)
     print(env.obs_space)
 
@@ -50,6 +50,8 @@ if __name__ == '__main__':
     policy_hparam = dict(
         tau_init=1e-1,
         tau_learnable=True,
+        kappa_init=1e-2,
+        kappa_learnable=True,
         activation_nonlin=to.tanh,
         potentials_dyn_fcn=pd_cubic,
     )
@@ -57,12 +59,12 @@ if __name__ == '__main__':
 
     # Algorithm
     algo_hparam = dict(
-        max_iter=200,
+        max_iter=100,
         pop_size=10*policy.num_param,
         expl_factor=1.05,
         num_rollouts=1,
-        expl_std_init=0.5,
-        num_sampler_envs=4,
+        expl_std_init=0.05,
+        num_sampler_envs=6,
     )
     algo = HCNormal(ex_dir, env, policy, **algo_hparam)
 

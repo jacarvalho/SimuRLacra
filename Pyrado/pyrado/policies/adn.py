@@ -143,7 +143,7 @@ class ADNPolicy(RecurrentPolicy):
                  obs_layer: [nn.Module, Policy] = None,
                  tau_init: float = 2.,
                  tau_learnable: bool = True,
-                 kappa_init: float = 0.01,
+                 kappa_init: float = 1e-3,
                  kappa_learnable: bool = True,
                  capacity_learnable: bool = True,
                  scaling_layer: bool = True,
@@ -202,14 +202,14 @@ class ADNPolicy(RecurrentPolicy):
         # time constant
         self.tau_learnable = tau_learnable
         self._log_tau_init = to.log(to.tensor([tau_init], dtype=to.get_default_dtype()))
-        self._log_tau = nn.Parameter(self._log_tau_init,
-                                     requires_grad=True) if self.tau_learnable else self._log_tau_init
+        self._log_tau = nn.Parameter(self._log_tau_init, requires_grad=True)\
+            if self.tau_learnable else self._log_tau_init
         # cubic decay
         self.kappa_learnable = kappa_learnable
         if potentials_dyn_fcn == pd_cubic:
             self._log_kappa_init = to.log(to.tensor([kappa_init], dtype=to.get_default_dtype()))
-            self._log_kappa = nn.Parameter(self._log_kappa_init,
-                                           requires_grad=True) if self.kappa_learnable else self._log_kappa_init
+            self._log_kappa = nn.Parameter(self._log_kappa_init, requires_grad=True)\
+                if self.kappa_learnable else self._log_kappa_init
         else:
             self._log_kappa = None
         # capacity

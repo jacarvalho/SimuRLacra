@@ -15,6 +15,7 @@ class ParallelTasks(Task):
                  tasks: Sequence[Task],
                  hold_rew_when_done: bool = False,
                  allow_failures: bool = False,
+                 easily_satisfied: bool = False,
                  verbose: bool = False):
         """
         Constructor
@@ -22,6 +23,8 @@ class ParallelTasks(Task):
         :param tasks: sequence of tasks a.k.a. goals, the order matters
         :param hold_rew_when_done: if `True` reward values for done tasks will be stored and added every step
         :param allow_failures: if `True` this allows to continue after one sub-task failed, by default `False`
+        :param easily_satisfied: if `True` one successful subtask is enough to make the complete task successful,
+                                 by default `False`. Use this wisely.
         :param verbose: print messages on task completion
 
         .. note::
@@ -33,6 +36,7 @@ class ParallelTasks(Task):
         self.succeeded_tasks = np.full(len(self), False, dtype=bool)
         self.failed_tasks = np.full(len(self), False, dtype=bool)
         self.hold_rew_when_done = hold_rew_when_done
+        self.easily_satisfied = easily_satisfied
         if self.hold_rew_when_done:
             self.held_rews = np.zeros(len(self))
         self.allow_failures = allow_failures
@@ -190,7 +194,13 @@ class ParallelTasks(Task):
         :param state: environments current state
         :return: `True` if succeeded
         """
-        successful = np.all(self.succeeded_tasks)
+        if self.easily_satisfied:
+            # Mark done if one subtask is done
+            successful = np.any(self.succeeded_tasks)
+        else:
+            # Mark done if every subtask is done
+            successful = np.all(self.succeeded_tasks)
+
         if successful and self.verbose:
             print_cbt(f'All {len(self)} parallel sub-tasks are done successfully', 'g')
         return successful

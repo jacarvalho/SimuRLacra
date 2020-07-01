@@ -143,14 +143,14 @@ class Planar3LinkSim(RcsSim, Serializable):
         )
         task = FinalRewTask(
             SequentialTasks([subtask_1p, subtask_3, subtask_2p], hold_rew_when_done=True, verbose=True),
-            mode=FinalRewMode(always_positive=True), factor=2e3
+            mode=FinalRewMode(always_positive=True), factor=1e3
         )
         masked_task = MaskedTask(self.spec, task, idcs)
 
         task_check_bounds = create_check_all_boundaries_task(self.spec, penalty=1e3)
 
         # Return the masked task and and additional task that ends the episode if the unmasked state is out of bound
-        return ParallelTasks([masked_task, task_check_bounds])
+        return ParallelTasks([masked_task, task_check_bounds], easily_satisfied=True)
 
 
 class Planar3LinkJointCtrlSim(Planar3LinkSim, Serializable):
