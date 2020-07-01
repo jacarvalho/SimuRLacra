@@ -17,7 +17,7 @@ from pyrado.utils.data_types import EnvSpec
 
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
-    ex_dir = setup_experiment(Planar3LinkIKSim.name, PPO.name, NFPolicy.name, seed=101)
+    ex_dir = setup_experiment(Planar3LinkIKSim.name, PPO.name, f'{NFPolicy.name}_obsnorm', seed=101)
 
     # Environment
     env_hparams = dict(
@@ -36,15 +36,16 @@ if __name__ == '__main__':
         observeCurrentManipulability=True,
         observeGoalDistance=True,
         observeDynamicalSystemDiscrepancy=False,
-        observeTaskSpaceDiscrepancy=True,
+        observeTaskSpaceDiscrepancy=False,
     )
     env = Planar3LinkIKSim(**env_hparams)
-    eub = {
-        'GD_DS0': 2.,
-        'GD_DS1': 2.,
-        'GD_DS2': 2.,
-    }
-    env = ObsNormWrapper(env, explicit_ub=eub)
+    # eub = {
+    #     'GD_DS0': 2.,
+    #     'GD_DS1': 2.,
+    #     'GD_DS2': 2.,
+    # }
+    # env = ObsNormWrapper(env, explicit_ub=eub)
+    env = ObsNormWrapper(env)
     env = ObsPartialWrapper(env, idcs=['Effector_Xd', 'Effector_Zd'])
 
     # Policy

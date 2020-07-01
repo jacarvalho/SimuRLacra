@@ -5,6 +5,7 @@ import torch as to
 
 from pyrado.algorithms.nes import NES
 from pyrado.environment_wrappers.observation_normalization import ObsNormWrapper
+from pyrado.environment_wrappers.observation_partial import ObsPartialWrapper
 from pyrado.environments.rcspysim.planar_3_link import Planar3LinkIKSim
 from pyrado.logger.experiment import setup_experiment, save_list_of_dicts_to_yaml
 from pyrado.policies.neural_fields import NFPolicy
@@ -12,15 +13,15 @@ from pyrado.policies.neural_fields import NFPolicy
 
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
-    ex_dir = setup_experiment(Planar3LinkIKSim.name, f'nf-{NES.name}', 'obsnorm', seed=1001)
+    ex_dir = setup_experiment(Planar3LinkIKSim.name, NES.name, f'{NFPolicy.name}_obsnorm', seed=1001)
 
     # Environment
     env_hparams = dict(
         physicsEngine='Bullet',  # Bullet or Vortex
         dt=1/50.,
-        max_steps=1000,
+        max_steps=800,
+        task_args=dict(consider_velocities=True),
         max_dist_force=None,
-        taskCombinationMethod='sum',
         checkJointLimits=True,
         collisionAvoidanceIK=True,
         observeVelocities=True,
@@ -29,8 +30,9 @@ if __name__ == '__main__':
         observePredictedCollisionCost=False,
         observeManipulabilityIndex=False,
         observeCurrentManipulability=True,
-        observeGoalDistance=False,
+        observeGoalDistance=True,
         observeDynamicalSystemDiscrepancy=False,
+        observeTaskSpaceDiscrepancy=False,
     )
     env = Planar3LinkIKSim(**env_hparams)
     eub = {
@@ -39,16 +41,26 @@ if __name__ == '__main__':
         'GD_DS2': 2.,
     }
     env = ObsNormWrapper(env, explicit_ub=eub)
+    env = ObsPartialWrapper(env, idcs=['Effector_Xd', 'Effector_Zd'])
 
     # Policy
     policy_hparam = dict(
-        hidden_size=5,
+        # obs_layer=FNN(input_size=env.obs_space.flat_dim,
+        #               output_size=25,
+        #               hidden_sizes=[16, 16],
+        #               hidden_nonlin=to.tanh),
+        hidden_size=25,
         conv_out_channels=1,
-        # conv_kernel_size=5,
+        mirrored_conv_weights=True,
+        conv_kernel_size=25,
         conv_padding_mode='circular',
+        init_param_kwargs=dict(bell=True),
         activation_nonlin=to.sigmoid,
         tau_init=1e-1,
         tau_learnable=True,
+        kappa_init=None,
+        kappa_learnable=True,
+        potential_init_learnable=True,
     )
     policy = NFPolicy(spec=env.spec, dt=env.dt, **policy_hparam)
 

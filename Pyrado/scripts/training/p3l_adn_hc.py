@@ -38,12 +38,13 @@ if __name__ == '__main__':
     )
     env = Planar3LinkIKSim(**env_hparams)
     env = ActNormWrapper(env)
-    eub = {
-        'GD_DS0': 2.,
-        'GD_DS1': 2.,
-        'GD_DS2': 2.,
-    }
-    env = ObsNormWrapper(env, explicit_ub=eub)
+    # eub = {
+    #     'GD_DS0': 2.,
+    #     'GD_DS1': 2.,
+    #     'GD_DS2': 2.,
+    # }
+    # env = ObsNormWrapper(env, explicit_ub=eub)
+    env = ObsNormWrapper(env)
     env = ObsPartialWrapper(env, idcs=['DiscrepTS_X', 'DiscrepTS_Z', 'Effector_Xd', 'Effector_Zd'])
     print(env.act_space)
     print(env.obs_space)

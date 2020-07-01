@@ -14,7 +14,7 @@ from pyrado.policies.neural_fields import NFPolicy
 
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
-    ex_dir = setup_experiment(Planar3LinkIKSim.name, HCNormal.name, NFPolicy.name, seed=101)
+    ex_dir = setup_experiment(Planar3LinkIKSim.name, HCNormal.name, f'{NFPolicy.name}_obsnorm', seed=101)
 
     # Environment
     env_hparams = dict(
@@ -36,12 +36,12 @@ if __name__ == '__main__':
         observeTaskSpaceDiscrepancy=True,
     )
     env = Planar3LinkIKSim(**env_hparams)
-    eub = {
-        'GD_DS0': 2.,
-        'GD_DS1': 2.,
-        'GD_DS2': 2.,
-    }
-    env = ObsNormWrapper(env, explicit_ub=eub)
+    # eub = {
+    #     'GD_DS0': 2.,
+    #     'GD_DS1': 2.,
+    #     'GD_DS2': 2.,
+    # }
+    # env = ObsNormWrapper(env, explicit_ub=eub)
     env = ObsPartialWrapper(env, idcs=['Effector_Xd', 'Effector_Zd'])
 
     # Policy
@@ -60,7 +60,6 @@ if __name__ == '__main__':
         potential_init_learnable=True,
     )
     policy = NFPolicy(spec=env.spec, dt=env.dt, **policy_hparam)
-    # policy.param_values = to.load('/home/muratore/Software/SimuRLacra/Pyrado/data/temp/p3l-ik/hc/2020-06-30_15-06-57--nf/policy.pt').param_values
     print(policy)
 
     # Algorithm

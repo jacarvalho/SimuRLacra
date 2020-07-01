@@ -186,7 +186,7 @@ class ADNPolicy(RecurrentPolicy):
         self.obs_layer = nn.Linear(self._input_size, self._hidden_size, bias=False) if obs_layer is None else obs_layer
         self.resting_level = nn.Parameter(to.zeros(self._hidden_size), requires_grad=True)
         self.prev_act_layer = nn.Linear(self._hidden_size, self._hidden_size, bias=False)
-        self.nonlin_layer = IndiNonlinLayer(self._hidden_size, nonlin=activation_nonlin, bias=True,
+        self.nonlin_layer = IndiNonlinLayer(self._hidden_size, nonlin=activation_nonlin, bias=False,
                                             weight=scaling_layer)  # scaling weight equals beta in eq (4) of [1]
 
         # Call custom initialization function after PyTorch network parameter initialization
