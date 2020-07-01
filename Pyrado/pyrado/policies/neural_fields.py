@@ -83,7 +83,6 @@ class NFPolicy(RecurrentPolicy):
         self._input_size = spec.obs_space.flat_dim  # observations include goal distance, prediction error, ect.
         self._hidden_size = hidden_size  # number of potential neurons
         self._num_recurrent_layers = 1
-        self._activation_nonlin = activation_nonlin
         self.mirrored_conv_weights = mirrored_conv_weights
 
         # Create the layers
