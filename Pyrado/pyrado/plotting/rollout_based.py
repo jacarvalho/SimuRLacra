@@ -96,9 +96,8 @@ def plot_observations(ro: StepSequence, idcs_sel: Sequence[int] = None):
         num_cols = int(np.ceil(len(dim_obs)/divisor))
         num_rows = int(np.ceil(len(dim_obs)/num_cols))
 
-        fig, axs = plt.subplots(num_rows, num_cols, figsize=(num_cols*5, num_rows*3), constrained_layout=True)
+        fig, axs = plt.subplots(num_rows, num_cols, figsize=(num_cols*5, num_rows*3), )
         fig.suptitle('Observations over Time')
-        plt.subplots_adjust(hspace=.5)
         colors = plt.get_cmap('tab20')(np.linspace(0, 1, len(dim_obs)))
 
         if len(dim_obs) == 1:
@@ -109,12 +108,13 @@ def plot_observations(ro: StepSequence, idcs_sel: Sequence[int] = None):
                 for j in range(num_cols):
                     if j + i*num_cols < len(dim_obs):
                         # Omit the last observation for simplicity
-                        axs[j + i*num_cols].plot(t, ro.observations[:-1, j + i*num_cols], c=colors[j + i*num_cols],
-                                                 label=_get_obs_label(ro, j + i*num_cols))
-                        axs[j + i*num_cols].legend()
+                        axs[i, j].plot(t, ro.observations[:-1, j + i*num_cols], c=colors[j + i*num_cols],
+                                       label=_get_obs_label(ro, j + i*num_cols))
+                        axs[i, j].legend()
                     else:
                         # We might create more subplots than there are observations
                         pass
+        plt.subplots_adjust(hspace=.2)
         plt.show()
 
 
