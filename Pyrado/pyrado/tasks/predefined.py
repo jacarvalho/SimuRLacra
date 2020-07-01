@@ -64,24 +64,6 @@ def create_check_all_boundaries_task(env_spec: EnvSpec, penalty: float) -> Final
 
 
 def create_task_space_discrepancy_task(env_spec: EnvSpec, rew_fcn: RewFcn) -> MaskedTask:
-    # Define the indices for selection. This needs to match the observations' names in RcsPySim.
-    idcs = ['DiscrepTS_X', 'DiscrepTS_Y', 'DiscrepTS_Z']
-
-    # Get the masked environment specification
-    spec = EnvSpec(
-        env_spec.obs_space,
-        env_spec.act_space,
-        env_spec.state_space.subspace(env_spec.state_space.create_mask(idcs))
-    )
-
-    # Create a desired state task (no task space discrepancy is desired and the task never stops because of success)
-    dst = DesStateTask(spec, np.zeros(spec.state_space.shape), rew_fcn, never_succeeded)
-
-    # Mask selected discrepancy observation
-    return MaskedTask(env_spec, dst, idcs)
-
-
-def create_task_space_discrepancy_task_XZ(env_spec: EnvSpec, rew_fcn: RewFcn) -> MaskedTask:
     """
     Create a task which punishes the discrepancy between the actual and the commanded state of the observed body.
     The observed body is specified in in the associated experiment configuration file in RcsPySim.
@@ -92,7 +74,7 @@ def create_task_space_discrepancy_task_XZ(env_spec: EnvSpec, rew_fcn: RewFcn) ->
     :return: masked task
     """
     # Define the indices for selection. This needs to match the observations' names in RcsPySim.
-    idcs = ['DiscrepTS_X', 'DiscrepTS_Z']
+    idcs = [idx for idx in env_spec.state_space.labels if 'DiscrepTS' in idx]
 
     # Get the masked environment specification
     spec = EnvSpec(
