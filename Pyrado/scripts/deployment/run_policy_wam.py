@@ -44,4 +44,5 @@ if __name__ == '__main__':
         print_cbt(f'Return: {ro.undiscounted_return()}', 'g', bright=True)
         np.save(osp.join(ex_dir, 'qpos_real.npy'), env_real.qpos)
         np.save(osp.join(ex_dir, 'qvel_real.npy'), env_real.qvel)
+        print_cbt('Saved trajectory into qpos_real.npy and qvel_real.npy', 'g')
         done, _, _ = after_rollout_query(env_real, policy, ro)

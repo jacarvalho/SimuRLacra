@@ -36,7 +36,6 @@ class WAMBallInCupReal(Env, Serializable):
         :param dt: sampling time interval
         :param max_steps: maximum number of time steps
         :param ip: IP address of the PC controlling the Barrett WAM, pass `None` to skip connecting
-        :param save_trajectory: If the trajectory recorded from Barrett WAM should be saved
         """
         Serializable._init(self, locals())
 
@@ -183,8 +182,8 @@ class WAMBallInCupReal(Env, Serializable):
         This function is called from robcom as callback and should never be called manually
 
         :param jg: joint group
-        :param eg: endeffector group
-        :param data_provider: additional datastream
+        :param eg: end-effector group
+        :param data_provider: additional data stream
         """
 
         # Check if max_steps is reached

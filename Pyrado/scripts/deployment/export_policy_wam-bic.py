@@ -60,7 +60,7 @@ if __name__ == '__main__':
     np.save(osp.join(ex_dir, 'qvel_des.npy'), qvel_des)
 
     # Plot trajectories of the directly controlled joints and their corresponding desired trajectories
-    fig, ax = plt.subplots(3, 2, sharex='all')
+    fig, ax = plt.subplots(3, 2, sharex='all', constrained_layout=True)
     fig.suptitle('Desired Trajectory')
     for i, idx in enumerate([1, 3, 5]):
         ax[i, 0].plot(t, 180/np.pi*qpos_des[:, idx], label='Desired')

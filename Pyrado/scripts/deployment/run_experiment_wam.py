@@ -1,4 +1,5 @@
-""" Execute a trajectory on the real WAM using robcom's GoTo command
+"""
+Execute a trajectory on the real WAM using robcom's GoTo command
 
 Dependencies:
     https://git.ias.informatik.tu-darmstadt.de/robcom-2/robcom-2.0
@@ -103,13 +104,19 @@ if __name__ == '__main__':
 
     # Get desired positions and velocities
     if args.mode == 'des':
+        # If using the PD controller
         print_cbt('Running desired trajectory ...', 'c', bright=True)
         qpos_exec = np.load(osp.join(ex_dir, 'qpos_des.npy'))
         qvel_exec = np.load(osp.join(ex_dir, 'qvel_des.npy'))
-    else:
+        print_cbt('Saved trajectory into qpos_des.npy and qvel_des.npy', 'g')
+    elif args.mode == 'rec':
+        # If using WAM's feedforward controller
         print_cbt('Running recorded trajectory ...', 'c', bright=True)
         qpos_exec = np.load(osp.join(ex_dir, 'qpos.npy'))
         qvel_exec = np.load(osp.join(ex_dir, 'qvel.npy'))
+        print_cbt('Saved trajectory into qpos.npy and qvel.npy', 'g')
+    else:
+        raise pyrado.ValueErr(given=args.mode, eq_constraint='des or rec')
 
     # Run on real WAM
     run_direct_control(ex_dir, qpos_exec, qvel_exec, start_pos=qpos_exec[0, :])
