@@ -106,6 +106,7 @@ class PoWER(ParameterExploring):
         # Average the return values over the rollouts
         rets_avg_ros = to.tensor(param_results.mean_returns)
         if any(rets_avg_ros < 0):
+            rets_avg_ros[rets_avg_ros < 0] = 1e-3
             warn('PoWER is must use positive reward functions (improper probability distribution)!')
 
         # We do the simplification from the original implementation, which is only valid for the return-based variant
