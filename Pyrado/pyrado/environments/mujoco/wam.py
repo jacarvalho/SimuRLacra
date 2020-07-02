@@ -172,7 +172,7 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         # Set the angle of the first rope segment relative to the cup bottom plate
         self.init_qpos[7] = -0.21
         # The initial position of the ball in cartesian coordinates
-        # self.sim.forward()  # former: not existent
+        # self.sim.forward()
         # init_ball_pos = self.sim.data.get_body_xpos('ball').copy()
         init_ball_pos = np.array([0.828, 0., 1.131])
         init_cup_goal = np.array([0.82521,  0, 1.4469])
@@ -191,7 +191,7 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         state_shape = init_state.shape
         state_up = np.full(state_shape, pyrado.inf)
         state_lo = np.full(state_shape, -pyrado.inf)
-        # Ensure that joint limits of the arm are not reached (up to 5 degree)
+        # Ensure that joint limits of the arm are not reached (5 deg safety margin)
         state_up[:7] = np.array([2.6, 1.985, 2.8, 3.14159, 1.25, 1.5707, 2.7]) - 5*np.pi/180
         state_lo[:7] = np.array([-2.6, -1.985, -2.8, -0.9, -4.55, -1.5707, -2.7]) + 5*np.pi/180
         self._state_space = BoxSpace(state_lo, state_up)
@@ -246,8 +246,8 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         else:
             state_des = self.sim.data.get_site_xpos('cup_goal')  # this is a reference
             rew_fcn = ExpQuadrErrRewFcn(
-                Q=task_args.get('Q', np.diag([2e1, 1e-2, 1e1])),  # distance ball - cup; shouldn't move in y-direction
-                R=task_args.get('R', np.diag([0, 0, 0, 5e-2, 5e-2, 5e-2]))
+                Q=task_args.get('Q', np.diag([2e1, 1e-4, 2e1])),  # distance ball - cup; shouldn't move in y-direction
+                R=task_args.get('R', np.diag([1e-3, 1e-3, 1e-3, 2e-2, 2e-2, 2e-2]))
             )
             task = DesStateTask(spec, state_des, rew_fcn)
 
@@ -266,7 +266,7 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         )
         state_des = np.array([0.82521,  0, 1.4469])  # init cup goal position
         rew_fcn = QuadrErrRewFcn(
-            Q=np.diag([5e-1, 1e-4, 1e-0]),  # cup shouldn't move in y-direction
+            Q=np.diag([2e-1, 1e-4, 2e-0]),  # cup shouldn't move in y-direction
             R=np.zeros((6, 6))
         )
         task = DesStateTask(spec, state_des, rew_fcn)
