@@ -172,6 +172,8 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         # Set the angle of the first rope segment relative to the cup bottom plate
         self.init_qpos[7] = -0.21
         # The initial position of the ball in cartesian coordinates
+        # self.sim.forward()  # former: not existent
+        # init_ball_pos = self.sim.data.get_body_xpos('ball').copy()
         init_ball_pos = np.array([0.828, 0., 1.131])
         init_state = np.concatenate([self.init_qpos, self.init_qvel, init_ball_pos])
         if self.fixed_initial_state:
@@ -179,9 +181,9 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         else:
             # Add plus/minus one degree to each motor joint and the first rope segment joint
             init_state_up = init_state.copy()
-            init_state_up[:7] += np.array([0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5])*np.pi/180
+            init_state_up[:7] += np.array([0, 0.5, 0, 0.5, 0, 1., 1.])*np.pi/180  # last one is not actuated
             init_state_lo = init_state.copy()
-            init_state_lo[:7] -= np.array([0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5])*np.pi/180
+            init_state_lo[:7] -= np.array([0, 0.5, 0, 0.5, 0, 1., 1.])*np.pi/180  # last one is not actuated
             self._init_space = BoxSpace(init_state_lo, init_state_up)
 
         # State space
@@ -244,7 +246,7 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
             # If we do not use copy(), state_des is a reference to passed body and updates automatically at each step
             state_des = self.sim.data.get_site_xpos('cup_goal')  # this is a reference
             rew_fcn = ExpQuadrErrRewFcn(
-                Q=task_args.get('Q', np.diag([2e1, 1e-2, 2e1])),  # distance ball - cup; shouldn't move in y-direction
+                Q=task_args.get('Q', np.diag([2e1, 1e-2, 1e1])),  # distance ball - cup; shouldn't move in y-direction
                 R=task_args.get('R', np.zeros((spec.act_space.flat_dim, spec.act_space.flat_dim)))
             )
             task = DesStateTask(spec, state_des, rew_fcn)
@@ -252,7 +254,7 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
             # Wrap the masked DesStateTask to add a bonus for the best state in the rollout
             return BestStateFinalRewTask(
                 MaskedTask(self.spec, task, idcs),
-                max_steps=self.max_steps, factor=task_args.get('final_factor', 1.)
+                max_steps=self.max_steps, factor=task_args.get('final_factor', 0.05)
             )
 
     def _create_deviation_task(self, task_args: dict) -> Task:
