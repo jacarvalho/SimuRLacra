@@ -175,7 +175,8 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         # self.sim.forward()  # former: not existent
         # init_ball_pos = self.sim.data.get_body_xpos('ball').copy()
         init_ball_pos = np.array([0.828, 0., 1.131])
-        init_state = np.concatenate([self.init_qpos, self.init_qvel, init_ball_pos])
+        init_cup_goal = np.array([0.82521,  0, 1.4469])
+        init_state = np.concatenate([self.init_qpos, self.init_qvel, init_ball_pos, init_cup_goal])
         if self.fixed_initial_state:
             self._init_space = SingularStateSpace(init_state)
         else:
@@ -214,7 +215,7 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
 
     def _create_main_task(self, task_args: dict) -> Task:
         # Create a DesStateTask that masks everything but the ball position
-        idcs = list(range(self.state_space.flat_dim - 3, self.state_space.flat_dim))  # Cartesian ball position
+        idcs = list(range(self.state_space.flat_dim - 6, self.state_space.flat_dim - 3))  # Cartesian ball position
         spec = EnvSpec(
             self.spec.obs_space,
             self.spec.act_space,
@@ -243,7 +244,6 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
             return MaskedTask(self.spec, task, idcs)
 
         else:
-            # If we do not use copy(), state_des is a reference to passed body and updates automatically at each step
             state_des = self.sim.data.get_site_xpos('cup_goal')  # this is a reference
             rew_fcn = ExpQuadrErrRewFcn(
                 Q=task_args.get('Q', np.diag([2e1, 1e-2, 1e1])),  # distance ball - cup; shouldn't move in y-direction
@@ -258,20 +258,16 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
             )
 
     def _create_deviation_task(self, task_args: dict) -> Task:
-        # Create a DesStateTask that masks everything but the actuated joint angles
-        idcs = [1, 3, 5]  # see act in _mujoco_step()
+        idcs = list(range(self.state_space.flat_dim - 3, self.state_space.flat_dim))  # Cartesian cup goal position
         spec = EnvSpec(
             self.spec.obs_space,
             self.spec.act_space,
             self.spec.state_space.subspace(self.spec.state_space.create_mask(idcs))
         )
-
-        # Note: the MuJoCo sim object has not yet been set to the actual init state. However, init_qpos is already set
-        # to the correct state in _create_spaces() which is called before _create_task()
-        state_des = self.init_qpos[1:7:2]  # actual init pose of the controlled joints
+        state_des = np.array([0.82521,  0, 1.4469])  # init cup goal position
         rew_fcn = QuadrErrRewFcn(
-            Q=np.diag([5e-1, 2e-1, 1e-1]),
-            R=np.zeros((spec.act_space.flat_dim, spec.act_space.flat_dim))
+            Q=np.diag([5e-1, 1e-4, 1e-0]),  # cup shouldn't move in y-direction
+            R=np.zeros((6, 6))
         )
         task = DesStateTask(spec, state_des, rew_fcn)
 
@@ -334,14 +330,15 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
 
         qpos, qvel = self.sim.data.qpos.copy(), self.sim.data.qvel.copy()
         ball_pos = self.sim.data.get_body_xpos('ball').copy()
-        self.state = np.concatenate([qpos, qvel, ball_pos])
+        cup_goal = self.sim.data.get_site_xpos('cup_goal').copy()
+        self.state = np.concatenate([qpos, qvel, ball_pos, cup_goal])
 
         # If desired, check for collisions of the ball with the robot
         ball_collided = self.check_ball_collisions() if self.stop_on_collision else False
 
         return dict(
             qpos_des=qpos_des, qvel_des=qvel_des, qpos=qpos[:7], qvel=qvel[:7], ball_pos=ball_pos,
-            cup_pos=self.sim.data.get_site_xpos('cup_goal').copy(), failed=mjsim_crashed or ball_collided
+            cup_pos=cup_goal, failed=mjsim_crashed or ball_collided
         )
 
     def check_ball_collisions(self, verbose: bool = False) -> bool:
