@@ -1,7 +1,11 @@
 <Controller graph="gPlanar3Link.xml">
 
-    <Task name="Position_X" effector="Effector" controlVariable="X" active="true" />
-    <Task name="Position_Z" effector="Effector" controlVariable="Z" active="true" />
+    <Task name="Position X" controlVariable="X" effector="Effector" active="false" />
+    <Task name="Position Z" controlVariable="Z" effector="Effector" active="false" />
+
+    <Task name="Distance 1" controlVariable="Distance" effector="Effector" refBdy="Goal1" gainDX="0.1" active="false" />
+    <Task name="Distance 2" controlVariable="Distance" effector="Effector" refBdy="Goal2" gainDX="0.1" active="false" />
+    <Task name="Distance 3" controlVariable="Distance" effector="Effector" refBdy="Goal3" gainDX="0.1" active="flase" />
 
     <CollisionModel DistanceThreshold="0.1"> <!-- [cm]; former: 0.025-->
         <CollisionPair body1="Link1" body2="Link3"/>
