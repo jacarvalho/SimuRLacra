@@ -167,8 +167,8 @@ def load_experiment(ex_dir: str, args: Any = None) -> ([SimEnv, EnvWrapper], Pol
             except FileNotFoundError:
                 # Results of BayRn
                 if args.iter == -1:
-                    policy = to.load(osp.join(ex_dir, 'final_policy.pt'))
-                    print_cbt(f'Loaded final_policy.pt', 'g')
+                    policy = to.load(osp.join(ex_dir, 'policy.pt'))
+                    print_cbt(f'Loaded policy.pt', 'g')
                 else:
                     policy = to.load(osp.join(ex_dir, f'iter_{args.iter}_policy.pt'))
                     print_cbt(f'Loaded iter_{args.iter}_policy.pt', 'g')
