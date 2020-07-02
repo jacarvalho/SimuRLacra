@@ -45,9 +45,9 @@ if __name__ == '__main__':
     # }
     # env = ObsNormWrapper(env, explicit_ub=eub)
     env = ObsNormWrapper(env)
-    env = ObsPartialWrapper(env, idcs=['DiscrepTS_X', 'DiscrepTS_Z', 'Effector_Xd', 'Effector_Zd'])
-    print(env.act_space)
-    print(env.obs_space)
+    # env = ObsPartialWrapper(env, idcs=['Effector_Xd', 'Effector_Zd'])
+    # env = ObsPartialWrapper(env, idcs=['DiscrepTS_X', 'DiscrepTS_Z', 'Effector_Xd', 'Effector_Zd'])
+    print(env)
 
     # Policy
     policy_hparam = dict(
@@ -63,11 +63,11 @@ if __name__ == '__main__':
     # Algorithm
     algo_hparam = dict(
         max_iter=100,
-        pop_size=10*policy.num_param,
+        pop_size=50*policy.num_param,
         expl_factor=1.05,
         num_rollouts=1,
-        expl_std_init=0.5,
-        num_sampler_envs=6,
+        expl_std_init=0.8,
+        num_sampler_envs=8,
     )
     algo = HCNormal(ex_dir, env, policy, **algo_hparam)
 

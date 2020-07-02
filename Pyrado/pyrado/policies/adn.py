@@ -383,6 +383,9 @@ class ADNPolicy(RecurrentPolicy):
         potentials = potentials.detach()
         self._potentials = potentials.clone()  # saved in rollout()
 
+        # Scale the potentials, subtract a bias, and pass them through a nonlinearity
+        # prev_act = self.nonlin_layer(potentials)
+
         # ----------------
         # Activation Logic
         # ----------------
