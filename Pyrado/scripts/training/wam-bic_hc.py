@@ -14,29 +14,31 @@ from pyrado.policies.environment_specific import DualRBFLinearPolicy
 
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
-    ex_dir = setup_experiment(WAMBallInCupSim.name, f'{DualRBFLinearPolicy.name}_dr-cs-rl-m-jd-js', seed=1001)
+    ex_dir = setup_experiment(WAMBallInCupSim.name, HCNormal.name,
+                              f'{DualRBFLinearPolicy.name}_nom', seed=1001)
+                              # f'{DualRBFLinearPolicy.name}_dr-cs-rl-m-jd-js', seed=1001)
 
     # Environment
     env_hparams = dict(
         max_steps=2000,
-        task_args=dict(final_factor=0.05),
-        fixed_initial_state=False
+        task_args=dict(final_factor=0.01),
+        fixed_initial_state=True,
     )
     env = WAMBallInCupSim(**env_hparams)
 
     # Randomizer
-    randomizer = DomainRandomizer(
-        UniformDomainParam(name='cup_scale', mean=0.95, halfspan=0.05),
-        NormalDomainParam(name='rope_length', mean=0.3, std=0.005),
-        NormalDomainParam(name='ball_mass', mean=0.021, std=0.001),
-        UniformDomainParam(name='joint_damping', mean=0.05, halfspan=0.05),
-        UniformDomainParam(name='joint_stiction', mean=0.1, halfspan=0.1),
-    )
-    env = DomainRandWrapperLive(env, randomizer)
+    # randomizer = DomainRandomizer(
+    #     UniformDomainParam(name='cup_scale', mean=0.95, halfspan=0.05),
+    #     NormalDomainParam(name='rope_length', mean=0.3, std=0.005),
+    #     NormalDomainParam(name='ball_mass', mean=0.021, std=0.001),
+    #     UniformDomainParam(name='joint_damping', mean=0.05, halfspan=0.05),
+    #     UniformDomainParam(name='joint_stiction', mean=0.1, halfspan=0.1),
+    # )
+    # env = DomainRandWrapperLive(env, randomizer)
 
     # Policy
     policy_hparam = dict(
-        rbf_hparam=dict(num_feat_per_dim=10, bounds=(0., 1.), scale=None),
+        rbf_hparam=dict(num_feat_per_dim=12, bounds=(0., 1.), scale=None),
         dim_mask=2
     )
     policy = DualRBFLinearPolicy(env.spec, **policy_hparam)
@@ -44,11 +46,11 @@ if __name__ == '__main__':
     # Algorithm
     algo_hparam = dict(
         max_iter=100,
-        pop_size=200,
+        pop_size=10*policy.num_param,
         expl_factor=1.05,
-        num_rollouts=100,
-        expl_std_init=np.pi/2,
-        num_sampler_envs=32,
+        num_rollouts=1,
+        expl_std_init=np.pi/12,
+        num_sampler_envs=8,
     )
     algo = HCNormal(ex_dir, env, policy, **algo_hparam)
 

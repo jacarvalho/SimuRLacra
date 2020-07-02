@@ -15,24 +15,25 @@ from pyrado.policies.environment_specific import DualRBFLinearPolicy
 
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
-    ex_dir = setup_experiment(WAMBallInCupSim.name, PoWER.name, 'randomized', seed=101)
+    ex_dir = setup_experiment(WAMBallInCupSim.name, PoWER.name, DualRBFLinearPolicy.name, seed=None)
 
     # Environment
     env_hparams = dict(
-        max_steps=1500,
-        task_args=dict(final_factor=0.05)
+        max_steps=2000,
+        task_args=dict(final_factor=0.01),
+        fixed_initial_state=True
     )
     env = WAMBallInCupSim(**env_hparams)
 
     # Randomizer
-    randomizer = DomainRandomizer(
-        UniformDomainParam(name='cup_scale', mean=1.2, halfspan=0.3)
-    )
-    env = DomainRandWrapperLive(env, randomizer)
+    # randomizer = DomainRandomizer(
+    #     UniformDomainParam(name='cup_scale', mean=1.2, halfspan=0.3)
+    # )
+    # env = DomainRandWrapperLive(env, randomizer)
 
     # Policy
     policy_hparam = dict(
-        rbf_hparam=dict(num_feat_per_dim=8, bounds=(0., 1.), scale=None),
+        rbf_hparam=dict(num_feat_per_dim=10, bounds=(0., 1.), scale=None),
         dim_mask=2
     )
     policy = DualRBFLinearPolicy(env.spec, **policy_hparam)
@@ -40,10 +41,10 @@ if __name__ == '__main__':
     # Algorithm
     algo_hparam = dict(
         max_iter=100,
-        pop_size=50,
-        num_rollouts=20,
-        num_is_samples=5,
-        expl_std_init=np.pi/4,
+        pop_size=200,
+        num_rollouts=1,
+        num_is_samples=10,
+        expl_std_init=np.pi/6,
         expl_std_min=0.02,
         num_sampler_envs=8,
     )
