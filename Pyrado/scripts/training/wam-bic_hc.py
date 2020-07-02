@@ -20,7 +20,7 @@ if __name__ == '__main__':
 
     # Environment
     env_hparams = dict(
-        max_steps=2000,
+        max_steps=3000,
         task_args=dict(final_factor=0.01),
         fixed_initial_state=True,
     )
@@ -49,7 +49,7 @@ if __name__ == '__main__':
         pop_size=10*policy.num_param,
         expl_factor=1.05,
         num_rollouts=1,
-        expl_std_init=np.pi/12,
+        expl_std_init=np.pi/24,
         num_sampler_envs=8,
     )
     algo = HCNormal(ex_dir, env, policy, **algo_hparam)

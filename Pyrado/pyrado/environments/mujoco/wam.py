@@ -247,7 +247,7 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
             state_des = self.sim.data.get_site_xpos('cup_goal')  # this is a reference
             rew_fcn = ExpQuadrErrRewFcn(
                 Q=task_args.get('Q', np.diag([2e1, 1e-4, 2e1])),  # distance ball - cup; shouldn't move in y-direction
-                R=task_args.get('R', np.diag([1e-3, 1e-3, 1e-3, 2e-2, 2e-2, 2e-2]))
+                R=task_args.get('R', np.diag([0, 0, 1, 1e-2, 1e-2, 1e-1]))  # last joint is really unreliable
             )
             task = DesStateTask(spec, state_des, rew_fcn)
 
@@ -266,8 +266,8 @@ class WAMBallInCupSim(MujocoSimEnv, Serializable):
         )
         state_des = np.array([0.82521,  0, 1.4469])  # init cup goal position
         rew_fcn = QuadrErrRewFcn(
-            Q=np.diag([2e-1, 1e-4, 2e-0]),  # cup shouldn't move in y-direction
-            R=np.zeros((6, 6))
+            Q=np.diag([2e-1, 1e-4, 5e-0]),  # distance from init position ; cup shouldn't move in y-direction
+            R=np.zeros((6, 6))  # would be redundant
         )
         task = DesStateTask(spec, state_des, rew_fcn)
 
