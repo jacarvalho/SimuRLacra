@@ -4,13 +4,12 @@ Collection of plotting functions which take Rollouts as inputs and produce line 
 import functools
 import numpy as np
 import torch as to
-from matplotlib import gridspec
 from matplotlib import pyplot as plt
 from typing import Sequence
 
 import pyrado
 from pyrado.environment_wrappers.action_normalization import ActNormWrapper
-from pyrado.environment_wrappers.utils import remove_env
+from pyrado.environment_wrappers.utils import typed_env, inner_env
 from pyrado.environments.base import Env
 from pyrado.policies.base import Policy
 from pyrado.policies.linear import LinearPolicy
@@ -54,7 +53,6 @@ def plot_observations_actions_rewards(ro: StepSequence):
 
         fig, axs = plt.subplots(dim_obs + dim_act + 1, 1, figsize=(8, 12))
         fig.suptitle('Observations, Actions, and Reward over Time')
-        plt.subplots_adjust(hspace=.5)
         colors = plt.get_cmap('tab20')(np.linspace(0, 1, dim_obs if dim_obs > dim_act else dim_act))
 
         # Observations (without the last time step)
@@ -71,6 +69,7 @@ def plot_observations_actions_rewards(ro: StepSequence):
         # Rewards
         axs[-1].plot(t, ro.rewards, label='reward', c='k')
         axs[-1].legend()
+        plt.subplots_adjust(hspace=.5)
         plt.show()
 
 
@@ -97,9 +96,8 @@ def plot_observations(ro: StepSequence, idcs_sel: Sequence[int] = None):
         num_cols = int(np.ceil(len(dim_obs)/divisor))
         num_rows = int(np.ceil(len(dim_obs)/num_cols))
 
-        fig, axs = plt.subplots(nrows=num_rows, ncols=num_cols, figsize=(num_cols*5, num_rows*3))
+        fig, axs = plt.subplots(num_rows, num_cols, figsize=(num_cols*5, num_rows*3), )
         fig.suptitle('Observations over Time')
-        plt.subplots_adjust(hspace=.5)
         colors = plt.get_cmap('tab20')(np.linspace(0, 1, len(dim_obs)))
 
         if len(dim_obs) == 1:
@@ -110,12 +108,13 @@ def plot_observations(ro: StepSequence, idcs_sel: Sequence[int] = None):
                 for j in range(num_cols):
                     if j + i*num_cols < len(dim_obs):
                         # Omit the last observation for simplicity
-                        axs[i, j].plot(t, ro.observations[:-1, j + i*num_cols],
-                                       label=_get_obs_label(ro, j + i*num_cols), c=colors[j + i*num_cols])
+                        axs[i, j].plot(t, ro.observations[:-1, j + i*num_cols], c=colors[j + i*num_cols],
+                                       label=_get_obs_label(ro, j + i*num_cols))
                         axs[i, j].legend()
                     else:
                         # We might create more subplots than there are observations
                         pass
+        plt.subplots_adjust(hspace=.2)
         plt.show()
 
 
@@ -146,10 +145,10 @@ def plot_features(ro: StepSequence, policy: Policy):
         num_cols = int(np.ceil(len(dim_feat)/divisor))
         num_rows = int(np.ceil(len(dim_feat)/num_cols))
 
-        fig, axs = plt.subplots(nrows=num_rows, ncols=num_cols, figsize=(num_cols*5, num_rows*3))
+        fig, axs = plt.subplots(num_rows, num_cols, figsize=(num_cols*5, num_rows*3), constrained_layout=True)
         fig.suptitle('Feature values over Time')
         plt.subplots_adjust(hspace=.5)
-        colors = plt.get_cmap('tab20')(np.linspace(0, 1, dim_feat))
+        colors = plt.get_cmap('tab20')(np.linspace(0, 1, len(dim_feat)))
 
         if len(dim_feat) == 1:
             axs.plot(t, feat_vals[:-1, dim_feat[0]], label=_get_obs_label(ro, dim_feat[0]))
@@ -168,7 +167,7 @@ def plot_features(ro: StepSequence, policy: Policy):
         plt.show()
 
 
-def plot_actions(ro: StepSequence, env: Env = None):
+def plot_actions(ro: StepSequence, env: Env):
     """
     Plot all action trajectories of the given rollout.
 
@@ -176,31 +175,37 @@ def plot_actions(ro: StepSequence, env: Env = None):
     :param env: environment (used for getting the clipped action values)
     """
     if hasattr(ro, 'actions'):
+        if not isinstance(ro.actions, np.ndarray):
+            raise pyrado.TypeErr(given=ro.actions, expected_type=np.ndarray)
+
         dim_act = ro.actions.shape[1]
         # Use recorded time stamps if possible
         t = ro.env_infos.get('t', np.arange(0, ro.length)) if hasattr(ro, 'env_infos') else np.arange(0, ro.length)
 
         fig, axs = plt.subplots(dim_act, figsize=(8, 12))
         fig.suptitle('Actions over Time')
-        plt.subplots_adjust(hspace=.5)
         colors = plt.get_cmap('tab20')(np.linspace(0, 1, dim_act))
 
-        if env is not None:
-            act_space_unnorm = remove_env(env, ActNormWrapper).act_space
-            act_clipped = np.array([act_space_unnorm.project_to(a) for a in ro.actions[:]])
+        act_norm_wrapper = typed_env(env, ActNormWrapper)
+        if act_norm_wrapper is not None:
+            lb, ub = inner_env(env).act_space.bounds
+            act_denorm = lb + (ro.actions[:] + 1.)*(ub - lb)/2
+            act_clipped = np.array([inner_env(env).limit_act(a) for a in act_denorm])
+        else:
+            act_denorm = ro.actions
+            act_clipped = np.array([env.limit_act(a) for a in ro.actions[:]])
 
         if dim_act == 1:
-            axs.plot(t, ro.actions[:], label=_get_act_label(ro, 0))
-            if env is not None:
-                axs.plot(t, act_clipped, label=_get_act_label(ro, 0) + ' (clipped)', c='k', ls='--')
-            axs.legend()
+            axs.plot(t, act_denorm, label=_get_act_label(ro, 0) + ' (to env)')
+            axs.plot(t, act_clipped, label=_get_act_label(ro, 0) + ' (clipped)', c='k', ls='--')
+            axs.legend(bbox_to_anchor=(0, 1.0, 1, -0.1), loc='lower left', mode='expand', ncol=2)
         else:
-
             for i in range(dim_act):
-                axs[i].plot(t, ro.actions[:, i], label=_get_act_label(ro, i), c=colors[i])
-                if env is not None:
-                    axs[i].plot(t, act_clipped[:, i], label=_get_act_label(ro, i) + ' (clipped)', c='k', ls='--')
-                axs[i].legend()
+                axs[i].plot(t, act_denorm[:, i], label=_get_act_label(ro, i) + ' (to env)', c=colors[i])
+                axs[i].plot(t, act_clipped[:, i], label=_get_act_label(ro, i) + ' (clipped)', c='k', ls='--')
+                axs[i].legend(bbox_to_anchor=(0, 1.0, 1, -0.1), loc='lower left', mode='expand', ncol=2)
+
+        plt.subplots_adjust(hspace=1.2)
         plt.show()
 
 
@@ -256,14 +261,15 @@ def plot_potentials(ro: StepSequence, layout: str = 'joint'):
                     ax2.set_title(f'{ro.potentials.shape[1]} Potentials over time')
                     ax3.set_title(f'{ro.actions.shape[1]} Actions over time')
 
-            # for a in fig.get_axes():
-            #     a.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+            if num_pot < 8:  # otherwise it gets too cluttered
+                for a in fig.get_axes():
+                    a.legend(loc='center left', bbox_to_anchor=(1, 0.5))
 
             plt.subplots_adjust(hspace=.5)
             plt.subplots_adjust(wspace=.8)
 
         elif layout == 'joint':
-            fig, axs = plt.subplots(nrows=4, ncols=1, sharex=True, figsize=(8, 12))
+            fig, axs = plt.subplots(nrows=4, ncols=1, figsize=(12, 10), sharex='all')
 
             for i in range(num_pot):
                 axs[0].plot(t, ro.stimuli_external[:, i], label=rf'$s_{{ext,{i}}}$', c=colors_pot[i])
@@ -278,14 +284,13 @@ def plot_potentials(ro: StepSequence, layout: str = 'joint'):
             axs[2].set_title(f'{ro.potentials.shape[1]} Potentials over time')
             axs[3].set_title(f'{ro.actions.shape[1]} Actions over time')
 
-            # for a in fig.get_axes():
-            #     a.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+            for a in fig.get_axes():
+                a.legend(loc='center left', bbox_to_anchor=(1, 0.5))
 
             plt.subplots_adjust(wspace=.8)
 
         else:
             raise pyrado.ValueErr(given=layout, eq_constraint='joint or separate')
-
         plt.show()
 
 

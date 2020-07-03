@@ -7,4 +7,4 @@ conda create -n pyrado python=3.7 blas cmake colorama coverage cython joblib lap
 
 conda activate pyrado
 
-pip install git+https://github.com/Xfel/init-args-serializer.git@master argparse box2d glfw gym pprint pytest-lazy-fixture vpython
+conda run -n pyrado /bin/bash -c "pip install git+https://github.com/Xfel/init-args-serializer.git@master argparse box2d glfw gym pprint pytest-lazy-fixture vpython"

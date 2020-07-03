@@ -18,7 +18,7 @@ from pyrado.utils.data_types import EnvSpec
 
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
-    ex_dir = setup_experiment(HopperSim.name, PPO.name, 'fnn', seed=1001)
+    ex_dir = setup_experiment(HopperSim.name, PPO.name, FNNPolicy.name, seed=1001)
 
     # Environment
     env_hparams = dict()

@@ -9,6 +9,8 @@ from pyrado.utils.data_types import EnvSpec
 class IdlePolicy(Policy):
     """ The most simple policy which simply does nothing """
 
+    name: str = 'idle'
+
     def __init__(self, spec: EnvSpec, use_cuda: bool = False):
         """
         Constructor
@@ -28,6 +30,8 @@ class IdlePolicy(Policy):
 
 class DummyPolicy(Policy):
     """ Simple policy which samples random values form the action space """
+
+    name: str = 'dummy'
 
     def __init__(self, spec: EnvSpec, use_cuda: bool = False):
         """
@@ -55,6 +59,8 @@ class RecurrentDummyPolicy(RecurrentPolicy):
     Simple recurrent policy which samples random values form the action space and
     always returns hidden states with value zero
     """
+
+    name: str = 'rec_cummy'
 
     def __init__(self, spec: EnvSpec, hidden_size: int, use_cuda: bool = False):
         """

@@ -448,7 +448,7 @@ def setup_sl():
         print("Dependencies have NOT been installed.")
 
     # Set up custom IAS dependency
-    setup_scppsctp()
+    setup_cppsctp()
 
     # Get it all GitLab
     if not osp.exists(sl_dir):

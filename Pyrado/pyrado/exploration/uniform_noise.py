@@ -1,10 +1,11 @@
 import torch as to
+import torch.nn as nn
 from torch.distributions import Uniform
 
 import pyrado
 
 
-class UniformNoise(to.nn.Module):
+class UniformNoise(nn.Module):
     """ Module for learnable additive uniform noise """
 
     def __init__(self,
@@ -37,8 +38,8 @@ class UniformNoise(to.nn.Module):
 
         # Register parameters
         if learnable:
-            self.log_halfspan = to.nn.Parameter(to.Tensor(noise_dim), requires_grad=True)
-            self.mean = to.nn.Parameter(to.Tensor(noise_dim), requires_grad=True) if train_mean else None
+            self.log_halfspan = nn.Parameter(to.Tensor(noise_dim), requires_grad=True)
+            self.mean = nn.Parameter(to.Tensor(noise_dim), requires_grad=True) if train_mean else None
         else:
             self.log_halfspan = to.empty(noise_dim)
             self.mean = None

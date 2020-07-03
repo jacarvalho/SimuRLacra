@@ -18,7 +18,7 @@ from pyrado.utils.data_types import EnvSpec
 
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
-    ex_dir = setup_experiment(BallOnPlate2DSim.name, SAC.name, '', seed=1001)
+    ex_dir = setup_experiment(BallOnPlate2DSim.name, SAC.name, TwoHeadedFNNPolicy.name, seed=1001)
 
     # Environment
     env_hparams = dict(

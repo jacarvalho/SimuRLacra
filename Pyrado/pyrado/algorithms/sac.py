@@ -3,6 +3,7 @@ import numpy as np
 import os.path as osp
 import sys
 import torch as to
+import torch.nn as nn
 from copy import deepcopy
 from tqdm import tqdm
 
@@ -95,7 +96,7 @@ class SAC(Algorithm):
         if not isinstance(env, Env):
             raise pyrado.TypeErr(given=env, expected_type=Env)
         if typed_env(env, ActNormWrapper) is None:
-            raise pyrado.TypeErr(msg='SAC required an environment wrapped by anActNormWrapper!')
+            raise pyrado.TypeErr(msg='SAC required an environment wrapped by an ActNormWrapper!')
         if not isinstance(q_fcn_1, Policy):
             raise pyrado.TypeErr(given=q_fcn_1, expected_type=Policy)
         if not isinstance(q_fcn_2, Policy):
@@ -157,7 +158,7 @@ class SAC(Algorithm):
         log_alpha_init = to.log(to.tensor(alpha_init, dtype=to.get_default_dtype()))
         if learn_alpha:
             # Automatic entropy tuning
-            self._log_alpha = to.nn.Parameter(log_alpha_init, requires_grad=True)
+            self._log_alpha = nn.Parameter(log_alpha_init, requires_grad=True)
             self._alpha_optim = to.optim.Adam([{'params': self._log_alpha}], lr=lr)
             self.target_entropy = -to.prod(to.tensor(env.act_space.shape))
         else:
@@ -223,7 +224,7 @@ class SAC(Algorithm):
         self.make_snapshot(snapshot_mode, float(ret_avg), meta_info)
 
     @staticmethod
-    def soft_update(target: to.nn.Module, source: to.nn.Module, tau: float = 0.995):
+    def soft_update(target: nn.Module, source: nn.Module, tau: float = 0.995):
         """
         Moving average update, a.k.a. Polyak update.
         Modifies the input argument `target`.
@@ -284,8 +285,8 @@ class SAC(Algorithm):
             # E_{(s_t, a_t) ~ D} [1/2 * (Q_i(s_t, a_t) - r_t - gamma * E_{s_{t+1} ~ p} [V(s_{t+1})] )^2]
             q_val_1 = self.q_fcn_1(to.cat([steps.observations, steps.actions], dim=1))
             q_val_2 = self.q_fcn_2(to.cat([steps.observations, steps.actions], dim=1))
-            q_1_loss = to.nn.functional.mse_loss(q_val_1, next_q_val)
-            q_2_loss = to.nn.functional.mse_loss(q_val_2, next_q_val)
+            q_1_loss = nn.functional.mse_loss(q_val_1, next_q_val)
+            q_2_loss = nn.functional.mse_loss(q_val_2, next_q_val)
             q_fcn_1_losses[b] = q_1_loss.data
             q_fcn_2_losses[b] = q_2_loss.data
 

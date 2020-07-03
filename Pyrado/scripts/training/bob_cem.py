@@ -11,7 +11,7 @@ from pyrado.policies.linear import LinearPolicy
 
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
-    ex_dir = setup_experiment(BallOnBeamSim.name, CEM.name, 'rbf', seed=101)
+    ex_dir = setup_experiment(BallOnBeamSim.name, CEM.name, LinearPolicy.name, seed=101)
 
     # Environment
     env_hparams = dict(dt=1/50., max_steps=300)

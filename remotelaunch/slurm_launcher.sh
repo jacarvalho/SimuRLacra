@@ -4,10 +4,10 @@
 # SLURM Configurations
 #SBATCH --job-name slurm_launcher_pyrado
 #SBATCH --array 0-0
-##SBATCH --time 24:00:00
+##SBATCH --time 72:00:00
 #SBATCH --ntasks 1
 ## Always leave ntasks value to 1. This is only used for MPI, which is not supported now.
-#SBATCH --cpus-per-task 12
+#SBATCH --cpus-per-task 32 
 ## Specify the number of cores. The maximum is 32.
 ##SBATCH --gres=gpu:rtx2080:1
 ## Leave this if you want to use a GPU per job. Remove it if you do not need it.

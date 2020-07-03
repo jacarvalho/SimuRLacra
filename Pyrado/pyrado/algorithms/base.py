@@ -1,6 +1,7 @@
 import os.path as osp
 import pandas as pd
 import torch as to
+import torch.nn as nn
 from abc import ABC, abstractmethod
 from typing import Any
 
@@ -182,7 +183,7 @@ class Algorithm(ABC, LoggerAware):
         raise NotImplementedError
 
     @staticmethod
-    def clip_grad(module: to.nn.Module, max_grad_norm: [float, None]) -> float:
+    def clip_grad(module: nn.Module, max_grad_norm: [float, None]) -> float:
         """
         Clip all gradients of the provided Module (e.g., a policy or an advantage estimator) by their L2 norm value.
 
@@ -194,7 +195,7 @@ class Algorithm(ABC, LoggerAware):
         :return: total norm of the parameters (viewed as a single vector)
         """
         if max_grad_norm is not None:
-            to.nn.utils.clip_grad_norm_(module.parameters(), max_grad_norm, norm_type=2)  # returns unclipped norm
+            nn.utils.clip_grad_norm_(module.parameters(), max_grad_norm, norm_type=2)  # returns unclipped norm
 
         # Calculate the clipped gradient's L2 norm (for logging)
         total_norm = 0.

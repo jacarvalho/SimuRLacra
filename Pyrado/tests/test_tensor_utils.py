@@ -2,11 +2,11 @@ import numpy as np
 import pytest
 import torch as to
 
-from pyrado.utils.tensor_utils import stack_tensor_list, stack_tensor_dict_list, insert_tensor_col, \
+from pyrado.utils.tensor import stack_tensor_list, stack_tensor_dict_list, insert_tensor_col, \
     atleast_2D, atleast_3D
 
 
-@pytest.mark.util
+
 @pytest.mark.pytorch_augmentation
 @pytest.mark.parametrize(
     'x', [
@@ -27,7 +27,7 @@ def test_atleast_2D(x):
     assert np.all(x_al2d.numpy() == x_np)
 
 
-@pytest.mark.util
+
 @pytest.mark.pytorch_augmentation
 @pytest.mark.parametrize(
     'x', [
@@ -48,7 +48,7 @@ def test_atleast_3D(x):
     assert np.all(x_al3d.numpy() == x_np)
 
 
-@pytest.mark.util
+
 @pytest.mark.pytorch_augmentation
 def test_stack_tensors():
     tensors = [
@@ -66,7 +66,7 @@ def test_stack_tensors():
     ]))
 
 
-@pytest.mark.util
+
 @pytest.mark.pytorch_augmentation
 def test_stack_tensors_scalar():
     tensors = [1, 2, 3]
@@ -74,7 +74,7 @@ def test_stack_tensors_scalar():
     to.testing.assert_allclose(stack, to.tensor([1, 2, 3]))
 
 
-@pytest.mark.util
+
 @pytest.mark.pytorch_augmentation
 def test_stack_tensor_dicts():
     tensors = [
@@ -87,7 +87,7 @@ def test_stack_tensor_dicts():
     to.testing.assert_allclose(stack['multi'], to.tensor([[1, 2], [3, 4], [5, 6]]))
 
 
-@pytest.mark.util
+
 @pytest.mark.pytorch_augmentation
 @pytest.mark.parametrize(
     'orig, col', [

@@ -1,11 +1,11 @@
 import torch as to
 import torch.nn as nn
 import torch.nn.init as init
-from math import sqrt, ceil
+from math import sqrt
 from warnings import warn
 
 import pyrado
-from pyrado.policies.base import ScaleLayer, PositiveScaleLayer, IndiNonlinLayer
+from pyrado.utils.nn_layers import ScaleLayer, PositiveScaleLayer, IndiNonlinLayer
 
 
 def init_param(m, **kwargs):
@@ -60,7 +60,7 @@ def init_param(m, **kwargs):
             if 'weight_ih' in name:
                 # Initialize the input to hidden weights orthogonally
                 # w_ii, w_if, w_ic, w_io
-                to.nn.init.orthogonal_(param.data)
+                nn.init.orthogonal_(param.data)
             elif 'weight_hh' in name:
                 # Initialize the hidden to hidden weights separately as identity matrices and stack them afterwards
                 # w_ii, w_if, w_ic, w_io
@@ -76,14 +76,14 @@ def init_param(m, **kwargs):
                     if not isinstance(kwargs['t_max'], (float, int, to.Tensor)):
                         raise pyrado.TypeErr(given=kwargs['t_max'], expected_type=[float, int, to.Tensor])
                     # Initialize all biases to 0, but the bias of the forget and input gate using the chrono init
-                    to.nn.init.constant_(param.data, val=0)
-                    param.data[m.hidden_size:m.hidden_size*2] = to.log(to.nn.init.uniform_(  # forget gate
+                    nn.init.constant_(param.data, val=0)
+                    param.data[m.hidden_size:m.hidden_size*2] = to.log(nn.init.uniform_(  # forget gate
                         param.data[m.hidden_size:m.hidden_size*2], 1, kwargs['t_max'] - 1
                     ))
                     param.data[0: m.hidden_size] = -param.data[m.hidden_size: 2*m.hidden_size]  # input gate
                 else:
                     # Initialize all biases to 0, but the bias of the forget gate to 1
-                    to.nn.init.constant_(param.data, val=0)
+                    nn.init.constant_(param.data, val=0)
                     param.data[m.hidden_size:m.hidden_size*2].fill_(1)
 
     elif isinstance(m, nn.Conv1d):
@@ -99,11 +99,10 @@ def init_param(m, **kwargs):
         m.log_weight.data.fill_(0.)
 
     elif isinstance(m, IndiNonlinLayer):
-        # Initialize all weights to 1 and all biases (if they exist) to 0
-        m.log_weight.data.fill_(0.)
-        if m.bias is None:
-            pass
-        else:
+        # Initialize all weights to 1 and all biases to 0 (if they exist)
+        if m.log_weight is not None:
+            m.log_weight.data.fill_(0.)
+        if m.bias is not None:
             m.bias.data.fill_(0.)
 
     else:

@@ -1,4 +1,5 @@
 import torch as to
+import torch.nn as nn
 from abc import ABC, abstractmethod
 from typing import Sequence, Callable, Tuple
 
@@ -26,6 +27,8 @@ class TwoHeadedPolicy(Policy, ABC):
 
 class TwoHeadedFNNPolicy(TwoHeadedPolicy):
     """ Policy architecture which has a common body and two heads that have a separate last layer """
+
+    name: str = '2h_fnn'
 
     def __init__(self,
                  spec: EnvSpec,
@@ -67,8 +70,8 @@ class TwoHeadedFNNPolicy(TwoHeadedPolicy):
         # Create output layer
         head_1_size = spec.act_space.flat_dim if head_1_size is None else head_1_size
         head_2_size = spec.act_space.flat_dim if head_2_size is None else head_2_size
-        self.head_1 = to.nn.Linear(shared_hidden_sizes[-1], head_1_size)
-        self.head_2 = to.nn.Linear(shared_hidden_sizes[-1], head_2_size)
+        self.head_1 = nn.Linear(shared_hidden_sizes[-1], head_1_size)
+        self.head_2 = nn.Linear(shared_hidden_sizes[-1], head_2_size)
         self.head_1_output_nonlin = head_1_output_nonlin
         self.head_2_output_nonlin = head_2_output_nonlin
 
@@ -102,6 +105,8 @@ class TwoHeadedFNNPolicy(TwoHeadedPolicy):
 class TwoHeadedGRUPolicy(TwoHeadedPolicy, RecurrentPolicy):
     """ Policy architecture which has a common body and two heads that have a separate last layer """
 
+    name: str = '2h_gru'
+
     def __init__(self,
                  spec: EnvSpec,
                  shared_hidden_size: int,
@@ -133,7 +138,7 @@ class TwoHeadedGRUPolicy(TwoHeadedPolicy, RecurrentPolicy):
         self._num_recurrent_layers = shared_num_recurrent_layers
 
         # Create the feed-forward neural network
-        self.shared = to.nn.GRU(
+        self.shared = nn.GRU(
             input_size=spec.obs_space.flat_dim,
             hidden_size=shared_hidden_size,
             num_layers=shared_num_recurrent_layers,
@@ -146,8 +151,8 @@ class TwoHeadedGRUPolicy(TwoHeadedPolicy, RecurrentPolicy):
         # Create output layer
         self.head_1_size = spec.act_space.flat_dim if head_1_size is None else head_1_size
         self.head_2_size = spec.act_space.flat_dim if head_2_size is None else head_2_size
-        self.head_1 = to.nn.Linear(shared_hidden_size, self.head_1_size)
-        self.head_2 = to.nn.Linear(shared_hidden_size, self.head_2_size)
+        self.head_1 = nn.Linear(shared_hidden_size, self.head_1_size)
+        self.head_2 = nn.Linear(shared_hidden_size, self.head_2_size)
         self.head_1_output_nonlin = head_1_output_nonlin
         self.head_2_output_nonlin = head_2_output_nonlin
 

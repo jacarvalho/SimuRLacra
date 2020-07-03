@@ -26,7 +26,7 @@ from pyrado.utils.data_types import EnvSpec
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
     ex_dir = setup_experiment(QBallBalancerSim.name, f'{SPOTA.name}-{PPO.name}',
-                              'fnn_actnorm_obsnoise-s_actedlay-10_ws', seed=1001)
+                              f'{GRUPolicy.name}_actnorm_obsnoise-s_actedlay-10_ws', seed=1001)
 
     # Environment and domain randomization
     env_hparams = dict(dt=1/100., max_steps=500, load_experimental_tholds=True)

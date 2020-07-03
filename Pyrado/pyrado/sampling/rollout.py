@@ -1,6 +1,7 @@
 import numpy as np
 import time
 import torch as to
+import torch.nn as nn
 from numpy.random import binomial
 from tabulate import tabulate
 
@@ -24,7 +25,7 @@ from pyrado.utils.input_output import print_cbt, color_validity
 
 
 def rollout(env: Env,
-            policy: [to.nn.Module, Policy],
+            policy: [nn.Module, Policy],
             eval: bool = False,
             max_steps: int = None,
             reset_kwargs: dict = None,

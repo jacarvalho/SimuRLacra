@@ -28,8 +28,11 @@ jobs:
           sudo mkdir /home/user/
           sudo mkdir /home/user/SimuRLacra
           sudo ln -s $COVPATH /home/user/SimuRLacra
+          ./test-reporter-latest-linux-amd64 format-coverage -t coverage.py -p /home/user/SimuRLacra
+          ./test-reporter-latest-linux-amd64 upload-coverage
       - uses: codecov/codecov-action@v1
         with:
           file: coverage.xml # optional
           flags: unittests # optional
           name: codecov-umbrella # optional
+          fail_ci_if_error: true
