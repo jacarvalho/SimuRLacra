@@ -2,13 +2,12 @@ import numpy as np
 
 import pyrado
 from pyrado.tasks.base import Task
-from pyrado.tasks.utils import never_succeeded
 from pyrado.tasks.reward_functions import StateBasedRewFcn, RewFcn
 from pyrado.utils.data_types import EnvSpec
 
 
 class GoallessTask(Task):
-    """ Task which has no desired state and runs endlessly """
+    """ Task which has no desired state or desired space, this runs endlessly """
 
     def __init__(self, env_spec: EnvSpec, rew_fcn: RewFcn):
         """
@@ -52,7 +51,7 @@ class GoallessTask(Task):
         return self.rew_fcn(state, act, remaining_steps)
 
     def has_succeeded(self, state: np.ndarray) -> bool:
-        return never_succeeded()
+        return False  # never succeed
 
 
 class OptimProxyTask(Task):
@@ -93,4 +92,4 @@ class OptimProxyTask(Task):
         return self.rew_fcn(state)
 
     def has_succeeded(self, state: np.ndarray) -> bool:
-        return never_succeeded()
+        return False  # never succeed

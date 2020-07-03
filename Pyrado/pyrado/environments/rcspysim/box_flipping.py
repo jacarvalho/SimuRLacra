@@ -13,7 +13,7 @@ from pyrado.tasks.desired_state import DesStateTask
 from pyrado.tasks.endless_flipping import EndlessFlippingTask
 from pyrado.tasks.masked import MaskedTask
 from pyrado.tasks.reward_functions import ExpQuadrErrRewFcn, MinusOnePerStepRewFcn, AbsErrRewFcn, CosOfOneEleRewFcn, \
-    CombinedRewFcn, RewFcn
+    CompoundRewFcn, RewFcn
 from pyrado.tasks.parallel import ParallelTasks
 from pyrado.tasks.utils import proximity_succeeded, never_succeeded
 from pyrado.tasks.predefined import create_check_all_boundaries_task, create_collision_task
@@ -60,7 +60,7 @@ def create_box_flip_task(env_spec: EnvSpec, continuous_rew_fcn):
         # r = 1e-6*np.ones(spec.act_space.flat_dim)
         # rew_fcn_act = AbsErrRewFcn(q, r)
         rew_fcn = CosOfOneEleRewFcn(idx=0)
-        # rew_fcn = CombinedRewFcn([rew_fcn_act, rew_fcn_box])
+        # rew_fcn = CompoundRewFcn([rew_fcn_act, rew_fcn_box])
     else:
         rew_fcn = MinusOnePerStepRewFcn()
     ef_task = EndlessFlippingTask(spec, rew_fcn, init_angle=0.)
@@ -76,8 +76,8 @@ class BoxFlippingSim(RcsSim, Serializable):
                  task_args: dict,
                  ref_frame: str,
                  position_mps: bool,
-                 mps_left: [Sequence[dict], None],
-                 mps_right: [Sequence[dict], None],
+                 mps_left: [Sequence[dict], None] = None,
+                 mps_right: [Sequence[dict], None] = None,
                  **kwargs):
         """
         Constructor
@@ -146,6 +146,41 @@ class BoxFlippingSim(RcsSim, Serializable):
                     table_friction_coefficient=1.0)
 
 
+class BoxFlippingIKSim(BoxFlippingSim, Serializable):
+    """ Simplified robotic manipulator flipping a box over and over again using a Rcs IK-based controller """
+
+    name: str = 'bf-ik'
+
+    def __init__(self, ref_frame: str, continuous_rew_fcn: bool = True, **kwargs):
+        """
+        Constructor
+
+        :param ref_frame: reference frame for the Rcs tasks, e.g. 'world', 'table', or 'box'
+        :param continuous_rew_fcn: specify if the continuous or an uninformative reward function should be used
+        :param kwargs: keyword arguments which are available for all task-based `RcsSim`
+                       checkJointLimits: bool = False,
+                       collisionAvoidanceIK: bool = True,
+                       observeVelocities: bool = False,
+                       observeCollisionCost: bool = True,
+                       observePredictedCollisionCost: bool = False,
+                       observeManipulabilityIndex: bool = False,
+                       observeCurrentManipulability: bool = True,
+                       observeDynamicalSystemDiscrepancy: bool = False,
+                       observeTaskSpaceDiscrepancy: bool = True,
+                       observeForceTorque: bool = True
+        """
+        Serializable._init(self, locals())
+
+        # Forward to the BoxFlippingSim's constructor
+        super().__init__(
+            task_args=dict(continuous_rew_fcn=continuous_rew_fcn),
+            ref_frame=ref_frame,
+            position_mps=True,
+            actionModelType='ik',
+            **kwargs
+        )
+
+
 class BoxFlippingPosMPsSim(BoxFlippingSim, Serializable):
     """ Simplified robotic manipulator flipping a box over and over again using position-level movement primitives """
 
@@ -165,6 +200,7 @@ class BoxFlippingPosMPsSim(BoxFlippingSim, Serializable):
         :param mps_right: right arm's movement primitives holding the dynamical systems and the goal states
         :param continuous_rew_fcn: specify if the continuous or an uninformative reward function should be used
         :param kwargs: keyword arguments which are available for all task-based `RcsSim`
+                       taskCombinationMethod: str = 'mean',  # 'sum', 'mean',  'product', or 'softmax'
                        checkJointLimits: bool = False,
                        collisionAvoidanceIK: bool = True,
                        observeVelocities: bool = False,
@@ -217,6 +253,7 @@ class BoxFlippingPosMPsSim(BoxFlippingSim, Serializable):
             position_mps=True,
             mps_left=mps_left,
             mps_right=mps_right,
+            actionModelType='activation',
             **kwargs
         )
 
@@ -240,6 +277,7 @@ class BoxFlippingVelMPsSim(BoxFlippingSim, Serializable):
         :param mps_right: right arm's movement primitives holding the dynamical systems and the goal states
         :param continuous_rew_fcn: specify if the continuous or an uninformative reward function should be used
         :param kwargs: keyword arguments which are available for all task-based `RcsSim`
+                       taskCombinationMethod: str = 'mean',  # 'sum', 'mean',  'product', or 'softmax'
                        checkJointLimits: bool = False,
                        collisionAvoidanceIK: bool = True,
                        observeVelocities: bool = False,
@@ -282,5 +320,6 @@ class BoxFlippingVelMPsSim(BoxFlippingSim, Serializable):
             position_mps=False,
             mps_left=mps_left,
             mps_right=mps_right,
+            actionModelType='activation',
             **kwargs
         )

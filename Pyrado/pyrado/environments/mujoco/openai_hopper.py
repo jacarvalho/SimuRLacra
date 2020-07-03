@@ -7,7 +7,7 @@ from pyrado.environments.mujoco.base import MujocoSimEnv
 from pyrado.spaces.box import BoxSpace
 from pyrado.tasks.base import Task
 from pyrado.tasks.goalless import GoallessTask
-from pyrado.tasks.reward_functions import ForwardVelocityRewFcn, CombinedRewFcn, PlusOnePerStepRewFcn
+from pyrado.tasks.reward_functions import ForwardVelocityRewFcn, CompoundRewFcn, PlusOnePerStepRewFcn
 
 
 class HopperSim(MujocoSimEnv, Serializable):
@@ -85,10 +85,13 @@ class HopperSim(MujocoSimEnv, Serializable):
         max_obs = np.full(obs_shape, pyrado.inf)
         self._obs_space = BoxSpace(-max_obs, max_obs)
 
-    def _create_task(self, task_args: [dict, None] = None) -> Task:
-        if task_args is None:
-            task_args = dict(fwd_rew_weight=1., ctrl_cost_weight=1e-3)
-        rew_fcn = CombinedRewFcn([
+    def _create_task(self, task_args: dict) -> Task:
+        if 'fwd_rew_weight' not in task_args:
+            task_args['fwd_rew_weight'] = 1.
+        if 'ctrl_cost_weight' not in task_args:
+            task_args['ctrl_cost_weight'] = 1e-3
+
+        rew_fcn = CompoundRewFcn([
             ForwardVelocityRewFcn(self._dt, idx_fwd=0, **task_args),
             PlusOnePerStepRewFcn()  # equivalent to the "healthy_reward"
         ])

@@ -197,7 +197,8 @@ class QCartPoleSwingUpAndBalanceCtrl(Policy):
         """
         Constructor
 
-env_spec        :param u_max: maximum energy gain
+        :param env_spec: environment specification
+        :param u_max: maximum energy gain
         :param v_max: maximum voltage the control signal will be clipped to
         :param long: flag for long or short pole
         """
@@ -264,22 +265,31 @@ env_spec        :param u_max: maximum energy gain
 
 
 class QQubeSwingUpAndBalanceCtrl(Policy):
-    """ Hybrid controller (QQubeEnergyCtrl, QQubePDCtrl) switching based on the pendulum pole angle alpha """
+    """ Hybrid controller (QQubeEnergyCtrl, QQubePDCtrl) switching based on the pendulum pole angle alpha
+
+    .. note::
+        Extracted Quanser's values from q_qube2_swingup.mdl
+    """
 
     def __init__(self,
                  env_spec: EnvSpec,
-                 ref_energy: float = 0.09,  # Quanser's value: 0.04
-                 energy_gain: float = 40.,  # Quanser's value: 25.
-                 energy_th_gain: float = 0.4,
-                 acc_max: float = 5.,  # Quanser's value: 5.
+                 ref_energy: float = 0.04,  # Quanser's value: 0.02
+                 energy_gain: float = 30.,  # Quanser's value: 50
+                 energy_th_gain: float = 0.4,  # former: 0.4
+                 acc_max: float = 5.,  # Quanser's value: 6
                  alpha_max_pd_enable: float = 10.,  # Quanser's value: 20
-                 pd_gains: to.Tensor = to.tensor([-0.42, 18.45, -0.53, 1.53])):  # Quanser's value: [-2., 30., -2., 2.5]
+                 # pd_gains: to.Tensor = to.tensor([-0.42, 18.45, -0.53, 1.53])):  # Quanser's value: [-2, 35, -1.5, 3]
+                 pd_gains: to.Tensor = to.tensor([-2., 35., -1.5, 3.])):
+                 # pd_gains: to.Tensor = to.tensor([-0.4707,  4.4347, -1.6357,  3.7186])):
         """
         Constructor
 
         :param env_spec: environment specification
         :param ref_energy: reference energy level
         :param energy_gain: P-gain on the difference to the reference energy
+        :param energy_th_gain: P-gain on angle theta for the Energy controller. This term does not exist in Quanser's
+                               implementation. Its purpose it to keep the Qube from moving too much around the
+                               vertical axis, i.e. prevent bouncing against the mechanical boundaries.
         :param acc_max: maximum acceleration
         :param alpha_max_pd_enable: angle threshold for enabling the PD -controller [deg]
         :param pd_gains: gains for the PD-controller
@@ -290,7 +300,7 @@ class QQubeSwingUpAndBalanceCtrl(Policy):
         self.alpha_max_pd_enable = alpha_max_pd_enable/180.*math.pi
 
         # Set up the energy and PD controller
-        self.e_ctrl = QQubeEnergyCtrl(env_spec, ref_energy, energy_gain, acc_max, energy_th_gain)
+        self.e_ctrl = QQubeEnergyCtrl(env_spec, ref_energy, energy_gain, energy_th_gain, acc_max)
         self.pd_ctrl = QQubePDCtrl(env_spec, k=pd_gains, al_des=math.pi)
 
     def pd_enabled(self, cos_al: [float, to.Tensor]) -> bool:
@@ -383,10 +393,10 @@ class QQubeEnergyCtrl(Policy):
         E = E_kin + E_pot
 
         # Compute clipped action
-        u = self.E_gain*(self.E_ref - E)*to.sign(ald*to.cos(al)) + self._th_gain*th
+        u = self.E_gain*(E - self.E_ref)*to.sign(ald*to.cos(al)) - self._th_gain*th
         acc = clamp_symm(u, self.acc_max)
         trq = self.dp_nom['Mr']*self.dp_nom['Lr']*acc
-        volt = -self.dp_nom['Rm']/self.dp_nom['km']*trq
+        volt = self.dp_nom['Rm']/self.dp_nom['km']*trq
         return volt.unsqueeze(0)
 
 

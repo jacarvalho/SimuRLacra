@@ -46,7 +46,7 @@ def estimate_one_thold_qbb(servo: str, dir_multiplier: int, dact: float, thold_t
     act = np.zeros(2)
     obs_init = env.reset()
 
-    print_cbt(f'Running threshold estimation on servo {servo} in direction {dir_multiplier} ...', 'c')
+    print_cbt(f'Running threshold estimation on servo {servo} in direction {dir_multiplier} ...', 'c', bright=True)
     while not done:
         # Apply voltage and wait
         obs, _, _, _ = env.step(act)
@@ -95,7 +95,7 @@ def estimate_one_thold_qcp(dir_multiplier: int, dact: float, thold_x: float):
     act = np.zeros(1)
     obs_init = env.reset()
 
-    print_cbt(f'Running threshold estimation in direction {dir_multiplier} ...', 'c')
+    print_cbt(f'Running threshold estimation in direction {dir_multiplier} ...', 'c', bright=True)
     while not done:
         # Apply voltage and wait
         obs, _, _, _ = env.step(act)

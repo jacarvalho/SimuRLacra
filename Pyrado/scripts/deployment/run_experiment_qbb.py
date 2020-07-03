@@ -63,7 +63,7 @@ if __name__ == '__main__':
     for r in range(args.num_runs):
         # Run PD-controller on the device to get the ball into position
         env_real = inner_env(env_real)  # since we are reusing it
-        print_cbt('Running the PD-controller ...', 'c')
+        print_cbt('Running the PD-controller ...', 'c', bright=True)
         rollout(env_real, pdctrl, eval=True, max_steps=2000, render_mode=RenderMode())
         env_real.reset()
 
@@ -71,7 +71,7 @@ if __name__ == '__main__':
         env_real = wrap_like_other_env(env_real, env_sim)
 
         # Run learned policy on the device
-        print_cbt('Running the evaluation policy ...', 'c')
+        print_cbt('Running the evaluation policy ...', 'c', bright=True)
         ros.append(rollout(env_real, policy, eval=True, max_steps=args.max_steps, render_mode=RenderMode()))
 
     # Print and save results

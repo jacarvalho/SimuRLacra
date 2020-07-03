@@ -9,6 +9,8 @@ from pyrado.policies.environment_specific import QQubeSwingUpAndBalanceCtrl
 from pyrado.policies.features import FeatureStack, identity_feat, sign_feat, abs_feat, squared_feat, qubic_feat, \
     bell_feat, RandFourierFeat, MultFeat
 from pyrado.policies.linear import LinearPolicy
+import torch as to
+
 
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
@@ -17,9 +19,9 @@ if __name__ == '__main__':
     ex_dir = setup_experiment(QQubeSim.name, PoWER.name, 'ectrl', seed=1)
 
     # Environment
-    env_hparams = dict(dt=1/250., max_steps=1500)
+    env_hparams = dict(dt=1/500., max_steps=5000)
     env = QQubeSim(**env_hparams)
-    env = ActNormWrapper(env)
+    # env = ActNormWrapper(env)
 
     # Policy
     # policy_hparam = dict(
@@ -28,13 +30,21 @@ if __name__ == '__main__':
     #                         MultFeat([2, 5]), MultFeat([3, 5]), MultFeat([4, 5])])
     # )
     # policy = LinearPolicy(spec=env.spec, **policy_hparam)
-    policy_hparam = dict(energy_gain=0.587, ref_energy=0.827)
+    # policy_hparam = dict(energy_gain=0.587, ref_energy=0.827)
+    policy_hparam = dict(
+        ref_energy=0.02,
+        energy_gain=50.,
+        energy_th_gain=0.4,
+        acc_max=5.,
+        alpha_max_pd_enable=10.,
+        pd_gains=to.tensor([-2, 35, -1.5, 3])
+    )
     policy = QQubeSwingUpAndBalanceCtrl(env.spec, **policy_hparam)
 
     # Algorithm
     algo_hparam = dict(
         max_iter=50,
-        pop_size=20,
+        pop_size=50,
         num_rollouts=10,
         num_is_samples=10,
         expl_std_init=0.5,

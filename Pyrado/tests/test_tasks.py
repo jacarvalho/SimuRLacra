@@ -1,8 +1,10 @@
 import functools
 import numpy as np
 import pytest
+from pytest_lazyfixture import lazy_fixture
 
 import pyrado
+from pyrado.tasks.condition_only import ConditionOnlyTask
 from pyrado.tasks.desired_space import DesSpaceTask
 from pyrado.utils.data_types import EnvSpec
 from pyrado.spaces.box import BoxSpace
@@ -11,7 +13,7 @@ from pyrado.tasks.sequential import SequentialTasks
 from pyrado.tasks.utils import proximity_succeeded
 from pyrado.tasks.desired_state import DesStateTask, RadiallySymmDesStateTask
 from pyrado.tasks.parallel import ParallelTasks
-from pyrado.tasks.reward_functions import CombinedRewFcn, CosOfOneEleRewFcn, MinusOnePerStepRewFcn, QuadrErrRewFcn, \
+from pyrado.tasks.reward_functions import CompoundRewFcn, CosOfOneEleRewFcn, MinusOnePerStepRewFcn, QuadrErrRewFcn, \
     ScaledExpQuadrErrRewFcn, RewFcn, PlusOnePerStepRewFcn
 
 
@@ -29,7 +31,7 @@ def envspec_432():
     ], ids=['wo_args-wo_kwargs', 'w_args-wo_kwargs', 'w_args2-wo_kwargs', 'wo_args-w_kwargs'])
 def test_combined_reward_function_step(fcn_list, reset_args, reset_kwargs):
     # Create combined reward function
-    c = CombinedRewFcn(fcn_list)
+    c = CompoundRewFcn(fcn_list)
     # Create example state and action error
     err_s, err_a = np.array([1., 2.]), np.array([3.])
     # Calculate combined reward
@@ -318,8 +320,13 @@ def test_tracking_task(envspec_432, rew_fcn):
 
 @pytest.mark.parametrize(
     'sub_tasks', [
-        [DesStateTask(envspec_432(), np.array([0.05, 0.05, 0.05]), MinusOnePerStepRewFcn()),
-         DesSpaceTask(envspec_432(), BoxSpace(-1., 1., shape=3), MinusOnePerStepRewFcn())]
+        [DesStateTask(
+            EnvSpec(obs_space=BoxSpace(-1, 1, 4), act_space=BoxSpace(-1, 1, 2), state_space=BoxSpace(-1, 1, 3)),
+            np.array([0.05, 0.05, 0.05]), MinusOnePerStepRewFcn()),
+         DesSpaceTask(
+             EnvSpec(obs_space=BoxSpace(-1, 1, 4), act_space=BoxSpace(-1, 1, 2), state_space=BoxSpace(-1, 1, 3)),
+             BoxSpace(-1., 1., shape=3), MinusOnePerStepRewFcn())
+        ]
     ], ids=['des_state_and_des_space']
 )
 def test_set_goals_fo_composite_tasks(sub_tasks):
@@ -337,3 +344,26 @@ def test_set_goals_fo_composite_tasks(sub_tasks):
     st.idx_curr = 1
     st.space_des = BoxSpace(-0.5, 2., shape=3)
     assert st.space_des == BoxSpace(-0.5, 2., shape=3)
+
+
+@pytest.mark.parametrize(
+    'condition_fcn', [lambda x: np.linalg.norm(x - np.array([0.5, 0.5, 0.5])) < 0.01]
+)
+@pytest.mark.parametrize(
+    'is_success_condition', [True, False], ids=['isc_true', 'isc_false']
+)
+def test_condition_only_task(envspec_432, condition_fcn, is_success_condition):
+    cot = ConditionOnlyTask(envspec_432, condition_fcn, is_success_condition)
+    cot.reset(envspec_432)
+
+    state = np.array([0., 0., 0.5])
+    assert not cot.has_failed(state)
+    assert not cot.has_succeeded(state)
+
+    state = np.array([0.5, 0.5, 0.5])
+    if cot.is_success_condition:
+        assert not cot.has_failed(state)
+        assert cot.has_succeeded(state)
+    else:
+        assert cot.has_failed(state)
+        assert not cot.has_succeeded(state)

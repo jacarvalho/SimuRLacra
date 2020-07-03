@@ -89,7 +89,7 @@ static void RcsGraph_jointLimitBorderGradient3(const RcsGraph* self, MatNd* dH, 
 */
 namespace Rcs
 {
-    ActionModelIK::ActionModelIK(RcsGraph* graph) : ActionModel(graph)
+    ActionModelIK::ActionModelIK(RcsGraph* graph) : ActionModel(graph), alpha(1e-4), lambda(1e-6)
     {
         // Create controller using a separate graph.
         // that graph will later hold the desired state.
@@ -158,24 +158,23 @@ namespace Rcs
         // Compute dx from x_des and x_cur (NOTE: dx is the error, not the time derivative)
         controller->computeDX(dx_des, x_des);
         
-        // compute IK from dx_des
+        // Compute IK from dx_des
         ikFromDX(q_des, q_dot_des, dt);
     }
     
     void ActionModelIK::computeIKVel(MatNd* q_des, MatNd* q_dot_des, MatNd* T_des, const MatNd* x_dot_des, double dt)
     {
-        // dx is the distance we want to move during this step
+        // Compute dx from x_dot_des. dx is the distance we want to move during this step
+        // TODO Discuss with Michael why no controller is used
         MatNd_constMul(dx_des, x_dot_des, dt);
         
-        // compute IK from dx_des
+        // Compute IK from dx_des
         ikFromDX(q_des, q_dot_des, dt);
     }
     
     
     void ActionModelIK::ikFromDX(MatNd* q_des, MatNd* q_dot_des, double dt) const
     {
-        double alpha = 1e-4, lambda = 1e-6;
-        
         // Print desired task space delta if debug level is exceeded
         REXEC(6)
         {
@@ -244,18 +243,16 @@ namespace Rcs
     
     void AMIKGeneric::getMinMax(double* min, double* max) const
     {
-        unsigned int actI = 0;
+        unsigned int idx = 0;
         for (unsigned int ti = 0; ti < controller->getNumberOfTasks(); ++ti)
         {
             Task* task = controller->getTask(ti);
             for (unsigned int tp = 0; tp < task->getDim(); ++tp)
             {
                 auto param = task->getParameter(tp);
-                
-                min[actI] = param.minVal;
-                max[actI] = param.maxVal;
-                
-                actI++;
+                min[idx] = param.minVal;
+                max[idx] = param.maxVal;
+                idx++;
             }
         }
     }
@@ -282,13 +279,6 @@ namespace Rcs
         
         computeIK(q_des, q_dot_des, T_des, action, dt);
     }
-
-//void AMIKGeneric::addTask(Task* task)
-//{
-//    RCHECK_MSG(!solver, "Cannot add a Task to the action model after the first reset() call.");
-//    controller->add(task->clone(desiredGraph));
-//    delete task;
-//}
     
     void AMIKGeneric::getStableAction(MatNd* action) const
     {

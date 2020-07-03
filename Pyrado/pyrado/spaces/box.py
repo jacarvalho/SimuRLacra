@@ -127,13 +127,15 @@ class BoxSpace(Space):
                     ['lower bound ', *color_validity(self.bound_lo, check_lo)],
                     ['candidate ', *color_validity(cand, idcs_valid)],
                     ['upper bound ', *color_validity(self.bound_up, check_up)]
-                ], headers=[""] + list(self.labels)))
+                ], headers=[''] + list(self.labels)))
             return False
 
     def sample_uniform(self, concrete_inf: float = 1e6) -> np.ndarray:
+        # Get the original bounds
         bl = self.bound_lo.copy()
         bu = self.bound_up.copy()
-        # replace inf bounds to be able to work with the RNG
+
+        # Replace inf bounds to be able to work with the RNG
         bl[bl == -np.inf] = -concrete_inf
         bu[bu == np.inf] = concrete_inf
 
@@ -151,7 +153,9 @@ class BoxSpace(Space):
         Concatenate BoxSpaces.
 
         :param spaces: list or tuple of spaces
-        .. note:: This function does not check if the dimensions of the BoxSpaces are correct!
+
+        .. note::
+            This function does not check if the dimensions of the BoxSpaces are correct!
         """
         # Remove None elements for convenience
         spaces = [s for s in spaces if s is not None]

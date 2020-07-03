@@ -7,11 +7,15 @@ import matplotlib.pyplot as plt
 import mpl_toolkits.mplot3d
 
 import pyrado
+from pyrado.environment_wrappers.utils import inner_env
 from pyrado.environments.mujoco.wam import WAMBallInCupSim
+from pyrado.logger.experiment import ask_for_experiment
 from pyrado.policies.environment_specific import DualRBFLinearPolicy
 from pyrado.utils.data_types import RenderMode
 from pyrado.policies.features import RBFFeat
 from pyrado.sampling.rollout import rollout, after_rollout_query
+from pyrado.utils.experiments import load_experiment
+from pyrado.utils.input_output import print_cbt
 
 
 def compute_trajectory(weights, time, width):
@@ -105,15 +109,40 @@ def check_feat_equality():
     return correct
 
 
-if __name__ == '__main__':
-    # Fix seed for reproducibility
-    pyrado.set_seed(101)
+def eval_damping():
+    """ Plot joint trajectories for different joint damping parameters """
+    # Load experiment and remove possible randomization wrappers
+    ex_dir = ask_for_experiment()
+    env, policy, _ = load_experiment(ex_dir)
+    env = inner_env(env)
+    env.domain_param = WAMBallInCupSim.get_nominal_domain_param()
 
-    # Check for function equality
-    print(check_feat_equality())
+    data = []
+    t = []
+    dampings = [0., 1e-2, 1e-1, 1e0]
+    print_cbt(f'Run policy for damping coefficients: {dampings}')
+    for d in dampings:
+        env.reset(domain_param=dict(joint_damping=d))
+        ro = rollout(env, policy, render_mode=RenderMode(video=False), eval=True)
+        t.append(ro.env_infos['t'])
+        data.append(ro.env_infos['qpos'])
 
+    fig, ax = plt.subplots(3, sharex='all')
+    ls = ['k-', 'b--', 'g-.', 'r:']  # line style setting for better visibility
+    for i, idx in enumerate([1, 3, 5]):
+        for j in range(len(dampings)):
+            ax[i].plot(t[j], data[j][:, idx], ls[j], label=f'damping: {dampings[j]}')
+            if i == 0:
+                ax[i].legend()
+        ax[i].set_ylabel(f'joint {idx} pos [rad]')
+    ax[2].set_xlabel('time [s]')
+    plt.suptitle('Evaluation of joint damping coefficient')
+    plt.show()
+
+
+def rollout_dummy_rbf_policy():
     # Environment
-    env = WAMBallInCupSim(max_steps=1750)
+    env = WAMBallInCupSim(max_steps=1750, task_args=dict(sparse_rew_fcn=True))
 
     # Stabilize around initial position
     env.reset(domain_param=dict(cup_scale=1., rope_length=0.3103, ball_mass=0.021))
@@ -128,13 +157,14 @@ if __name__ == '__main__':
     done, param = False, None
     while not done:
         ro = rollout(env, policy, render_mode=RenderMode(video=True), eval=True, reset_kwargs=dict(domain_param=param))
+        print_cbt(f'Return: {ro.undiscounted_return()}', 'g', bright=True)
         done, _, param = after_rollout_query(env, policy, ro)
 
     # Retrieve infos from rollout
     t = ro.env_infos['t']
-    des_pos_traj = ro.env_infos['des_qpos']  # (max_steps,7) ndarray >> can directly be saved
+    des_pos_traj = ro.env_infos['qpos_des']  # (max_steps,7) ndarray
     pos_traj = ro.env_infos['qpos']
-    des_vel_traj = ro.env_infos['des_qvel']  # (max_steps,7) ndarray >> can directly be saved
+    des_vel_traj = ro.env_infos['qvel_des']  # (max_steps,7) ndarray
     vel_traj = ro.env_infos['qvel']
     ball_pos = ro.env_infos['ball_pos']
     state_des = ro.env_infos['state_des']
@@ -142,19 +172,36 @@ if __name__ == '__main__':
     # Plot trajectories of the directly controlled joints and their corresponding desired trajectories
     fig, ax = plt.subplots(3, sharex='all')
     for i, idx in enumerate([1, 3, 5]):
-        ax[i].plot(t, des_pos_traj[:, idx], label=f'des_qpos {idx}')
+        ax[i].plot(t, des_pos_traj[:, idx], label=f'qpos_des {idx}')
         ax[i].plot(t, pos_traj[:, idx], label=f'qpos {idx}')
         ax[i].legend()
 
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
     ax.plot(xs=ball_pos[:, 0], ys=ball_pos[:, 1], zs=ball_pos[:, 2], color='blue', label='Ball')
-    ax.scatter(xs=ball_pos[-1, 0], ys=ball_pos[-1, 1], zs=ball_pos[-1, 2], color='blue', label='Ball Final')
+    ax.scatter(xs=ball_pos[-1, 0], ys=ball_pos[-1, 1], zs=ball_pos[-1, 2], color='blue', label='Ball final')
     ax.plot(xs=state_des[:, 0], ys=state_des[:, 1], zs=state_des[:, 2], color='red', label='Cup')
-    ax.scatter(xs=state_des[-1, 0], ys=state_des[-1, 1], zs=state_des[-1, 2], color='red', label='Cup Final')
+    ax.scatter(xs=state_des[-1, 0], ys=state_des[-1, 1], zs=state_des[-1, 2], color='red', label='Cup final')
     ax.legend()
     ax.set_xlabel('x')
     ax.set_ylabel('y')
     ax.set_zlabel('z')
     ax.view_init(elev=16., azim=-7.)
     plt.show()
+
+
+if __name__ == '__main__':
+    # Fix seed for reproducibility
+    pyrado.set_seed(101)
+
+    # Check for function equality
+    if check_feat_equality():
+        print_cbt('The two methods to compute the trajectory yield equal results.', 'g')
+    else:
+        print_cbt('The two methods to compute the trajectory do not yield equal results.', 'r')
+
+    # Plot damping coefficient comparison
+    # eval_damping()
+
+    # Apply DualRBFLinearPolicy and plot the joint states over the desired ones
+    rollout_dummy_rbf_policy()

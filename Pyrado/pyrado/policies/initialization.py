@@ -1,11 +1,11 @@
 import torch as to
 import torch.nn as nn
 import torch.nn.init as init
-from math import sqrt
+from math import sqrt, ceil
 from warnings import warn
 
 import pyrado
-from pyrado.policies.base import PositiveScaleLayer, ScaleLayer
+from pyrado.policies.base import ScaleLayer, PositiveScaleLayer, IndiNonlinLayer
 
 
 def init_param(m, **kwargs):
@@ -25,6 +25,7 @@ def init_param(m, **kwargs):
 
     if isinstance(m, nn.Linear):
         if m.weight.data.ndimension() >= 2:
+            # Most common case
             init.orthogonal_(m.weight.data)  # former: init.xavier_normal_(m.weight.data)
         else:
             warn('Orthogonal initialization is not possible for tensors with less than 2 dimensions.'
@@ -35,12 +36,21 @@ def init_param(m, **kwargs):
             if kwargs.get('uniform_bias', False):
                 init.uniform_(m.bias.data, a=-1./sqrt(m.bias.data.nelement()), b=1./sqrt(m.bias.data.nelement()))
             else:
-                # Default
+                # Most common case
                 init.normal_(m.bias.data)
 
     elif isinstance(m, nn.RNN):
         for param in m.parameters():
             if len(param.shape) >= 2:
+                # Most common case
+                init.orthogonal_(param.data)
+            else:
+                init.normal_(param.data)
+
+    elif isinstance(m, (nn.GRU, nn.GRUCell)):
+        for param in m.parameters():
+            if len(param.shape) >= 2:
+                # Most common case
                 init.orthogonal_(param.data)
             else:
                 init.normal_(param.data)
@@ -65,7 +75,6 @@ def init_param(m, **kwargs):
                 if 't_max' in kwargs:
                     if not isinstance(kwargs['t_max'], (float, int, to.Tensor)):
                         raise pyrado.TypeErr(given=kwargs['t_max'], expected_type=[float, int, to.Tensor])
-
                     # Initialize all biases to 0, but the bias of the forget and input gate using the chrono init
                     to.nn.init.constant_(param.data, val=0)
                     param.data[m.hidden_size:m.hidden_size*2] = to.log(to.nn.init.uniform_(  # forget gate
@@ -77,17 +86,25 @@ def init_param(m, **kwargs):
                     to.nn.init.constant_(param.data, val=0)
                     param.data[m.hidden_size:m.hidden_size*2].fill_(1)
 
-    elif isinstance(m, (nn.GRU, nn.GRUCell)):
-        for param in m.parameters():
-            if len(param.shape) >= 2:
-                init.orthogonal_(param.data)
-            else:
-                init.normal_(param.data)
+    elif isinstance(m, nn.Conv1d):
+        # Not implemented
+        pass
 
     elif isinstance(m, ScaleLayer):
         # Initialize all weights to 1
         m.weight.data.fill_(1.)
 
     elif isinstance(m, PositiveScaleLayer):
-        # Initialize all weights to 0
+        # Initialize all weights to 1
         m.log_weight.data.fill_(0.)
+
+    elif isinstance(m, IndiNonlinLayer):
+        # Initialize all weights to 1 and all biases (if they exist) to 0
+        m.log_weight.data.fill_(0.)
+        if m.bias is None:
+            pass
+        else:
+            m.bias.data.fill_(0.)
+
+    else:
+        pass

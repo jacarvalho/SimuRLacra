@@ -1,14 +1,15 @@
 #include "ExperimentConfig.h"
-#include "action/AMJointControlPosition.h"
-#include "action/AMIntegrate2ndOrder.h"
-#include "action/AMTaskActivation.h"
 #include "action/ActionModelIK.h"
+#include "action/AMIntegrate1stOrder.h"
+#include "action/AMIntegrate2ndOrder.h"
+#include "action/AMJointControlPosition.h"
+#include "action/AMTaskActivation.h"
 #include "initState/ISSPlanar3Link.h"
 #include "observation/OMBodyStateLinear.h"
 #include "observation/OMCombined.h"
 #include "observation/OMJointState.h"
 #include "observation/OMPartial.h"
-#include "observation/OMGoalDistance.h"
+#include "observation/OMDynamicalSystemGoalDistance.h"
 #include "observation/OMForceTorque.h"
 #include "observation/OMCollisionCost.h"
 #include "observation/OMCollisionCostPrediction.h"
@@ -19,12 +20,12 @@
 #include "physics/PPDMaterialProperties.h"
 #include "physics/ForceDisturber.h"
 #include "util/string_format.h"
+#include "observation/OMTaskSpaceDiscrepancy.h"
 
 #include <Rcs_Mat3d.h>
 #include <Rcs_Vec3d.h>
 #include <Rcs_typedef.h>
 #include <Rcs_macros.h>
-
 #include <TaskPosition1D.h>
 #include <TaskVelocity1D.h>
 
@@ -50,21 +51,54 @@ protected:
     {
         std::string actionModelType = "joint_pos";
         properties->getProperty(actionModelType, "actionModelType");
+
+        // Common for the action models
+        RcsBody* effector = RcsGraph_getBodyByName(graph, "Effector");
+        RCHECK(effector);
         
         if (actionModelType == "joint_pos")
         {
             return new AMJointControlPosition(graph);
         }
+        else if (actionModelType == "joint_vel")
+        {
+            double max_action = 90*M_PI/180; // [rad/s]
+            return new AMIntegrate1stOrder(new AMJointControlPosition(graph), max_action);
+        }
         else if (actionModelType == "joint_acc")
         {
-            double max_action = 120*M_PI/180; // [1/s^2]
+            double max_action = 120*M_PI/180; // [rad/s^2]
             return new AMIntegrate2ndOrder(new AMJointControlPosition(graph), max_action);
+        }
+        else if (actionModelType == "ik")
+        {
+            // Create the action model
+            auto amIK = new AMIKGeneric(graph);
+            std::vector<TaskGenericIK*> tasks;
+
+            // Check if the tasks are defined on position or task level. Adapt their parameters if desired.
+            if (properties->getPropertyBool("positionTasks", true))
+            {
+                tasks.emplace_back(new TaskPosition1D("X", graph, effector, nullptr, nullptr));
+                tasks.emplace_back(new TaskPosition1D("Z", graph, effector, nullptr, nullptr));
+                tasks[0]->resetParameter(Task::Parameters(-1.5, 1.5, 1.0, "X Position [m]"));
+                tasks[1]->resetParameter(Task::Parameters(0., 1.7, 1.0, "Z Position [m]"));
+            }
+            else
+            {
+                tasks.emplace_back(new TaskVelocity1D("Xd", graph, effector, nullptr, nullptr));
+                tasks.emplace_back(new TaskVelocity1D("Zd", graph, effector, nullptr, nullptr));
+            }
+
+            // Add the tasks
+            for (auto t : tasks)
+            { amIK->addTask(t); }
+
+            return amIK;
         }
         else if (actionModelType == "activation")
         {
             // Obtain the inner action model
-            RcsBody* effector = RcsGraph_getBodyByName(graph, "Effector");
-            RCHECK(effector);
             std::unique_ptr<AMIKGeneric> innerAM(new AMIKGeneric(graph));
             
             // Check if the MPs are defined on position or task level
@@ -132,7 +166,7 @@ protected:
             auto omLin = new OMBodyStateLinear(graph, "Effector");  // in world coordinates
             omLin->setMinState(-1.56); // [m]
             omLin->setMaxState(1.56); // [m]
-            omLin->setMaxVelocity(3.0); // [m/s]
+            omLin->setMaxVelocity(10.0); // [m/s]
             fullState->addPart(OMPartial::fromMask(omLin, {true, false, true}));  // mask out y axis
         }
         else
@@ -215,7 +249,7 @@ protected:
             int horizon = 20;
             properties->getChild("collisionConfig")->getProperty(horizon, "predCollHorizon");
             // Add collision model
-            auto omCollisionCost = new OMCollisionCostPrediction(graph, collisionMdl, actionModel, 50);
+            auto omCollisionCost = new OMCollisionCostPrediction(graph, collisionMdl, actionModel, 20);
             fullState->addPart(omCollisionCost);
         }
         
@@ -225,6 +259,22 @@ protected:
         {
             bool ocm = properties->getPropertyBool("observeCurrentManipulability", true);
             fullState->addPart(new OMManipulabilityIndex(ikModel, ocm));
+        }
+
+        // Add the task space discrepancy observation model
+        if (properties->getPropertyBool("observeTaskSpaceDiscrepancy", false))
+        {
+            auto wamIK = actionModel->unwrap<ActionModelIK>();
+            if (wamIK)
+            {
+                auto omTSDescr = new OMTaskSpaceDiscrepancy("Effector", graph, wamIK->getController()->getGraph());
+                fullState->addPart(OMPartial::fromMask(omTSDescr, {true, false, true}));
+            }
+            else
+            {
+                delete fullState;
+                throw std::invalid_argument("The action model needs to be of type ActionModelIK!");
+            }
         }
         
         return fullState;
@@ -308,14 +358,14 @@ public:
         {
         linesOut.emplace_back(
             string_format("end-eff pos:   [% 1.3f,% 1.3f] m  end-eff vel:   [% 1.2f,% 1.2f] m/s",
-                          obs->ele[omLin.pos], obs->ele[omLin.pos + 2],
+                          obs->ele[omLin.pos], obs->ele[omLin.pos + 1],
                           obs->ele[sd + omLin.vel], obs->ele[sd + omLin.vel + 1]));
         }
         else if (omLinPos)
         {
             linesOut.emplace_back(
                 string_format("end-eff pos:   [% 1.3f,% 1.3f] m",
-                              obs->ele[omLinPos.pos], obs->ele[omLinPos.pos + 2]));
+                              obs->ele[omLinPos.pos], obs->ele[omLinPos.pos + 1]));
         }
         
         auto omGD = observationModel->findOffsets<OMGoalDistance>();

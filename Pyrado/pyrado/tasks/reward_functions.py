@@ -29,7 +29,7 @@ class RewFcn(ABC):
         pass
 
 
-class CombinedRewFcn(RewFcn):
+class CompoundRewFcn(RewFcn):
     """ Combine multiple reward functions """
 
     def __init__(self, rew_fcns: Sequence):
@@ -159,7 +159,7 @@ class QuadrErrRewFcn(RewFcn):
         eig_Q, _ = np.linalg.eig(Q)
         eig_R, _ = np.linalg.eig(R)
         assert (eig_Q >= 0).all()
-        assert (eig_R > 0).all()
+        assert (eig_R >= 0).all()  # in theory strictly > 0
 
         self.Q = Q
         self.R = R

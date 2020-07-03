@@ -8,7 +8,7 @@ Credits to Pascal Klink, Kai Plöger, and OpenAI
   <!--size njmax="500" nconmax="100"/-->
 
   <default>
-    <joint type="hinge" limited="true" pos="0 0 0" axis="0 0 1" frictionloss=".1"/>
+    <joint type="hinge" limited="true" pos="0 0 0" axis="0 0 1" frictionloss=".1" damping="[joint_damping]"/>
     <default class="viz">
       <geom type="mesh" contype="0" conaffinity="0" group="2" rgba="0.7 0.7 0.7 1" density="0"/>
     </default>
@@ -177,6 +177,8 @@ Credits to Pascal Klink, Kai Plöger, and OpenAI
                       <geom name="cup_geom16" class="cup_geom" mesh="cup16"/>
                       <geom name="cup_geom17" class="cup_geom" mesh="cup17"/>
                       <geom name="cup_geom18" class="cup_geom" mesh="cup18"/>
+                      <!-- cup_inner defines the inner space of the cup;  gap: arbitrary large value to generate "inactive" contacts -->
+                      <geom name="cup_inner" pos="0 0.01 [pos_goal]" euler="-1.57 0 0" type="cylinder" size="[size_cup_inner] 0.04" group="3" gap="1000" rgba="0.9 1 0 1"/>
                       <site name="cup_goal" pos="0 0.05 [pos_goal]" size="1e-5" />
                       <site name="cup_goal_final" pos="0 -0.025 [pos_goal]" size="1e-5" />
 

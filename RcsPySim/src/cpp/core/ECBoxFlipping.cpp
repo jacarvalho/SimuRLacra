@@ -5,7 +5,7 @@
 #include "observation/OMCombined.h"
 #include "observation/OMBodyStateLinear.h"
 #include "observation/OMBodyStateAngular.h"
-#include "observation/OMGoalDistance.h"
+#include "observation/OMDynamicalSystemGoalDistance.h"
 #include "observation/OMForceTorque.h"
 #include "observation/OMPartial.h"
 #include "observation/OMCollisionCost.h"
@@ -47,6 +47,10 @@ protected:
         RCHECK(leftCP);
         RcsBody* rightCP = RcsGraph_getBodyByName(graph, "ContactPoint_R");
         RCHECK(rightCP);
+        RcsBody* table = RcsGraph_getBodyByName(graph, "Table");
+        RCHECK(table);
+        RcsBody* box = RcsGraph_getBodyByName(graph, "Box");
+        RCHECK(box);
 
         // Get reference frames for the position and orientation tasks
         std::string refFrameType = "world";
@@ -80,115 +84,157 @@ protected:
             throw std::invalid_argument(os.str());
         }
 
-        // Initialize action model and tasks
-        std::unique_ptr<AMIKGeneric> innerAM(new AMIKGeneric(graph));
-        std::vector<std::unique_ptr<DynamicalSystem>> tasks;
+        std::string actionModelType = "activation";
+        properties->getProperty(actionModelType, "actionModelType");
 
-        // Control effector positions and orientation
-        if (properties->getPropertyBool("positionTasks", false))
+        if (actionModelType == "ik")
         {
-            RcsBody* table = RcsGraph_getBodyByName(graph, "Table");
-            RCHECK(table);
-            RcsBody* box = RcsGraph_getBodyByName(graph, "Box");
-            RCHECK(box);
+            // Create the action model
+            auto amIK = new AMIKGeneric(graph);
+            std::vector<TaskGenericIK*> tasks;
 
-            // Left
-            innerAM->addTask(new TaskPosition1D("Y", graph, leftCP, refBody, refFrame));
-            innerAM->addTask(new TaskPosition1D("Z", graph, leftCP, refBody, refFrame));
-            // Right
-//            innerAM->addTask(new TaskPosition1D("Y", graph, rightCP, refBody, refFrame));
-            innerAM->addTask(new TaskPosition1D("Z", graph, rightCP, refBody, refFrame));
-            innerAM->addTask(new TaskDistance(graph, rightCP, box));
+            // Check if the tasks are defined on position or task level. Adapt their parameters if desired.
+            if (properties->getPropertyBool("positionTasks", true))
+            {
+                // Left
+                amIK->addTask(new TaskPosition1D("Y", graph, leftCP, refBody, refFrame));
+                amIK->addTask(new TaskPosition1D("Z", graph, leftCP, refBody, refFrame));
+//                amIK->addTask(new TaskDistance1D(graph, leftCP, box, 1));  // Y
+                // Right
+                amIK->addTask(new TaskPosition1D("Y", graph, rightCP, refBody, refFrame));
+                amIK->addTask(new TaskPosition1D("Z", graph, rightCP, refBody, refFrame));
+//                amIK->addTask(new TaskDistance1D(graph, rightCP, box, 1));  // Y
+            }
+            else
+            {
+                // Left
+                amIK->addTask(new TaskVelocity1D("Yd", graph, leftCP, refBody, refFrame));
+                amIK->addTask(new TaskVelocity1D("Zd", graph, leftCP, refBody, refFrame));
+                // Right
+                amIK->addTask(new TaskVelocity1D("Yd", graph, rightCP, refBody, refFrame));
+                amIK->addTask(new TaskVelocity1D("Zd", graph, rightCP, refBody, refFrame));
+            }
 
-            // Obtain task data (depends on the order of the MPs coming from Pyrado)
-            // Left
-            unsigned int i = 0;
-            std::vector<unsigned int> taskDimsLeft{1, 1, 1, 1};
-            std::vector<unsigned int> offsetsLeft{0, 0, 1, 1};
-            auto& tsLeft = properties->getChildList("tasksLeft");
-            for (auto tsk : tsLeft)
-            {
-                DynamicalSystem* ds = DynamicalSystem::create(tsk, taskDimsLeft[i]);
-                tasks.emplace_back(new DSSlice(ds, offsetsLeft[i], taskDimsLeft[i]));
-                i++;
-            }
-            // Right
-            i = 0;
-//            std::vector<unsigned int> taskDimsRight{1, 1, 1, 1, 1};
-            std::vector<unsigned int> taskDimsRight{1, 1};
-            unsigned int oL = offsetsLeft.back() + taskDimsLeft.back();
-//            std::vector<unsigned int> offsetsRight{oL, oL, oL + 1, oL + 1, oL + 2};
-            std::vector<unsigned int> offsetsRight{oL, oL + 1};
-            auto& tsRight = properties->getChildList("tasksRight");
-            for (auto tsk : tsRight)
-            {
-                DynamicalSystem* ds = DynamicalSystem::create(tsk, taskDimsRight[i]);
-                tasks.emplace_back(new DSSlice(ds, offsetsRight[i], taskDimsRight[i]));
-                i++;
-            }
+            // Add the tasks
+            for (auto t : tasks)
+            { amIK->addTask(t); }
+
+            return amIK;
         }
-        // Control effector velocity and orientation
+        else if (actionModelType == "activation")
+        {
+            // Initialize action model and tasks
+            std::unique_ptr<AMIKGeneric> innerAM(new AMIKGeneric(graph));
+            std::vector<std::unique_ptr<DynamicalSystem>> tasks;
+
+            // Control effector positions and orientation
+            if (properties->getPropertyBool("positionTasks", false))
+            {
+                // Left
+                innerAM->addTask(new TaskPosition1D("Y", graph, leftCP, refBody, refFrame));
+                innerAM->addTask(new TaskPosition1D("Z", graph, leftCP, refBody, refFrame));
+                // Right
+    //            innerAM->addTask(new TaskPosition1D("Y", graph, rightCP, refBody, refFrame));
+                innerAM->addTask(new TaskPosition1D("Z", graph, rightCP, refBody, refFrame));
+                innerAM->addTask(new TaskDistance(graph, rightCP, box));
+
+                // Obtain task data (depends on the order of the MPs coming from Pyrado)
+                // Left
+                unsigned int i = 0;
+                std::vector<unsigned int> taskDimsLeft{1, 1, 1, 1};
+                std::vector<unsigned int> offsetsLeft{0, 0, 1, 1};
+                auto& tsLeft = properties->getChildList("tasksLeft");
+                for (auto tsk : tsLeft)
+                {
+                    DynamicalSystem* ds = DynamicalSystem::create(tsk, taskDimsLeft[i]);
+                    tasks.emplace_back(new DSSlice(ds, offsetsLeft[i], taskDimsLeft[i]));
+                    i++;
+                }
+                // Right
+                i = 0;
+    //            std::vector<unsigned int> taskDimsRight{1, 1, 1, 1, 1};
+                std::vector<unsigned int> taskDimsRight{1, 1};
+                unsigned int oL = offsetsLeft.back() + taskDimsLeft.back();
+    //            std::vector<unsigned int> offsetsRight{oL, oL, oL + 1, oL + 1, oL + 2};
+                std::vector<unsigned int> offsetsRight{oL, oL + 1};
+                auto& tsRight = properties->getChildList("tasksRight");
+                for (auto tsk : tsRight)
+                {
+                    DynamicalSystem* ds = DynamicalSystem::create(tsk, taskDimsRight[i]);
+                    tasks.emplace_back(new DSSlice(ds, offsetsRight[i], taskDimsRight[i]));
+                    i++;
+                }
+            }
+            // Control effector velocity and orientation
+            else
+            {
+                // Left
+                innerAM->addTask(new TaskVelocity1D("Yd", graph, leftCP, refBody, refFrame));
+                innerAM->addTask(new TaskVelocity1D("Zd", graph, leftCP, refBody, refFrame));
+                // Right
+                innerAM->addTask(new TaskVelocity1D("Yd", graph, rightCP, refBody, refFrame));
+                innerAM->addTask(new TaskVelocity1D("Zd", graph, rightCP, refBody, refFrame));
+
+                // Obtain task data (depends on the order of the MPs coming from Pyrado)
+                // Left
+                unsigned int i = 0;
+                std::vector<unsigned int> taskDimsLeft{1, 1, 1, 1};
+                std::vector<unsigned int> offsetsLeft{0, 0, 1, 1};
+                auto& tsLeft = properties->getChildList("tasksLeft");
+                for (auto tsk : tsLeft)
+                {
+                    DynamicalSystem* ds = DynamicalSystem::create(tsk, taskDimsLeft[i]);
+                    tasks.emplace_back(new DSSlice(ds, offsetsLeft[i], taskDimsLeft[i]));
+                    i++;
+                }
+                // Right
+                i = 0;
+                std::vector<unsigned int> taskDimsRight{1, 1, 1, 1};
+                unsigned int oL = offsetsLeft.back() + taskDimsLeft.back();
+                std::vector<unsigned int> offsetsRight{oL, oL, oL + 1, oL + 1};
+                auto& tsRight = properties->getChildList("tasksRight");
+                for (auto tsk : tsRight)
+                {
+                    DynamicalSystem* ds = DynamicalSystem::create(tsk, taskDimsRight[i]);
+                    tasks.emplace_back(new DSSlice(ds, offsetsRight[i], taskDimsRight[i]));
+                    i++;
+                }
+
+            }
+
+            if (tasks.empty())
+            {
+                throw std::invalid_argument("No tasks specified!");
+            }
+
+            // Incorporate collision costs into IK
+            if (properties->getPropertyBool("collisionAvoidanceIK", true))
+            {
+                std::cout << "IK considers the provided collision model" << std::endl;
+                innerAM->setupCollisionModel(collisionMdl);
+            }
+
+            // Setup task-based action model
+            std::vector<DynamicalSystem*> taskRel;
+            for (auto& task : tasks)
+            {
+                taskRel.push_back(task.release());
+            }
+
+            // Get the method how to combine the movement primitives / tasks given their activation
+            std::string taskCombinationMethod = "mean";
+            properties->getProperty(taskCombinationMethod, "taskCombinationMethod");
+            TaskCombinationMethod tcm = AMTaskActivation::checkTaskCombinationMethod(taskCombinationMethod);
+
+            return new AMTaskActivation(innerAM.release(), taskRel, tcm);
+        }
         else
         {
-            // Left
-            innerAM->addTask(new TaskVelocity1D("Yd", graph, leftCP, refBody, refFrame));
-            innerAM->addTask(new TaskVelocity1D("Zd", graph, leftCP, refBody, refFrame));
-            // Right
-            innerAM->addTask(new TaskVelocity1D("Yd", graph, rightCP, refBody, refFrame));
-            innerAM->addTask(new TaskVelocity1D("Zd", graph, rightCP, refBody, refFrame));
-
-            // Obtain task data (depends on the order of the MPs coming from Pyrado)
-            // Left
-            unsigned int i = 0;
-            std::vector<unsigned int> taskDimsLeft{1, 1, 1, 1};
-            std::vector<unsigned int> offsetsLeft{0, 0, 1, 1};
-            auto& tsLeft = properties->getChildList("tasksLeft");
-            for (auto tsk : tsLeft)
-            {
-                DynamicalSystem* ds = DynamicalSystem::create(tsk, taskDimsLeft[i]);
-                tasks.emplace_back(new DSSlice(ds, offsetsLeft[i], taskDimsLeft[i]));
-                i++;
-            }
-            // Right
-            i = 0;
-            std::vector<unsigned int> taskDimsRight{1, 1, 1, 1};
-            unsigned int oL = offsetsLeft.back() + taskDimsLeft.back();
-            std::vector<unsigned int> offsetsRight{oL, oL, oL + 1, oL + 1};
-            auto& tsRight = properties->getChildList("tasksRight");
-            for (auto tsk : tsRight)
-            {
-                DynamicalSystem* ds = DynamicalSystem::create(tsk, taskDimsRight[i]);
-                tasks.emplace_back(new DSSlice(ds, offsetsRight[i], taskDimsRight[i]));
-                i++;
-            }
-
+            std::ostringstream os;
+            os << "Unsupported action model type: ";
+            os << actionModelType;
+            throw std::invalid_argument(os.str());
         }
-
-        if (tasks.empty())
-        {
-            throw std::invalid_argument("No tasks specified!");
-        }
-
-        // Incorporate collision costs into IK
-        if (properties->getPropertyBool("collisionAvoidanceIK", true))
-        {
-            std::cout << "IK considers the provided collision model" << std::endl;
-            innerAM->setupCollisionModel(collisionMdl);
-        }
-
-        // Setup task-based action model
-        std::vector<DynamicalSystem*> taskRel;
-        for (auto& task : tasks)
-        {
-            taskRel.push_back(task.release());
-        }
-
-        // Get the method how to combine the movement primitives / tasks given their activation
-        std::string taskCombinationMethod = "mean";
-        properties->getProperty(taskCombinationMethod, "taskCombinationMethod");
-        TaskCombinationMethod tcm = AMTaskActivation::checkTaskCombinationMethod(taskCombinationMethod);
-
-        return new AMTaskActivation(innerAM.release(), taskRel, tcm);
     }
 
     virtual ObservationModel* createObservationModel()

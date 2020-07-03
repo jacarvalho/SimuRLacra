@@ -65,9 +65,10 @@ required_packages = [
     "freeglut3-dev",  #  conda install -c anaconda freeglut 
     "mesa-common-dev",  #  conda install -c conda-forge mesalib
     "libopenscenegraph-dev",  # conda install -c conda-forge openscenegraph __OR__ HEADLESS BUILD
-    "openscenegraph",  #  conda install -c conda-forge openscenegraph 
+    "openscenegraph",  #  conda install -c conda-forge openscenegraph __OR__ HEADLESS BUILD
     "liblapack-dev"  #  conda install -c conda-forge lapack 
 ]
+# using --headless: conda install -c conda-forge bullet freetype libglu freeglut mesalib lapack
 
 # Environment for build processes
 env_vars = {
@@ -155,6 +156,18 @@ rcspysim_cmake_vars = {
 # Pyrado
 pyrado_dir = osp.join(project_dir, "Pyrado")
 
+# Robcom & SL
+cppsctp_git_repo = "https://git.ias.informatik.tu-darmstadt.de/robcom/cppsctp.git"
+sl_git_repo = "https://git.ias.informatik.tu-darmstadt.de/sl/sl.git"
+robcom_git_repo = "https://git.ias.informatik.tu-darmstadt.de/robcom-2/robcom-2.0.git"
+
+ias_dir = osp.join(dependency_dir, "ias")
+cppsctp_dir = osp.join(dependency_dir, "ias", "cppsctp")
+sl_dir = osp.join(dependency_dir, "ias", "sl")
+robcom_dir = osp.join(dependency_dir, "ias", "robcom")
+
+cppsctp_cmake_vars = {"IAS_DIR": ias_dir}
+sl_cmake_vars = {"IAS_DIR": ias_dir, "BUILD_barrett": "ON"}
 
 # ======= #
 # HELPERS #
@@ -396,6 +409,77 @@ def setup_pytorch_based():
     sp.check_call([sys.executable, "-m", "pip", "install", "-U", "--no-deps", "gpytorch"])
     sp.check_call([sys.executable, "-m", "pip", "install", "-U", "--no-deps", "botorch"])
     sp.check_call([sys.executable, "-m", "pip", "install", "-U", "--no-deps", "pyro-ppl"])
+
+
+def setup_cppsctp():
+    # Get it all GitLab
+    if not osp.exists(cppsctp_dir):
+        mkdir_p(cppsctp_dir)
+        sp.check_call(["git", "clone", cppsctp_git_repo, cppsctp_dir])
+
+    # Create relative build dir
+    cppsctp_build_dir = osp.join(cppsctp_dir, "build")
+    if not osp.exists(cppsctp_build_dir):
+        mkdir_p(cppsctp_dir)
+
+    # Build it
+    buildCMakeProject(cppsctp_dir, cppsctp_build_dir, cmakeVars=cppsctp_cmake_vars)
+
+
+def setup_sl():
+    # Install dependencies (copied from https://git.ias.informatik.tu-darmstadt.de/robcom-2/robcom-2.0/-/wikis/usage)
+    required_packages_sl = [
+        "libsctp-dev",
+        "libncurses5-dev",
+        "libreadline6-dev",
+        "freeglut3-dev",
+        "libxmu-dev",
+        "cmake-curses-gui",
+        "libedit-dev",
+        "clang",
+        "xterm"
+    ]
+    user_input = input(f"You are about to install SL which depends on the following libraries\n{required_packages_sl}\n"
+                       f"Do you really want this? [y / n] ")
+    if user_input.lower() == "y":
+        sp.check_call(["sudo", "apt-get", "install", "-y"] + required_packages_sl)
+        print("Dependencies have been installed.")
+    else:
+        print("Dependencies have NOT been installed.")
+
+    # Set up custom IAS dependency
+    setup_scppsctp()
+
+    # Get it all GitLab
+    if not osp.exists(sl_dir):
+        mkdir_p(sl_dir)
+        sp.check_call(["git", "clone", sl_git_repo, sl_dir])
+
+    # Create relative build dir
+    sl_build_dir = osp.join(sl_dir, "build")
+    if not osp.exists(sl_build_dir):
+        mkdir_p(sl_build_dir)
+
+    # Build it
+    buildCMakeProject(sl_dir, sl_build_dir, cmakeVars=sl_cmake_vars)
+
+
+def setup_robcom():
+    # Set up dependency
+    setup_cppsctp()
+
+    # Get it all GitLab
+    if not osp.exists(robcom_dir):
+        mkdir_p(robcom_dir)
+        sp.check_call(["git", "clone", robcom_git_repo, robcom_dir])
+
+    # Install it suing its setup script
+    env = os.environ.copy()
+    env.update(env_vars)
+    env["BUILD_ROBCIMPYTHON_WRAPPER"] = "ON"
+    env["IAS_DIR"] = ias_dir
+    env["INSTALL_IN_IAS_DIR"] = "ON"
+    sp.check_call([sys.executable, "setup.py", "install", "--user"], cwd=robcom_dir, env=env)
 
 
 def setup_separate_pytorch():

@@ -11,19 +11,19 @@ class MaskedTask(Task):
 
     def __init__(self,
                  env_spec: EnvSpec,
-                 wrapped: Task,
+                 wrapped_task: Task,
                  state_idcs: [str, int],
                  action_idcs: [str, int] = None):
         """
         Constructor
 
         :param env_spec: environment specification
-        :param wrapped: task for the selected part of the state-action space
+        :param wrapped_task: task for the selected part of the state-action space
         :param state_idcs: indices of the selected states
         :param action_idcs: indices of the selected actions
         """
         self._env_spec = env_spec
-        self._wrapped = wrapped
+        self._wrapped_task = wrapped_task
         self._state_idcs = state_idcs
         self._action_idcs = action_idcs
 
@@ -38,23 +38,27 @@ class MaskedTask(Task):
         return self._env_spec
 
     @property
+    def wrapped_task(self) -> Task:
+        return self._wrapped_task
+
+    @property
     def state_des(self) -> np.ndarray:
         # The desired state is NaN for masked entries.
         full = np.full(self.env_spec.state_space.shape, np.nan)
-        full[self._state_mask] = self._wrapped.state_des
+        full[self._state_mask] = self._wrapped_task.state_des
         return full
 
     @state_des.setter
     def state_des(self, state_des: np.ndarray):
-        self._wrapped.state_des = state_des[self._state_mask]
+        self._wrapped_task.state_des = state_des[self._state_mask]
 
     @property
     def rew_fcn(self) -> RewFcn:
-        return self._wrapped.rew_fcn
+        return self._wrapped_task.rew_fcn
 
     @rew_fcn.setter
     def rew_fcn(self, rew_fcn: RewFcn):
-        self._wrapped.rew_fcn = rew_fcn
+        self._wrapped_task.rew_fcn = rew_fcn
 
     def reset(self, env_spec: EnvSpec, **kwargs):
         self._env_spec = env_spec
@@ -70,7 +74,7 @@ class MaskedTask(Task):
             self._action_mask = np.ones(env_spec.act_space.shape, dtype=np.bool_)
 
         # Pass masked state and masked action
-        self._wrapped.reset(
+        self._wrapped_task.reset(
             env_spec=EnvSpec(
                 env_spec.obs_space,
                 env_spec.act_space.subspace(self._action_mask),
@@ -80,20 +84,20 @@ class MaskedTask(Task):
 
     def step_rew(self, state: np.ndarray, act: np.ndarray, remaining_steps: int) -> float:
         # Pass masked state and masked action
-        return self._wrapped.step_rew(state[self._state_mask], act[self._action_mask], remaining_steps)
+        return self._wrapped_task.step_rew(state[self._state_mask], act[self._action_mask], remaining_steps)
 
     def final_rew(self, state: np.ndarray, remaining_steps: int) -> float:
         # Pass masked state and masked action
-        return self._wrapped.final_rew(state[self._state_mask], remaining_steps)
+        return self._wrapped_task.final_rew(state[self._state_mask], remaining_steps)
 
     def has_succeeded(self, state: np.ndarray) -> bool:
         # Pass masked state and masked action
-        return self._wrapped.has_succeeded(state[self._state_mask])
+        return self._wrapped_task.has_succeeded(state[self._state_mask])
 
     def has_failed(self, state: np.ndarray) -> bool:
         # Pass masked state and masked action
-        return self._wrapped.has_failed(state[self._state_mask])
+        return self._wrapped_task.has_failed(state[self._state_mask])
 
     def is_done(self, state: np.ndarray) -> bool:
         # Pass masked state and masked action
-        return self._wrapped.is_done(state[self._state_mask])
+        return self._wrapped_task.is_done(state[self._state_mask])

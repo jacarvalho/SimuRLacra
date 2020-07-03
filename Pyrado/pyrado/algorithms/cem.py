@@ -37,7 +37,7 @@ class CEM(ParameterExploring):
                  num_is_samples: int,
                  expl_std_init: float,
                  expl_std_min: float = 0.01,
-                 extra_expl_std_init: float = 2.,
+                 extra_expl_std_init: float = 1.,
                  extra_expl_decay_iter: int = 10,
                  full_cov: bool = False,
                  symm_sampling: bool = False,
@@ -100,6 +100,7 @@ class CEM(ParameterExploring):
             self._expl_strat = SymmParamExplStrat(self._expl_strat)
 
         self.num_is_samples = min(pop_size, num_is_samples)
+        self.extra_expl_decay_iter = extra_expl_decay_iter
         if isinstance(self._expl_strat.noise, DiagNormalNoise):
             self.extra_expl_std_init = to.ones_like(self._policy.param_values)*extra_expl_std_init
         elif isinstance(self._expl_strat.noise, FullNormalNoise):
@@ -124,13 +125,15 @@ class CEM(ParameterExploring):
         # Update the exploration covariance from the empirical variance of the importance samples
         if isinstance(self._expl_strat.noise, DiagNormalNoise):
             std_is = to.std(params_is, dim=0)
-            extra_expl_std = self.extra_expl_std_init*to.max(1. - self._curr_iter/self.extra_expl_std_init,
-                                                             to.zeros_like(self.extra_expl_std_init))  # see [2, p.4]
+            extra_expl_std = self.extra_expl_std_init*max(
+                1. - self._curr_iter/self.extra_expl_decay_iter, 0  # see [2, p.4]
+            )
             self._expl_strat.noise.adapt(std=std_is + extra_expl_std)
         elif isinstance(self._expl_strat.noise, FullNormalNoise):
             cov_is = cov(params_is, data_along_rows=True)
-            extra_expl_cov = to.pow(self.extra_expl_std_init, 2)*to.max(1. - self._curr_iter/self.extra_expl_std_init,
-                                                                        to.zeros_like(self.extra_expl_std_init))  # see [2, p.4]
+            extra_expl_cov = to.pow(self.extra_expl_std_init, 2)*max(
+                1. - self._curr_iter/self.extra_expl_decay_iter, 0  # see [2, p.4]
+            )
             self._expl_strat.noise.adapt(cov=cov_is + extra_expl_cov)
         else:
             raise NotImplementedError  # CEM could also sample using different distributions

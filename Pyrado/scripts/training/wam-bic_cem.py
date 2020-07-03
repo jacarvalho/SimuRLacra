@@ -17,45 +17,42 @@ from pyrado.policies.environment_specific import DualRBFLinearPolicy
 
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
-    ex_dir = setup_experiment(WAMBallInCupSim.name, CEM.name, 'dr_cs_rl', seed=101)
+    ex_dir = setup_experiment(WAMBallInCupSim.name, CEM.name, '', seed=1001)
 
     # Environment
     env_hparams = dict(
-        max_steps=1500,
-        task_args=dict(factor=0.05)
+        max_steps=1750,
+        task_args=dict(final_factor=0.05)
     )
     env = WAMBallInCupSim(**env_hparams)
 
     # Randomizer
-    randomizer = DomainRandomizer(
-        NormalDomainParam(name='cup_scale', mean=1.0, std=0.05),
-        NormalDomainParam(name='rope_length', mean=0.3103, std=0.015)
-    )
-    env = DomainRandWrapperLive(env, randomizer)
+#    randomizer = DomainRandomizer(
+#        NormalDomainParam(name='cup_scale', mean=1.0, std=0.05),
+#        NormalDomainParam(name='rope_length', mean=0.3103, std=0.015)
+#    )
+#    env = DomainRandWrapperLive(env, randomizer)
 
     # Policy
     policy_hparam = dict(
-        rbf_hparam=dict(num_feat_per_dim=8, bounds=(0., 1.), scale=None),
+        rbf_hparam=dict(num_feat_per_dim=7, bounds=(0., 1.), scale=None),
         dim_mask=2
     )
     policy = DualRBFLinearPolicy(env.spec, **policy_hparam)
 
-    policy.param_values = to.load(osp.join(pyrado.TEMP_DIR, 'wam-bic', 'power', '2020-06-05_12-29-10--randomized',
-                                           'policy.pt')).param_values
-
     # Algorithm
     algo_hparam = dict(
-        max_iter=20,
-        pop_size=50,
-        num_rollouts=40,
-        num_is_samples=5,
-        expl_std_init=np.pi/6,
+        max_iter=50,
+        pop_size=200,
+        num_rollouts=1,
+        num_is_samples=10,
+        expl_std_init=np.pi/2,
         expl_std_min=0.02,
-        extra_expl_std_init=np.pi/6,
-        extra_expl_decay_iter=5,
+        extra_expl_std_init=np.pi/2,
+        extra_expl_decay_iter=10,
         full_cov=False,
         symm_sampling=False,
-        num_sampler_envs=10,
+        num_sampler_envs=8,
     )
     algo = CEM(ex_dir, env, policy, **algo_hparam)
 

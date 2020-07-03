@@ -9,9 +9,11 @@ from typing import Any
 
 import pyrado
 from pyrado.plotting.utils import AccNorm
+from pyrado.policies.adn import ADNPolicy
 from pyrado.policies.base import Policy
+from pyrado.policies.neural_fields import NFPolicy
 from pyrado.utils.data_types import EnvSpec
-from pyrado.utils.input_output import ensure_no_subscript, ensure_math_mode
+from pyrado.utils.input_output import ensure_no_subscript, ensure_math_mode, print_cbt
 
 
 def _annotate_img(img,
@@ -98,8 +100,8 @@ def render_policy_params(policy: Policy,
     # Create axes and subplots depending on the NN structure
     num_rows = len(list(policy.parameters()))
     fig = plt.figure(figsize=(14, 10), tight_layout=False)
-    gs = gridspec.GridSpec(num_rows, 2, width_ratios=[14, 1])  # right column is the color bar
-    ax_cb = plt.subplot(gs[:, 1])
+    gs = fig.add_gridspec(num_rows, 2, width_ratios=[14, 1])  # right column is the color bar
+    ax_cb = fig.add_subplot(gs[:, 1])
 
     # Accumulative norm for the colors
     norm = AccNorm()
@@ -110,41 +112,68 @@ def render_policy_params(policy: Policy,
         ax.set_title(name.replace('_', '\_'))
 
         # Convert the data and plot the image with the colors proportional to the parameters
+        if param.ndim == 3:
+            # For example convolution layers
+            param = param.flatten(0)
+            print_cbt(f'Flattened the first dimension of the {name} parameter tensor.', 'y')
         data = np.atleast_2d(param.detach().numpy())
+
         img = plt.imshow(data, cmap=cmap, norm=norm, aspect='auto', origin='lower')
 
         if annotate:
-            _annotate_img(img, thold_lo=min(policy.param_values)*0.75, thold_up=max(policy.param_values)*0.75,
-                          valfmt=annotation_valfmt)
+            _annotate_img(
+                img,
+                thold_lo=0.75*min(policy.param_values).detach().numpy(),
+                thold_up=0.75*max(policy.param_values).detach().numpy(),
+                valfmt=annotation_valfmt
+            )
 
         # Prepare the ticks
-        if name == 'obs_layer.weight':
-            # Set the labels in case of an ADN policy
-            ax.set_xticks(np.arange(env_spec.obs_space.flat_dim))
-            ax.set_yticks(np.arange(env_spec.act_space.flat_dim))
-            ax.set_xticklabels(ensure_no_subscript(env_spec.obs_space.labels))
-            ax.set_yticklabels(reversed(ensure_math_mode(env_spec.act_space.labels)))
-        elif name in ['obs_layer.bias', 'scaling_layer.log_weight']:
-            # Set the labels in case of an ADN policy
-            ax.set_xticks(np.arange(env_spec.act_space.flat_dim))
-            ax.set_xticklabels(ensure_math_mode(env_spec.act_space.labels))
-            ax.yaxis.set_major_locator(ticker.NullLocator())
-            ax.yaxis.set_minor_formatter(ticker.NullFormatter())
-        elif name == 'prev_act_layer.weight':
-            # Set the labels in case of an ADN policy
-            ax.set_xticks(np.arange(env_spec.act_space.flat_dim))
-            ax.set_yticks(np.arange(env_spec.act_space.flat_dim))
-            ax.set_xticklabels(ensure_math_mode(env_spec.act_space.labels))
-            ax.set_yticklabels(reversed(ensure_math_mode(env_spec.act_space.labels)))
-        elif name in ['_log_tau', '_log_kappa', '_log_capacity']:
-            # Set the labels in case of an ADN policy
-            ax.xaxis.set_major_locator(ticker.NullLocator())
-            ax.yaxis.set_major_locator(ticker.NullLocator())
-            ax.xaxis.set_minor_formatter(ticker.NullFormatter())
-            ax.yaxis.set_minor_formatter(ticker.NullFormatter())
-        else:
-            ax.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
-            ax.yaxis.set_major_locator(ticker.MaxNLocator(integer=True))
+        if isinstance(policy, ADNPolicy):
+            if name == 'obs_layer.weight':
+                ax.set_xticks(np.arange(env_spec.obs_space.flat_dim))
+                ax.set_yticks(np.arange(env_spec.act_space.flat_dim))
+                ax.set_xticklabels(ensure_no_subscript(env_spec.obs_space.labels))
+                ax.set_yticklabels(ensure_math_mode(env_spec.act_space.labels))
+            elif name in ['obs_layer.bias', 'scaling_layer.log_weight']:
+                ax.set_xticks(np.arange(env_spec.act_space.flat_dim))
+                ax.set_xticklabels(ensure_math_mode(env_spec.act_space.labels))
+                ax.yaxis.set_major_locator(ticker.NullLocator())
+                ax.yaxis.set_minor_formatter(ticker.NullFormatter())
+            elif name == 'prev_act_layer.weight':
+                ax.set_xticks(np.arange(env_spec.act_space.flat_dim))
+                ax.set_yticks(np.arange(env_spec.act_space.flat_dim))
+                ax.set_xticklabels(ensure_math_mode(env_spec.act_space.labels))
+                ax.set_yticklabels(ensure_math_mode(env_spec.act_space.labels))
+            elif name in ['_log_tau', '_log_kappa', '_log_capacity']:
+                ax.xaxis.set_major_locator(ticker.NullLocator())
+                ax.yaxis.set_major_locator(ticker.NullLocator())
+                ax.xaxis.set_minor_formatter(ticker.NullFormatter())
+                ax.yaxis.set_minor_formatter(ticker.NullFormatter())
+            else:
+                ax.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
+                ax.yaxis.set_major_locator(ticker.MaxNLocator(integer=True))
+
+        elif isinstance(policy, NFPolicy):
+            if name == 'obs_layer.weight':
+                ax.set_xticks(np.arange(env_spec.obs_space.flat_dim))
+                ax.yaxis.set_major_locator(ticker.NullLocator())
+                ax.set_xticklabels(ensure_no_subscript(env_spec.obs_space.labels))
+                ax.yaxis.set_minor_formatter(ticker.NullFormatter())
+            elif name in ['_log_tau', 'obs_layer.bias', 'conv_layer.weight',
+                          'nonlin_layer.log_weight', 'nonlin_layer.bias']:
+                ax.xaxis.set_major_locator(ticker.NullLocator())
+                ax.yaxis.set_major_locator(ticker.NullLocator())
+                ax.xaxis.set_minor_formatter(ticker.NullFormatter())
+                ax.yaxis.set_minor_formatter(ticker.NullFormatter())
+            elif name == 'act_layer.weight':
+                ax.xaxis.set_major_locator(ticker.NullLocator())
+                ax.set_yticks(np.arange(env_spec.act_space.flat_dim))
+                ax.xaxis.set_minor_formatter(ticker.NullFormatter())
+                ax.set_yticklabels(ensure_math_mode(env_spec.act_space.labels))
+            else:
+                ax.xaxis.set_major_locator(ticker.MaxNLocator(integer=True))
+                ax.yaxis.set_major_locator(ticker.MaxNLocator(integer=True))
 
         # Add the color bar (call this within the loop to make the AccNorm scan every image)
         colorbar.ColorbarBase(ax_cb, cmap=cmap, norm=norm, label=colorbar_label)

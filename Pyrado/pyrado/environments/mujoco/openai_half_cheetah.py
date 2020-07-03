@@ -20,7 +20,7 @@ class HalfCheetahSim(MujocoSimEnv, Serializable):
 
     name: str = 'cth'
 
-    def __init__(self, frame_skip: int = 5, max_steps: int = 1000, task_args: [dict, None] = None):
+    def __init__(self, frame_skip: int = 5, max_steps: int = 800, task_args: [dict, None] = None):
         """
         Constructor
 
@@ -36,13 +36,6 @@ class HalfCheetahSim(MujocoSimEnv, Serializable):
 
     @classmethod
     def get_nominal_domain_param(cls) -> dict:
-        """
-        Get the nominal a.k.a. default domain parameters.
-
-        .. seealso::
-            http://www.mujoco.org/book/XMLreference.html#geom
-            http://www.mujoco.org/book/computation.html#coContact
-        """
         return dict(
             total_mass=14,
             tangential_friction_coeff=0.4,
@@ -76,9 +69,12 @@ class HalfCheetahSim(MujocoSimEnv, Serializable):
         max_obs = np.full(obs_shape, pyrado.inf)
         self._obs_space = BoxSpace(-max_obs, max_obs)
 
-    def _create_task(self, task_args: [dict, None] = None) -> Task:
-        if task_args is None:
-            task_args = dict(fwd_rew_weight=1., ctrl_cost_weight=0.1)
+    def _create_task(self, task_args: dict) -> Task:
+        if 'fwd_rew_weight' not in task_args:
+            task_args['fwd_rew_weight'] = 1.
+        if 'ctrl_cost_weight' not in task_args:
+            task_args['ctrl_cost_weight'] = 0.1
+
         return GoallessTask(self.spec, ForwardVelocityRewFcn(self._dt, idx_fwd=0, **task_args))
 
     def _mujoco_step(self, act: np.ndarray) -> dict:

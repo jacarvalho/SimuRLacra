@@ -112,18 +112,17 @@ class ParameterExploring(Algorithm):
 
         with to.no_grad():
             # Sample rollouts using these parameters
-            rollouts = self.sampler.sample(paramsets)
+            param_samp_res = self.sampler.sample(paramsets)
 
-        # Evaluate the mean policy
-        ret_avg_curr = rollouts[0].mean_undiscounted_return
-        param_results = rollouts[1:]
+        # Evaluate the current policy (first one in list if include_nominal_params is True)
+        ret_avg_curr = param_samp_res[0].mean_undiscounted_return
 
         # Store the average return for the stopping criterion
         self.ret_avg_stack = np.delete(self.ret_avg_stack, 0)
         self.ret_avg_stack = np.append(self.ret_avg_stack, ret_avg_curr)
 
-        all_rets = param_results.mean_returns
-        all_lengths = np.array([len(ro) for pg in param_results for ro in pg.rollouts])
+        all_rets = param_samp_res.mean_returns
+        all_lengths = np.array([len(ro) for pss in param_samp_res for ro in pss.rollouts])
 
         # Log metrics computed from the old policy (before the update)
         self.logger.add_value('curr policy return', ret_avg_curr)
@@ -138,13 +137,13 @@ class ParameterExploring(Algorithm):
                               self._policy.param_values[to.argmax(abs(self._policy.param_values))])
 
         # Extract the best policy parameter sample for saving it later
-        self.best_policy_param = param_results.parameters[np.argmax(param_results.mean_returns)].clone()
+        self.best_policy_param = param_samp_res.parameters[np.argmax(param_samp_res.mean_returns)].clone()
 
         # Save snapshot data
-        self.make_snapshot(snapshot_mode, float(np.max(param_results.mean_returns)), meta_info)
+        self.make_snapshot(snapshot_mode, float(np.max(param_samp_res.mean_returns)), meta_info)
 
         # Update the policy
-        self.update(param_results, ret_avg_curr)
+        self.update(param_samp_res, ret_avg_curr)
 
     @abstractmethod
     def update(self, param_results: ParameterSamplingResult, ret_avg_curr: float):

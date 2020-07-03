@@ -59,7 +59,7 @@ set(CORE_SRCS
     observation/OMBodyStateLinear.cpp
     observation/OMJointState.cpp
     observation/OMBallPos.cpp
-    observation/OMGoalDistance.cpp
+    observation/OMDynamicalSystemGoalDistance.cpp
     observation/OMForceTorque.cpp
     observation/OMCollisionCost.cpp
     observation/OMCollisionCostPrediction.cpp

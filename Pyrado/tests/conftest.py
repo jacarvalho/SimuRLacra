@@ -21,7 +21,6 @@ from pyrado.policies.rnn import RNNPolicy, GRUPolicy, LSTMPolicy
 from pyrado.policies.time import TimePolicy, TraceableTimePolicy
 from pyrado.policies.two_headed import TwoHeadedFNNPolicy, TwoHeadedGRUPolicy
 
-
 # Set default torch dtype globally to avoid inconsistent errors depending on the test run order
 to.set_default_dtype(to.double)
 
@@ -33,7 +32,7 @@ try:
     from pyrado.environments.rcspysim.box_shelving import BoxShelvingVelMPsSim, BoxShelvingPosMPsSim
     from pyrado.environments.rcspysim.mp_blending import MPBlendingSim
     from pyrado.environments.rcspysim.planar_3_link import Planar3LinkIKSim, Planar3LinkTASim
-    from pyrado.environments.rcspysim.planar_insert import PlanarInsertSim
+    from pyrado.environments.rcspysim.planar_insert import PlanarInsertTASim, PlanarInsertIKSim
     from pyrado.environments.rcspysim.quanser_qube import QQubeRcsSim
     from pyrado.environments.rcspysim.target_tracking import TargetTrackingSim
 
@@ -148,7 +147,29 @@ def default_bop5d_vx():
 
 @m_needs_bullet
 @pytest.fixture(scope='function')
-def default_p3l_bt():
+def default_p3l_ik_bt():
+    return Planar3LinkIKSim(
+        physicsEngine='Bullet',
+        dt=1/50.,
+        max_steps=1000,
+        max_dist_force=None,
+        taskCombinationMethod='sum',
+        checkJointLimits=True,
+        collisionAvoidanceIK=True,
+        observeVelocities=True,
+        observeForceTorque=True,
+        observeCollisionCost=True,
+        observePredictedCollisionCost=True,
+        observeManipulabilityIndex=True,
+        observeCurrentManipulability=True,
+        observeGoalDistance=True,
+        observeDynamicalSystemDiscrepancy=True,
+    )
+
+
+@m_needs_bullet
+@pytest.fixture(scope='function')
+def default_p3l_ta_bt():
     return Planar3LinkTASim(
         physicsEngine='Bullet',
         dt=1/50.,
@@ -171,7 +192,7 @@ def default_p3l_bt():
 
 @m_needs_vortex
 @pytest.fixture(scope='function')
-def default_p3l_vx():
+def default_p3l_ta_vx():
     return Planar3LinkTASim(
         physicsEngine='Vortex',
         dt=1/50.,
@@ -192,10 +213,54 @@ def default_p3l_vx():
     )
 
 
+@m_needs_vortex
+@pytest.fixture(scope='function')
+def default_pi_ik_6l_vx():
+    return PlanarInsertIKSim(
+        physicsEngine='Vortex',
+        graphFileName='gPlanarInsert6Link.xml',
+        dt=1/50.,
+        max_steps=500,
+        max_dist_force=None,
+        taskCombinationMethod='sum',
+        checkJointLimits=True,
+        collisionAvoidanceIK=True,
+        observeForceTorque=True,
+        observePredictedCollisionCost=True,
+        observeManipulabilityIndex=True,
+        observeCurrentManipulability=True,
+        observeGoalDistance=True,
+        observeDynamicalSystemDiscrepancy=True,
+        observeTaskSpaceDiscrepancy=True,
+    )
+
+
 @m_needs_bullet
 @pytest.fixture(scope='function')
-def default_pi_6l_bt():
-    return PlanarInsertSim(
+def default_pi_ik_5l_bt():
+    return PlanarInsertIKSim(
+        physicsEngine='Bullet',
+        graphFileName='gPlanarInsert5Link.xml',
+        dt=1/50.,
+        max_steps=500,
+        max_dist_force=None,
+        taskCombinationMethod='sum',
+        checkJointLimits=True,
+        collisionAvoidanceIK=True,
+        observeForceTorque=True,
+        observePredictedCollisionCost=True,
+        observeManipulabilityIndex=True,
+        observeCurrentManipulability=True,
+        observeGoalDistance=True,
+        observeDynamicalSystemDiscrepancy=True,
+        observeTaskSpaceDiscrepancy=True,
+    )
+
+
+@m_needs_bullet
+@pytest.fixture(scope='function')
+def default_pi_ta_6l_bt():
+    return PlanarInsertTASim(
         physicsEngine='Bullet',
         graphFileName='gPlanarInsert6Link.xml',
         dt=1/50.,
@@ -216,8 +281,8 @@ def default_pi_6l_bt():
 
 @m_needs_vortex
 @pytest.fixture(scope='function')
-def default_pi_5l_vx():
-    return PlanarInsertSim(
+def default_pi_ta_5l_vx():
+    return PlanarInsertTASim(
         physicsEngine='Vortex',
         graphFileName='gPlanarInsert5Link.xml',
         dt=1/50.,
@@ -401,7 +466,7 @@ def gru_policy(env):
 
 @pytest.fixture(scope='function')
 def adn_policy(env):
-    return ADNPolicy(env.spec, dt=env.dt, output_nonlin=to.tanh, potentials_dyn_fcn=pd_cubic)
+    return ADNPolicy(env.spec, dt=env.dt, activation_nonlin=to.sigmoid, potentials_dyn_fcn=pd_cubic)
 
 
 @pytest.fixture(scope='function')

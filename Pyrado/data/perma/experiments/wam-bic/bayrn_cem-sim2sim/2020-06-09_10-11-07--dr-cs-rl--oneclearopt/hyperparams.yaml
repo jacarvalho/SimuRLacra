@@ -1,0 +1,42 @@
+env:
+  max_steps: 1500
+  task_args:
+    factor: 0.05
+seed: 111
+policy: {}
+subroutine:
+  expl_std_init: 0.7
+  expl_std_min: 0.02
+  extra_expl_decay_iter: 10
+  extra_expl_std_init: 0.7
+  full_cov: false
+  max_iter: 15
+  num_is_samples: 10
+  num_rollouts: 50
+  num_sampler_envs: 8
+  pop_size: 100
+  symm_sampling: false
+subroutine_name: cem
+algo:
+  acq_fc: EI
+  acq_restarts: 500
+  acq_samples: 1000
+  max_iter: 15
+  num_eval_rollouts_real: 100
+  num_eval_rollouts_sim: 100
+  num_init_cand: 3
+  warmstart: false
+algo_name: bayrn
+dp_map:
+  0: !!python/tuple
+  - cup_scale
+  - mean
+  1: !!python/tuple
+  - cup_scale
+  - std
+  2: !!python/tuple
+  - rope_length
+  - mean
+  3: !!python/tuple
+  - rope_length
+  - std

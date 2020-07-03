@@ -9,6 +9,7 @@ from pyrado.environments.rcspysim.base import RcsSim
 from pyrado.spaces.singular import SingularStateSpace
 from pyrado.tasks.base import Task
 from pyrado.tasks.masked import MaskedTask
+from pyrado.tasks.predefined import create_check_all_boundaries_task
 from pyrado.tasks.utils import proximity_succeeded
 from pyrado.tasks.final_reward import FinalRewTask, FinalRewMode
 from pyrado.tasks.desired_state import DesStateTask
@@ -25,7 +26,7 @@ rcsenv.addResourcePath(osp.join(rcsenv.RCSPYSIM_CONFIG_PATH, 'Planar3Link'))
 class Planar3LinkSim(RcsSim, Serializable):
     """ Base class for the Planar 3-link environments simulated in Rcs using the Vortex or Bullet physics engine """
 
-    def __init__(self, task_args: dict, max_dist_force: float = None, position_mps: bool = None, **kwargs):
+    def __init__(self, task_args: dict, max_dist_force: float = None, **kwargs):
         """
         Constructor
 
@@ -34,9 +35,8 @@ class Planar3LinkSim(RcsSim, Serializable):
 
         :param task_args: arguments for the task construction
         :param max_dist_force: maximum disturbance force, set to None (default) for no disturbance
-        :param position_mps: `True` if the MPs are defined on position level, `False` if defined on velocity level,
-                             only matters if `actionModelType='activation'`
         :param kwargs: keyword arguments forwarded to `RcsSim`
+                       collisionConfig: specification of the Rcs CollisionModel
         """
         Serializable._init(self, locals())
 
@@ -58,7 +58,6 @@ class Planar3LinkSim(RcsSim, Serializable):
             envType='Planar3Link',
             graphFileName='gPlanar3Link.xml',
             task_args=task_args,
-            positionTasks=position_mps,
             collisionConfig=collision_config,
             **kwargs
         )
@@ -80,14 +79,15 @@ class Planar3LinkSim(RcsSim, Serializable):
 
     @classmethod
     def get_nominal_domain_param(cls):
-        return NotImplementedError
+        # Needs to be implemented by subclasses
+        raise NotImplementedError
 
     def _create_task(self, task_args: dict) -> Task:
-        # Define the task including the reward function
-        mps = task_args.get('mps')
-
         # Define the indices for selection. This needs to match the observations' names in RcsPySim.
-        idcs = ['Effector_X', 'Effector_Z']
+        if task_args.get('consider_velocities', False):
+            idcs = ['Effector_X', 'Effector_Z', 'Effector_Xd', 'Effector_Zd']
+        else:
+            idcs = ['Effector_X', 'Effector_Z']
 
         # Get the masked environment specification
         spec = EnvSpec(
@@ -100,13 +100,19 @@ class Planar3LinkSim(RcsSim, Serializable):
         p1 = self.get_body_position('Goal1', '', '')
         p2 = self.get_body_position('Goal2', '', '')
         p3 = self.get_body_position('Goal3', '', '')
-        state_des1 = np.array([p1[0], p1[2]])
-        state_des2 = np.array([p2[0], p2[2]])
-        state_des3 = np.array([p3[0], p3[2]])
+        if task_args.get('consider_velocities', False):
+            Q = np.diag([1e0, 1e0, 1e-1, 1e-1])
+            state_des1 = np.array([p1[0], p1[2], 0, 0])
+            state_des2 = np.array([p2[0], p2[2], 0, 0])
+            state_des3 = np.array([p3[0], p3[2], 0, 0])
+        else:
+            Q = np.diag([1e0, 1e0])
+            state_des1 = np.array([p1[0], p1[2]])
+            state_des2 = np.array([p2[0], p2[2]])
+            state_des3 = np.array([p3[0], p3[2]])
 
         success_fcn = functools.partial(proximity_succeeded, thold_dist=7.5e-2, dims=[0, 1])  # min distance = 7cm
-        Q = np.diag([1e0, 1e0])
-        R = 5e-2*np.eye(len(mps))
+        R = np.zeros((spec.act_space.flat_dim, spec.act_space.flat_dim))
 
         # Create the tasks
         subtask_11 = FinalRewTask(
@@ -139,77 +145,81 @@ class Planar3LinkSim(RcsSim, Serializable):
             SequentialTasks([subtask_1p, subtask_3, subtask_2p], hold_rew_when_done=True, verbose=True),
             mode=FinalRewMode(always_positive=True), factor=2e3
         )
+        masked_task = MaskedTask(self.spec, task, idcs)
 
-        # subtask_11 = FinalRewTask(
-        #     DesStateTask(spec, state_des1, ExpQuadrErrRewFcn(Q, R), success_fcn),
-        #     mode=FinalRewMode(time_dependent=True)
-        # )
-        # subtask_21 = FinalRewTask(
-        #     DesStateTask(spec, state_des2, ExpQuadrErrRewFcn(Q, R), success_fcn),
-        #     mode=FinalRewMode(time_dependent=True)
-        # )
-        # subtask_12 = FinalRewTask(
-        #     DesStateTask(spec, state_des1, ExpQuadrErrRewFcn(Q, R), success_fcn),
-        #     mode=FinalRewMode(time_dependent=True)
-        # )
-        # subtask_22 = FinalRewTask(
-        #     DesStateTask(spec, state_des2, ExpQuadrErrRewFcn(Q, R), success_fcn),
-        #     mode=FinalRewMode(time_dependent=True)
-        # )
-        # subtask_13 = FinalRewTask(
-        #     DesStateTask(spec, state_des1, ExpQuadrErrRewFcn(Q, R), success_fcn),
-        #     mode=FinalRewMode(time_dependent=True)
-        # )
-        # subtask_23 = FinalRewTask(
-        #     DesStateTask(spec, state_des2, ExpQuadrErrRewFcn(Q, R), success_fcn),
-        #     mode=FinalRewMode(time_dependent=True)
-        # )
-        # task = FinalRewTask(
-        #     SequentialTasks([subtask_11, subtask_21, subtask_12, subtask_22, subtask_13, subtask_23],
-        #                     hold_rew_when_done=True, verbose=True),
-        #     mode=FinalRewMode(time_dependent=True),
-        # )
+        task_check_bounds = create_check_all_boundaries_task(self.spec, penalty=1e3)
 
-        # Return the masked tasks
-        return MaskedTask(self.spec, task, idcs)
+        # Return the masked task and and additional task that ends the episode if the unmasked state is out of bound
+        return ParallelTasks([masked_task, task_check_bounds])
 
 
-class Planar3LinkIKSim(Planar3LinkSim, Serializable):
-    """
-    Planar 3-link robot environment controlled by setting the joint angles, i.e. the agent has to learn the
-    inverse kinematics of the 3-link robot
-    """
+class Planar3LinkJointCtrlSim(Planar3LinkSim, Serializable):
+    """ Planar 3-link robot controlled by directly setting the joint angles """
 
-    name: str = 'p3l-ik'
+    name: str = 'p3l-jt'
 
-    def __init__(self, state_des: np.ndarray = None, **kwargs):
+    def __init__(self, task_args: dict = None, **kwargs):
         """
         Constructor
 
-        :param state_des: desired state for the task
         :param kwargs: keyword arguments forwarded to `RcsSim`
         """
         Serializable._init(self, locals())
 
         # Forward to the Planar3LinkSim's constructor, specifying the characteristic action model
-        super().__init__(task_args=dict(state_des=state_des), actionModelType='joint_pos', **kwargs)
+        super().__init__(
+            task_args=dict() if task_args is None else task_args,
+            actionModelType='joint_pos',
+            **kwargs
+        )
+
+
+class Planar3LinkIKSim(Planar3LinkSim, Serializable):
+    """ Planar 3-link robot environment controlled by setting the input to an Rcs IK-based controller """
+
+    name: str = 'p3l-ik'
+
+    def __init__(self, task_args: dict = None, **kwargs):
+        """
+        Constructor
+
+        :param kwargs: keyword arguments forwarded to `RcsSim`
+                       positionTasks: bool = True,
+                       checkJointLimits: bool = False,
+                       collisionAvoidanceIK: bool = True,
+                       observeVelocities: bool = True,
+                       observeForceTorque: bool = True,
+                       observeCollisionCost: bool = False,
+                       observePredictedCollisionCost: bool = False,
+                       observeManipulabilityIndex: bool = False,
+                       observeCurrentManipulability: bool = True,
+                       observeGoalDistance: bool = False,
+        """
+        Serializable._init(self, locals())
+
+        # Forward to the Planar3LinkSim's constructor, specifying the characteristic action model
+        super().__init__(
+            task_args=dict() if task_args is None else task_args,
+            actionModelType='ik',
+            positionTasks=kwargs.pop('positionTasks', True),
+            **kwargs
+        )
 
 
 class Planar3LinkTASim(Planar3LinkSim, Serializable):
-    """ Planar 3-link robot environment controlled by setting the task activation of a Rcs control task """
+    """ Planar 3-link robot controlled by setting the task activation of a Rcs control task """
 
     name: str = 'p3l-ta'
 
     def __init__(self,
+                 task_args: dict = None,
                  mps: Sequence[dict] = None,
-                 collision_config: dict = None,
                  position_mps: bool = True,
                  **kwargs):
         """
         Constructor
 
         :param mps: movement primitives holding the dynamical systems and the goal states
-        :param collision_config: specification of the Rcs `CollisionModel`
         :param position_mps: if `True` use movement primitives specified on position-level, if `False` velocity-level
         :param kwargs: keyword arguments which are available for all task-based `RcsSim`
                        taskCombinationMethod: str = 'mean',  # 'sum', 'mean',  'product', or 'softmax'
@@ -293,10 +303,10 @@ class Planar3LinkTASim(Planar3LinkSim, Serializable):
 
         # Forward to the Planar3LinkSim's constructor, specifying the characteristic action model
         super().__init__(
-            task_args=dict(mps=mps),
+            task_args=dict() if task_args is None else task_args,
             actionModelType='activation',
             tasks=mps,
-            position_mps=position_mps,
+            positionTasks=position_mps,
             **kwargs
         )
 

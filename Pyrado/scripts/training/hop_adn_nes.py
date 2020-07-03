@@ -30,7 +30,7 @@ if __name__ == '__main__':
         tau_learnable=True,
         kappa_learnable=True,
         capacity_learnable=False,
-        output_nonlin=to.tanh,
+        activation_nonlin=to.tanh,
         potentials_dyn_fcn=pd_capacity_21_abs,
         scaling_layer=False,
     )

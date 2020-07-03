@@ -27,7 +27,7 @@ __Cons__
 * __No vision-based environments/tasks.__ In principle there is nothing stopping you from integrating computer vision into SimuRLacra. However, I assume there are better suited frameworks out there.
 * __Without bells and whistles.__ Most implementations (especially the algorithms) do not focus on performance. After all, this framework was created to understand and prototype things. 
 * __Hyper-parameters are not fully tuned.__ Sometimes the most important part of reinforcement learning is the time-consuming search for the right hyper-parameters. I only did this for the environment-algorithm combinations reported in my papers. But, for all the other cases there is [Optuna](https://optuna.org/) and some optuna-based example scripts that you can start from.
-* __Unfinished GPU-support.__ At the moment the porting of the policies is implemented but not fully tests. The GPU-enabled re-implementation of the simulation environments in the pysim folder (simple Python simulations) is at question. The environments based on [Rcs](https://github.com/HRI-EU/Rcs) which require the Bullet or Vortex physics engine will only be able to run on CPU.
+* __Unfinished GPU-support.__ At the moment the porting of the policies is implemented but not fully tested. The GPU-enabled re-implementation of the simulation environments in the pysim folder (simple Python simulations) is at question. The environments based on [Rcs](https://github.com/HRI-EU/Rcs) which require the Bullet or Vortex physics engine will only be able to run on CPU.
 
 SimuRLacra was tested on Ubuntu 16.04, 18.04 (recommended), 19.10, and 20.04, with PyTorch 1.3.
 The part without C++ dependencies (Pyrado) also works under Windows 10, but is not supported.
@@ -67,18 +67,13 @@ cd SimuRLacra
 
 Create an anaconda environment (without PyTorch)
 ```
-conda create -n pyrado python=3.7 cmake colorama coverage cython joblib libgcc-ng mkl matplotlib-base numpy pandas patchelf pip pycairo pytest pytest-cov pytest-xdist pyyaml scipy seaborn setuptools sphinx sphinx-math-dollar sphinx_rtd_theme tabulate tqdm -c conda-forge
+conda create -n pyrado python=3.7 blas cmake colorama coverage cython joblib lapack libgcc-ng mkl matplotlib-base numpy pandas patchelf pip pycairo pytest pytest-cov pytest-xdist pyyaml scipy seaborn setuptools sphinx sphinx-math-dollar sphinx_rtd_theme tabulate tqdm -c conda-forge
 
 conda activate pyrado
 
 pip install git+https://github.com/Xfel/init-args-serializer.git@master argparse box2d glfw gym pprint pytest-lazy-fixture vpython
 ```
 Any warnings from VPython can be safely ignored.
-
-> Alternatively, you could use the provided yml-file
->```
->conda env create -f Pyrado/environment.yml
->```
 
  _Infrastructure dependent_: install libraries system-wide  
 Parts of this framework create Python bindings of [Rcs](https://github.com/HRI-EU/Rcs) called RcsPySim. Running Rcs requires several libraries which can be installed (__requires sudo rights__) via
@@ -182,7 +177,7 @@ cd PATH_TO/SimuRLacra/Pyrado/scripts
 ```
 To exemplarily check basic Pyrado environments (implemented in Python without dependencies to RcsPySim)
 ```
-python sandbox/sb_qcp.py --env_name qcp-su
+python sandbox/sb_qcp.py --env_name qcp-su --dt 0.002
 ```
 Quickly check the environments interfacing Rcs via RcsPySim
 ```

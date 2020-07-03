@@ -43,7 +43,7 @@ if __name__ == '__main__':
 
     # Run on device
     done = False
-    print_cbt('Running ...', 'c')
+    print_cbt('Running loaded policy ...', 'c', bright=True)
     while not done:
         ro = rollout(env_real, policy, eval=True, render_mode=RenderMode(text=False, video=args.animation))
         print_cbt(f'Return: {ro.undiscounted_return()}', 'g', bright=True)

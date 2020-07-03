@@ -1,6 +1,9 @@
 #include "AMJointControlPosition.h"
 
 #include <Rcs_typedef.h>
+#include <Rcs_macros.h>
+
+#include <iostream>
 
 namespace Rcs
 {
@@ -11,14 +14,21 @@ AMJointControlPosition::AMJointControlPosition(RcsGraph* graph) : AMJointControl
     // Make sure nJ is correct
     RcsGraph_setState(graph, NULL, NULL);
     // Iterate over unconstrained joints
-//    RCSGRAPH_TRAVERSE_JOINTS(graph)
-//    {
-//        if (JNT->jacobiIndex != -1)
-//        {
-//            // Make sure that the joints actually use position control inside the simulation
-//            JNT->ctrlType = RCSJOINT_CTRL_POSITION;
-//        }
-//    }
+    REXEC(1)
+    {
+        RCSGRAPH_TRAVERSE_JOINTS(graph)
+        {
+            if (JNT->jacobiIndex != -1)
+            {
+                // Check if the joints actually use position control inside the simulation
+                if (JNT->ctrlType != RCSJOINT_CTRL_POSITION)
+                {
+                    std::cout << "Using AMJointControlPosition, but at least one joint does not have the control type"
+                                 "RCSJOINT_CTRL_POSITION!" << std::endl;
+                }
+            }
+        }
+    }
 }
 
 AMJointControlPosition::~AMJointControlPosition()

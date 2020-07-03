@@ -24,14 +24,14 @@ if __name__ == '__main__':
     policy_hparam = dict(
         # feats=FeatureStack([squared_feat, qubic_feat])
         # feats = FeatureStack([identity_feat, squared_feat, qubic_feat])
-        feats = FeatureStack([identity_feat, sign_feat, abs_feat, squared_feat, qubic_feat, bell_feat])
+        feats = FeatureStack([identity_feat, squared_feat, qubic_feat])
     )
     policy = LinearPolicy(spec=env.spec, **policy_hparam)
 
     # Algorithm
     algo_hparam = dict(
         max_iter=100,
-        pop_size=50,
+        pop_size=500,
         num_rollouts=10,
         num_is_samples=10,
         expl_std_init=2.,

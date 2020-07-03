@@ -48,7 +48,7 @@ if __name__ == '__main__':
 
     # Try to run several possible cases
     for pe in ['Bullet', 'Vortex']:
-        print_cbt(f'Running with {pe} physics engine', 'c')
+        print_cbt(f'Running with {pe} physics engine', 'c', bright=True)
 
         if rcsenv.supportsPhysicsEngine(pe):
             env, policy = create_setup(pe, dt=0.01, max_steps=1000, max_dist_force=0.)

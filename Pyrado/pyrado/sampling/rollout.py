@@ -13,9 +13,10 @@ from pyrado.environment_wrappers.utils import inner_env, typed_env
 from pyrado.plotting.curve import plot_dts
 from pyrado.plotting.policy_parameters import render_policy_params
 from pyrado.plotting.rollout_based import plot_observations_actions_rewards, plot_actions, plot_observations, \
-    plot_rewards, plot_adn_data, plot_features
+    plot_rewards, plot_potentials, plot_features
 from pyrado.policies.adn import ADNPolicy
 from pyrado.policies.base import Policy
+from pyrado.policies.neural_fields import NFPolicy
 from pyrado.policies.two_headed import TwoHeadedPolicy
 from pyrado.sampling.step_sequence import StepSequence
 from pyrado.utils.data_types import RenderMode
@@ -72,9 +73,10 @@ def rollout(env: Env,
     if policy.is_recurrent:
         hidden_hist = []
     # If an ExplStrat is passed use the policy property, if a Policy is passed use it directly
-    if isinstance(getattr(policy, 'policy', policy), ADNPolicy):
-        potentials_hist = []
-        stimuli_hist = []
+    if isinstance(getattr(policy, 'policy', policy), (ADNPolicy, NFPolicy)):
+        pot_hist = []
+        stim_ext_hist = []
+        stim_int_hist = []
     elif isinstance(getattr(policy, 'policy', policy), TwoHeadedPolicy):
         head_2_hist = []
     if record_dts:
@@ -104,7 +106,7 @@ def rollout(env: Env,
         else:
             policy.train()
 
-    # Check for recurrent policy, which requries special handling
+    # Check for recurrent policy, which requires special handling
     if policy.is_recurrent:
         # Initialize hidden state var
         hidden = policy.init_hidden()
@@ -118,7 +120,7 @@ def rollout(env: Env,
     env.render(render_mode, render_step=1)
 
     # Initialize the main loop variables
-    curr_step = 0
+    done = False
     if record_dts:
         t_post_step = time.time()  # first sample of remainder is useless
 
@@ -126,9 +128,8 @@ def rollout(env: Env,
     # Begin loop
     # ----------
 
-    done = False
     # Terminate if the environment signals done, it also keeps track of the time
-    while not (done and stop_on_done) and curr_step < env.max_steps:
+    while not (done and stop_on_done) and env.curr_step < env.max_steps:
         # Record step start time
         if record_dts or render_mode.video:
             t_start = time.time()  # dual purpose
@@ -216,15 +217,15 @@ def rollout(env: Env,
             hidden_hist.append(hidden)
             hidden = hidden_next
         # If an ExplStrat is passed use the policy property, if a Policy is passed use it directly
-        if isinstance(getattr(policy, 'policy', policy), ADNPolicy):
-            potentials_hist.append(getattr(policy, 'policy', policy).potentials.detach().numpy())
-            stimuli_hist.append(getattr(policy, 'policy', policy).stimuli.detach().numpy())
+        if isinstance(getattr(policy, 'policy', policy), (ADNPolicy, NFPolicy)):
+            pot_hist.append(getattr(policy, 'policy', policy).potentials.detach().numpy())
+            stim_ext_hist.append(getattr(policy, 'policy', policy).stimuli_external.detach().numpy())
+            stim_int_hist.append(getattr(policy, 'policy', policy).stimuli_internal.detach().numpy())
         elif isinstance(getattr(policy, 'policy', policy), TwoHeadedPolicy):
             head_2_hist.append(head_2_to)
 
-        # Prepare observation for next step (if done, this is the final observation)
+        # Store the observation for next step (if done, this is the final observation)
         obs = obs_next
-        curr_step += 1
 
         # Render if wanted (actually renders the next state)
         env.render(render_mode, render_step)
@@ -275,9 +276,10 @@ def rollout(env: Env,
     # Add special entries to the resulting rollout
     if policy.is_recurrent:
         res.add_data('hidden_states', hidden_hist)
-    if isinstance(getattr(policy, 'policy', policy), ADNPolicy):
-        res.add_data('potentials', potentials_hist)
-        res.add_data('stimuli', stimuli_hist)
+    if isinstance(getattr(policy, 'policy', policy), (ADNPolicy, NFPolicy)):
+        res.add_data('potentials', pot_hist)
+        res.add_data('stimuli_external', stim_ext_hist)
+        res.add_data('stimuli_internal', stim_int_hist)
     elif isinstance(getattr(policy, 'policy', policy), TwoHeadedPolicy):
         res.add_data('head_2', head_2_hist)
     if record_dts:
@@ -311,7 +313,7 @@ def after_rollout_query(env: Env, policy: Policy, rollout: StepSequence) -> tupl
         ['PF', 'plot features (for linear policy)'],
         ['PP', 'plot policy parameters (not suggested for many parameters)'],
         ['PDT', 'plot time deltas (profiling of a real system)'],
-        ['PADN', 'plot activation dynamic network data'],
+        ['PPOT', 'plot potentials, stimuli, and actions'],
         ['E', 'exit']
     ]
 
@@ -368,8 +370,8 @@ def after_rollout_query(env: Env, policy: Policy, rollout: StepSequence) -> tupl
         plot_dts(rollout.dts_policy, rollout.dts_step, rollout.dts_remainder)
         return after_rollout_query(env, policy, rollout),
 
-    elif ans == 'padn':
-        plot_adn_data(rollout)
+    elif ans == 'ppot':
+        plot_potentials(rollout)
         return after_rollout_query(env, policy, rollout)
 
     elif ans == 's':
