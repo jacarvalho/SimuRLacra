@@ -14,7 +14,7 @@ from pyrado.policies.adn import pd_cubic, ADNPolicy
 
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
-    ex_dir = setup_experiment(Planar3LinkIKSim.name, f'adn-{HCNormal.name}', '', seed=1001)
+    ex_dir = setup_experiment(Planar3LinkIKSim.name, HCNormal.name, ADNPolicy.name, seed=1001)
 
     # Environment
     env_hparams = dict(

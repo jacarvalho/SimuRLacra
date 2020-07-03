@@ -2,8 +2,8 @@
 Functions to plot Pyrado policies
 """
 import numpy as np
-import torch as to
-from matplotlib import ticker, gridspec, colorbar
+import torch.nn as nn
+from matplotlib import ticker, colorbar
 from matplotlib import pyplot as plt
 from typing import Any
 
@@ -93,8 +93,8 @@ def render_policy_params(policy: Policy,
     :param ylabel: label for the y axis
     :return: handles to figures
     """
-    if not isinstance(policy, to.nn.Module):
-        raise pyrado.TypeErr(given=policy, expected_type=to.nn.Module)
+    if not isinstance(policy, nn.Module):
+        raise pyrado.TypeErr(given=policy, expected_type=nn.Module)
     cmap = plt.get_cmap(cmap_name)
 
     # Create axes and subplots depending on the NN structure
@@ -135,7 +135,7 @@ def render_policy_params(policy: Policy,
                 ax.set_yticks(np.arange(env_spec.act_space.flat_dim))
                 ax.set_xticklabels(ensure_no_subscript(env_spec.obs_space.labels))
                 ax.set_yticklabels(ensure_math_mode(env_spec.act_space.labels))
-            elif name in ['obs_layer.bias', 'scaling_layer.log_weight']:
+            elif name in ['obs_layer.bias', 'nonlin_layer.log_weight', 'nonlin_layer.bias']:
                 ax.set_xticks(np.arange(env_spec.act_space.flat_dim))
                 ax.set_xticklabels(ensure_math_mode(env_spec.act_space.labels))
                 ax.yaxis.set_major_locator(ticker.NullLocator())
@@ -160,7 +160,7 @@ def render_policy_params(policy: Policy,
                 ax.yaxis.set_major_locator(ticker.NullLocator())
                 ax.set_xticklabels(ensure_no_subscript(env_spec.obs_space.labels))
                 ax.yaxis.set_minor_formatter(ticker.NullFormatter())
-            elif name in ['_log_tau', 'obs_layer.bias', 'conv_layer.weight',
+            elif name in ['_log_tau', '_potentials_init', 'resting_level', 'obs_layer.bias', 'conv_layer.weight',
                           'nonlin_layer.log_weight', 'nonlin_layer.bias']:
                 ax.xaxis.set_major_locator(ticker.NullLocator())
                 ax.yaxis.set_major_locator(ticker.NullLocator())

@@ -190,7 +190,35 @@ def fill_list_of_arrays(loa: Sequence[np.ndarray], des_len: int, fill_ele=np.nan
     return loa_c
 
 
-def check_all_types_equal(iterable):
+def is_iterable(inp) -> bool:
+    """
+    Check if the input is iterable by trying to create an iterator from the input.
+
+    :param inp: any object
+    :return: `True` if input is iterable, else `False`
+    """
+    try:
+        _ = iter(inp)
+        return True
+    except TypeError:
+        return False
+
+
+def is_iterator(inp) -> bool:
+    """
+    Check if the input is an iterator by trying to call `next()` on it.
+
+    :param inp: any object
+    :return: `True` if input is an iterator, else `False`
+    """
+    try:
+        next(inp, None)
+        return True
+    except TypeError:
+        return False
+
+
+def check_all_types_equal(iterable) -> bool:
     """
     Check if all elements of an iterable (e.g., list) are if the same type.
 
@@ -205,7 +233,7 @@ def check_all_types_equal(iterable):
     return all(type(first) == type(rest) for rest in iterator)
 
 
-def check_all_shapes_equal(iterable):
+def check_all_shapes_equal(iterable) -> bool:
     """
     Check if the shape attribute of all elements of an iterable (e.g., list) are equal.
 
@@ -220,7 +248,7 @@ def check_all_shapes_equal(iterable):
     return all(first.shape == rest.shape for rest in iterator)
 
 
-def check_all_values_equal(iterable):
+def check_all_values_equal(iterable) -> bool:
     """
     Check if all elements of an iterable (e.g., list) are equal.
 

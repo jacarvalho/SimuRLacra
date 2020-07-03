@@ -22,7 +22,7 @@ from pyrado.utils.data_types import EnvSpec
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
     ex_dir = setup_experiment(QBallBalancerSim.name, f'{EPOpt.name}-{PPO.name}',
-                              'fnn_obsnoise_actnorm_actdelay-30', seed=1001)
+                              f'{FNNPolicy.name}_obsnoise_actnorm_actdelay-30', seed=1001)
 
     # Environment
     env_hparams = dict(dt=1/500., max_steps=2500)

@@ -1,78 +1,14 @@
 import torch as to
 import torch.nn as nn
-import torch.nn.functional as F
-from math import ceil, sqrt
-from torch.nn.modules.conv import _ConvNd
-from torch.nn.modules.utils import _single
 from typing import Callable
 
 import pyrado
 from pyrado.utils.data_types import EnvSpec
-from pyrado.policies.base import Policy, IndiNonlinLayer
+from pyrado.policies.base import Policy
 from pyrado.policies.base_recurrent import RecurrentPolicy
 from pyrado.policies.initialization import init_param
 from pyrado.utils.input_output import print_cbt
-
-
-class MirrConv1d(_ConvNd):
-    """
-    Overriding `Conv1d` module implementation from PyTorch 1.4 to re-use parts of the convolution weights by mirroring
-    the first half of the kernel (along the columns). This way we can save (close to) half of the parameters, under
-    the assumption that we have a kernel that obeys this kind of symmetry.
-    The biases are left unchanged.
-    """
-
-    def __init__(self, in_channels, out_channels, kernel_size, stride=1, padding=0, dilation=1, groups=1, bias=True,
-                 padding_mode='zeros'):
-        # Same as in PyTorch 1.4
-        kernel_size = _single(kernel_size)
-        stride = _single(stride)
-        padding = _single(padding)
-        dilation = _single(dilation)
-        super().__init__(in_channels, out_channels, kernel_size, stride, padding, dilation, False, _single(0), groups,
-                         bias, padding_mode)
-
-        # Memorize PyTorch's weight shape (out_channels x in_channels x kernel_size) for later reconstruction
-        self.orig_weight_shape = self.weight.shape
-
-        # Get number of kernel elements we later want to use for mirroring
-        self.half_kernel_size = ceil(self.weight.shape[2]/2)  # kernel_size = 4 --> 2, kernel_size = 5 --> 3
-
-        # Initialize the weights values the same way PyTorch does
-        new_weight_init = to.zeros(self.orig_weight_shape[0], self.orig_weight_shape[1], self.half_kernel_size)
-        nn.init.kaiming_uniform_(new_weight_init, a=sqrt(5))
-
-        # Overwrite the weight attribute (transposed is False by default for the Conv1d module and we don't use it here)
-        self.weight = nn.Parameter(new_weight_init, requires_grad=True)
-
-    def forward(self, inp: to.Tensor) -> to.Tensor:
-        # Reconstruct symmetric weights for convolution (original size)
-        mirr_weight = to.empty(self.orig_weight_shape)
-        # mirr_weight.fill_(pyrado.inf)  # only for testing
-
-        # Loop over input channels
-        for i in range(self.orig_weight_shape[1]):
-            # Fill first half
-            mirr_weight[:, i, :self.half_kernel_size] = self.weight[:, i, :]
-
-            # Fill second half (flip columns left-right)
-            if self.orig_weight_shape[2]%2 == 1:
-                # Odd kernel size for convolution, don't flip the last column
-                mirr_weight[:, i, self.half_kernel_size:] = to.flip(self.weight[:, i, :], (1,))[:, 1:]
-            else:
-                # Even kernel size for convolution, flip all columns
-                mirr_weight[:, i, self.half_kernel_size:] = to.flip(self.weight[:, i, :], (1,))
-
-        # Only for testing
-        # if to.any(to.isinf(mirr_weight)):
-        #     raise RuntimeError
-
-        # Run though the same function as the original PyTorch implementation, but with mirrored kernel
-        if self.padding_mode == 'circular':
-            expanded_padding = ((self.padding[0] + 1) // 2, self.padding[0] // 2)
-            return F.conv1d(F.pad(inp, expanded_padding, mode='circular'), mirr_weight, self.bias, self.stride,
-                            _single(0), self.dilation, self.groups)
-        return F.conv1d(inp, mirr_weight, self.bias, self.stride, self.padding, self.dilation, self.groups)
+from pyrado.utils.nn_layers import MirrConv1d, IndiNonlinLayer
 
 
 class NFPolicy(RecurrentPolicy):
@@ -83,6 +19,8 @@ class NFPolicy(RecurrentPolicy):
         [1] S.-I. Amari "Dynamics of Pattern Formation in Lateral-Inhibition Type Neural Fields",
         Biological Cybernetics, 1977
     """
+
+    name: str = 'nf'
 
     def __init__(self,
                  spec: EnvSpec,
@@ -96,6 +34,9 @@ class NFPolicy(RecurrentPolicy):
                  conv_padding_mode: str = 'circular',
                  tau_init: float = 1.,
                  tau_learnable: bool = True,
+                 kappa_init: float = None,
+                 kappa_learnable: bool = True,
+                 potential_init_learnable: bool = False,
                  init_param_kwargs: dict = None,
                  use_cuda: bool = False):
         """
@@ -111,7 +52,10 @@ class NFPolicy(RecurrentPolicy):
         :param conv_out_channels: number of filter for the 1-dim convolution along the potential-based neurons
         :param conv_kernel_size: size of the kernel for the 1-dim convolution along the potential-based neurons
         :param tau_init: initial value for the shared time constant of the potentials
-        :param tau_learnable: flag to determine if the time constant is a learnable parameter or a fixed tensor
+        :param tau_learnable: flag to determine if the time constant is a learnable parameter or fixed
+        :param kappa_init: initial value for the cubic decay, pass `None` (default) to disable cubic decay
+        :param kappa_learnable: flag to determine if cubic decay is a learnable parameter or fixed
+        :param potential_init_learnable: flag to determine if the initial potentials are a learnable parameter or fixed
         :param init_param_kwargs: additional keyword arguments for the policy parameter initialization
         :param use_cuda: `True` to move the policy to the GPU, `False` (default) to use the CPU
         """
@@ -139,10 +83,11 @@ class NFPolicy(RecurrentPolicy):
         self._input_size = spec.obs_space.flat_dim  # observations include goal distance, prediction error, ect.
         self._hidden_size = hidden_size  # number of potential neurons
         self._num_recurrent_layers = 1
-        self._activation_nonlin = activation_nonlin
+        self.mirrored_conv_weights = mirrored_conv_weights
 
-        # Create the RNN's layers
-        self.obs_layer = nn.Linear(self._input_size, self._hidden_size, bias=True) if obs_layer is None else obs_layer
+        # Create the layers
+        self.obs_layer = nn.Linear(self._input_size, self._hidden_size, bias=False) if obs_layer is None else obs_layer
+        self.resting_level = nn.Parameter(to.zeros(hidden_size), requires_grad=True)
         padding = conv_kernel_size//2 if conv_padding_mode != 'circular' else conv_kernel_size - 1  # 1 means no padding
         conv1d_class = MirrConv1d if mirrored_conv_weights else nn.Conv1d
         self.conv_layer = conv1d_class(
@@ -152,32 +97,51 @@ class NFPolicy(RecurrentPolicy):
             stride=1, dilation=1, groups=1  # defaults
         )
         # self.post_conv_layer = nn.Linear(conv_out_channels, spec.act_space.flat_dim, bias=False)
-        self.nonlin_layer = IndiNonlinLayer(self._hidden_size, nonlin=activation_nonlin, bias=False)
+        self.nonlin_layer = IndiNonlinLayer(self._hidden_size, nonlin=activation_nonlin, bias=False, weight=True)
         self.act_layer = nn.Linear(self._hidden_size, spec.act_space.flat_dim, bias=False)
 
         # Call custom initialization function after PyTorch network parameter initialization
         self._potentials = to.zeros(self._hidden_size)
-        self._init_potentials = to.zeros_like(self._potentials)
+        self.potential_init_learnable = potential_init_learnable
+        self._potentials_init = nn.Parameter(to.randn_like(self._potentials), requires_grad=True)\
+            if potential_init_learnable else to.zeros_like(self._potentials)
         self._potentials_max = 100.  # clip potentials symmetrically
         self._stimuli_internal = to.zeros_like(self._potentials)
         self._stimuli_external = to.zeros_like(self._potentials)
 
         # Potential dynamics's time constant
-        self._tau_learnable = tau_learnable
+        self.tau_learnable = tau_learnable
         self._log_tau_init = to.log(to.tensor([tau_init], dtype=to.get_default_dtype()))
-        self._log_tau = nn.Parameter(self._log_tau_init,
-                                     requires_grad=True) if self._tau_learnable else self._log_tau_init
+        self._log_tau = nn.Parameter(self._log_tau_init, requires_grad=True)\
+            if self.tau_learnable else self._log_tau_init
+
+        if kappa_init is not None:
+            self.kappa_learnable = kappa_learnable
+            self._log_kappa_init = to.log(to.tensor([kappa_init], dtype=to.get_default_dtype()))
+            self._log_kappa = nn.Parameter(self._log_kappa_init, requires_grad=True)\
+                if self.kappa_learnable else self._log_kappa_init
+        else:
+            self._log_kappa = None
 
         # Initialize policy parameters
         init_param_kwargs = init_param_kwargs if init_param_kwargs is not None else dict()
         self.init_param(None, **init_param_kwargs)
         self.to(self.device)
 
+    def extra_repr(self) -> str:
+        return f'tau_learnable={self.tau_learnable}, use_kappa={self._log_kappa is not None}, learn_init_potentials=' \
+               f'{isinstance(self._potentials_init, nn.Parameter)}'
+
     @property
     def hidden_size(self) -> int:
-        """ Get the total number of hidden parameters is the hidden layer size times the hidden layer count. """
         assert self._num_recurrent_layers == 1
         return self._num_recurrent_layers*self._hidden_size
+
+    def init_hidden(self, batch_size: int = None) -> to.Tensor:
+        if batch_size is None:
+            return self._potentials_init
+        else:
+            return self._potentials_init.repeat(batch_size, 1)
 
     @property
     def potentials(self) -> to.Tensor:
@@ -205,16 +169,24 @@ class NFPolicy(RecurrentPolicy):
         """ Get the time scale parameter (exists for all potential dynamics functions). """
         return to.exp(self._log_tau)
 
+    @property
+    def kappa(self) -> [None, to.Tensor]:
+        """ Get the cubic decay parameter if specified in the constructor, else return zero. """
+        return None if self._log_kappa is None else to.exp(self._log_kappa)
+
     def potentials_dot(self, stimuli: to.Tensor) -> to.Tensor:
-        """
+        r"""
         Compute the derivative of the neurons' potentials per time step.
+        $/tau /dot{u} = s + h - u + /kappa (h - u)^3,
+        /quad /text{with} s = s_{int} + s_{ext} = W*o + /int{w(u, v) f(u) dv}$
 
         :param stimuli: sum of external and internal stimuli at the current point in time
         :return: time derivative of the potentials
         """
-        if not all(self.tau > 0):
-            raise pyrado.ValueErr(given=self.tau, g_constraint='0')
-        return (stimuli - self._potentials)/self.tau
+        rhs = stimuli + self.resting_level - self._potentials
+        if self._log_kappa is not None:
+            rhs += self.kappa*to.pow(self.resting_level - self._potentials, 3)
+        return rhs/self.tau
 
     def init_param(self, init_values: to.Tensor = None, **kwargs):
         if init_values is None:
@@ -222,85 +194,18 @@ class NFPolicy(RecurrentPolicy):
             init_param(self.obs_layer, **kwargs)
             # self.obs_layer.weight.data /= 100.
             # self.obs_layer.bias.data /= 100.
+            self.resting_level.data = to.randn_like(self.resting_level.data)
             init_param(self.conv_layer, **kwargs)
             # init_param(self.post_conv_layer, **kwargs)
             init_param(self.nonlin_layer, **kwargs)
             init_param(self.act_layer, **kwargs)
 
             # Initialize time constant if modifiable
-            if self._tau_learnable:
+            if self.tau_learnable:
                 self._log_tau.data = self._log_tau_init
 
         else:
             self.param_values = init_values
-
-    def forward(self, obs: to.Tensor, hidden: to.Tensor = None) -> (to.Tensor, to.Tensor):
-        """
-        Compute the goal distance, prediction error, and predicted cost.
-        Then pass it to the wrapped RNN.
-
-        :param obs: observations coming from the environment i.e. noisy
-        :param hidden: current hidden states, in this case action and potentials of the last time step
-        :return: current action and new hidden states
-        """
-        obs = obs.to(self.device)
-
-        # We assume flattened observations, if they are 2d, they're batched.
-        if len(obs.shape) == 1:
-            batch_size = None
-        elif len(obs.shape) == 2:
-            batch_size = obs.shape[0]
-        else:
-            raise pyrado.ShapeErr(msg=f"Improper shape of 'obs'. Policy received {obs.shape},"
-                                      f"but shape should be 1- or 2-dim")
-
-        # Unpack hidden tensor (i.e. the potentials of the last step) if specified
-        # The network can handle getting None by using default values
-        potentials = self._unpack_hidden(hidden, batch_size) if hidden is not None else hidden
-
-        # Don't track the gradient through the potentials
-        potentials = potentials.detach()
-        self._potentials = potentials.clone()  # saved in rollout()
-
-        # Clip the potentials
-        potentials = potentials.clamp(min=-self._potentials_max, max=self._potentials_max)
-
-        # ----------------
-        # Activation Logic
-        # ----------------
-
-        # Combine the current inputs
-        self._stimuli_external = self.obs_layer(obs)
-
-        # Scale the potentials, subtract a bias, and pass them through a nonlinearity
-        activations_prev = self.nonlin_layer(potentials)
-
-        # Reshape and convolve
-        b = batch_size if batch_size is not None else 1
-        self._stimuli_internal = self.conv_layer(activations_prev.view(b, 1, self._hidden_size))
-        self._stimuli_internal = to.sum(self._stimuli_internal, dim=1)  # TODO do multiple out channels makes sense if just summed up?
-        self._stimuli_internal = self._stimuli_internal.squeeze()
-
-        # Combine the different output channels of the convolution
-        # stimulus_pot = self.post_conv_layer(stimulus_pot)
-
-        if not self._stimuli_external.shape == self._stimuli_internal.shape:
-            raise pyrado.ShapeErr(given=self._stimuli_internal, expected_match=self._stimuli_external)
-
-        # Potential dynamics forward integration
-        potentials = potentials + self._dt*self.potentials_dot(self._stimuli_external + self._stimuli_internal)
-
-        # Scale the potentials, subtract a bias, and pass them through a nonlinearity
-        activations = self.nonlin_layer(potentials)
-
-        # Compute the actions from the activations
-        act = self.act_layer(activations)
-
-        # Pack hidden state
-        hidden_out = self._pack_hidden(potentials, batch_size)
-
-        # Return the next action and store the current potentials as a hidden variable
-        return act, hidden_out
 
     def _unpack_hidden(self, hidden: to.Tensor, batch_size: int = None):
         """
@@ -343,3 +248,72 @@ class NFPolicy(RecurrentPolicy):
         else:
             # Make sure that the batch dimension is the first element
             return hidden.view(batch_size, self._num_recurrent_layers*self._hidden_size)
+
+    def forward(self, obs: to.Tensor, hidden: to.Tensor = None) -> (to.Tensor, to.Tensor):
+        """
+        Compute the goal distance, prediction error, and predicted cost.
+        Then pass it to the wrapped RNN.
+
+        :param obs: observations coming from the environment i.e. noisy
+        :param hidden: current hidden states, in this case action and potentials of the last time step
+        :return: current action and new hidden states
+        """
+        obs = obs.to(self.device)
+
+        # We assume flattened observations, if they are 2d, they're batched.
+        if len(obs.shape) == 1:
+            batch_size = None
+        elif len(obs.shape) == 2:
+            batch_size = obs.shape[0]
+        else:
+            raise pyrado.ShapeErr(msg=f"Improper shape of 'obs'. Policy received {obs.shape},"
+                                      f"but shape should be 1- or 2-dim")
+
+        # Unpack hidden tensor (i.e. the potentials of the last step) if specified
+        # The network can handle getting None by using default values
+        potentials = self._unpack_hidden(hidden, batch_size) if hidden is not None else hidden
+
+        # Don't track the gradient through the potentials
+        potentials = potentials.detach()
+        self._potentials = potentials.clone()  # saved in rollout()
+
+        # ----------------
+        # Activation Logic
+        # ----------------
+
+        # Combine the current inputs
+        self._stimuli_external = self.obs_layer(obs)
+
+        # Scale the potentials, subtract a bias, and pass them through a nonlinearity
+        activations_prev = self.nonlin_layer(potentials)
+
+        # Reshape and convolve
+        b = batch_size if batch_size is not None else 1
+        self._stimuli_internal = self.conv_layer(activations_prev.view(b, 1, self._hidden_size))
+        self._stimuli_internal = to.sum(self._stimuli_internal, dim=1)  # TODO do multiple out channels makes sense if just summed up?
+        self._stimuli_internal = self._stimuli_internal.squeeze()
+
+        # Combine the different output channels of the convolution
+        # stimulus_pot = self.post_conv_layer(stimulus_pot)
+
+        # Check the shapes before adding the resting level since the broadcasting could mask errors from the convolution
+        if not self._stimuli_external.shape == self._stimuli_internal.shape:
+            raise pyrado.ShapeErr(given=self._stimuli_internal, expected_match=self._stimuli_external)
+
+        # Potential dynamics forward integration
+        potentials = potentials + self._dt*self.potentials_dot(self._stimuli_external + self._stimuli_internal)
+
+        # Clip the potentials
+        potentials = potentials.clamp(min=-self._potentials_max, max=self._potentials_max)
+
+        # Scale the potentials, subtract a bias, and pass them through a nonlinearity
+        activations = self.nonlin_layer(potentials)
+
+        # Compute the actions from the activations
+        act = self.act_layer(activations)
+
+        # Pack hidden state
+        hidden_out = self._pack_hidden(potentials, batch_size)
+
+        # Return the next action and store the current potentials as a hidden variable
+        return act, hidden_out

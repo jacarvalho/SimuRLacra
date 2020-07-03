@@ -3,6 +3,7 @@ import numpy as np
 import os.path as osp
 import sys
 import torch as to
+import torch.nn as nn
 from copy import deepcopy
 from tqdm import tqdm
 
@@ -173,7 +174,7 @@ class DQL(Algorithm):
         :param expected_q_vals: expected state-action values $r + \gamma \max_a Q(s^\prime, a)$, from target network
         :return: loss value
         """
-        return to.nn.functional.smooth_l1_loss(q_vals, expected_q_vals)
+        return nn.functional.smooth_l1_loss(q_vals, expected_q_vals)
 
     def update(self):
         """ Update the policy's and target Q-function's parameters on transitions sampled from the replay memory. """

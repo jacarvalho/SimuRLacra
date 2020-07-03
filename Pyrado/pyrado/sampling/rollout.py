@@ -1,6 +1,7 @@
 import numpy as np
 import time
 import torch as to
+import torch.nn as nn
 from numpy.random import binomial
 from tabulate import tabulate
 
@@ -24,7 +25,7 @@ from pyrado.utils.input_output import print_cbt, color_validity
 
 
 def rollout(env: Env,
-            policy: [to.nn.Module, Policy],
+            policy: [nn.Module, Policy],
             eval: bool = False,
             max_steps: int = None,
             reset_kwargs: dict = None,
@@ -158,6 +159,28 @@ def rollout(env: Env,
                     act_to, head_2_to = policy(obs_to)
                 else:
                     act_to = policy(obs_to)
+
+                    # act_to = (to.tensor([-3.6915228, 31.47042,   -6.827999,  11.602707]) @ obs_to).view(-1)
+
+
+                    # act_to = (to.tensor([-0.42, 18.45, -0.53, 1.53]) @ obs_to).view(-1)
+                    # act_to = (to.tensor([-0.2551887, 9.8527975, -4.421094, 10.82632]) @ obs_to).view(-1)
+
+
+
+                    # act_to = (to.tensor([ 0.18273291 , 3.829101 ,  -1.4158,      5.5001416]) @ obs_to).view(-1)
+
+
+                    # act_to = to.tensor([1.0078554 , 4.221323 ,  0.032006 ,  4.909644,  -2.201612]) @ obs_to
+
+                    # act_to = to.tensor([1.89549804,  4.74797034, -0.09684278,  5.51203606, -2.80852473]) @ obs_to
+
+                    # act_to = to.tensor([1.3555347 ,  3.8478632,  -0.04043245 , 7.40247 ,   -3.580207]) @ obs_to + \
+                    #     0.1 * np.random.randn()
+
+                    # print(act_to)
+
+
         act = act_to.detach().cpu().numpy()  # environment operates on numpy arrays
 
         # Check actions

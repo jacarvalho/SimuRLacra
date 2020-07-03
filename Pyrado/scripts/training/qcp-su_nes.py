@@ -9,7 +9,7 @@ from pyrado.policies.rnn import LSTMPolicy, GRUPolicy
 
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
-    ex_dir = setup_experiment(QCartPoleSwingUpSim.name, NES.name, 'gru', seed=1001)
+    ex_dir = setup_experiment(QCartPoleSwingUpSim.name, NES.name, GRUPolicy.name, seed=1001)
 
     # Environments
     env_hparams = dict(dt=1/100., max_steps=1300, long=False)

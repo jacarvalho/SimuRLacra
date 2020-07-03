@@ -14,8 +14,6 @@ from pyrado.utils.argparser import get_argparser
 from pyrado.utils.experiments import load_experiment
 from pyrado.utils.input_output import print_cbt
 from pyrado.utils.data_types import RenderMode
-import torch as to
-import numpy as np
 
 
 if __name__ == '__main__':
@@ -23,50 +21,8 @@ if __name__ == '__main__':
     args = get_argparser().parse_args()
 
     # Load the environment and the policy
-    env = QQubeSim(args.dt, args.max_steps)  # runs infinitely by default
-
-    # policy = QQubeSwingUpAndBalanceCtrl(env.spec)
-
-    # policy = QQubeSwingUpAndBalanceCtrl(
-    #     env.spec,
-    #     ref_energy=0.04,  # Quanser's value: 0.02
-    #     energy_gain=30.,  # Quanser's value: 50
-    #     energy_th_gain=0.4,  # former: 0.4
-    #     acc_max=5.,  # Quanser's value: 6
-    #     alpha_max_pd_enable=10.,  # Quanser's value: 20
-    #     pd_gains=to.tensor([-0.42, 18.45, -0.53, 1.53]))
-
-    # QUANSER
-    # policy = QQubeSwingUpAndBalanceCtrl(
-    #     env.spec,
-    #     ref_energy=np.exp(np.log(0.02)),  # Quanser's value: 0.02
-    #     energy_gain=np.exp(np.log(50.)),  # Quanser's value: 50
-    #     energy_th_gain=0.4,  # former: 0.4
-    #     acc_max=5.,  # Quanser's value: 6
-    #     alpha_max_pd_enable=10.,  # Quanser's value: 20
-    #     pd_gains=to.tensor([-2., 35., -1.5, 3.]))
-
-    # POWER
-    # policy = QQubeSwingUpAndBalanceCtrl(
-    #     env.spec,
-    #     ref_energy=np.exp(-3.4233),  # Quanser's value: 0.02
-    #     energy_gain=np.exp( 4.1721),  # Quanser's value: 50
-    #     energy_th_gain= 1.5496,  # former: 0.4
-    #     acc_max=5.,  # Quanser's value: 6
-    #     alpha_max_pd_enable=10.,  # Quanser's value: 20
-    #     pd_gains=to.tensor([-1.1408, 35.2608,  -1.1687, 3.7377]))
-
-    # MVD
-    policy = QQubeSwingUpAndBalanceCtrl(
-        env.spec,
-        ref_energy=np.exp(-3.5497499),
-        energy_gain=np.exp(3.4548347),
-        energy_th_gain=0.3,  # for simulation and real system
-        acc_max=5.,  # Quanser's value: 6
-        alpha_max_pd_enable=10.,  # Quanser's value: 20
-        pd_gains=to.tensor([-2.3208067, 33.905983, -1.2597903, 3.209255]))
-
-
+    env = QQubeStabSim(args.dt, args.max_steps)  # runs infinitely by default
+    policy = QQubeSwingUpAndBalanceCtrl(env.spec)
     print_cbt('Set up controller for the QQubeSim environment.', 'c')
 
     # Override the time step size if specified

@@ -13,7 +13,7 @@ from pyrado.policies.fnn import FNN
 
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
-    ex_dir = setup_experiment(HopperSim.name, f'adn-{NES.name}', 'lin', seed=1002)
+    ex_dir = setup_experiment(HopperSim.name, NES.name, ADNPolicy.name, seed=1002)
 
     # Environment
     env_hparams = dict()

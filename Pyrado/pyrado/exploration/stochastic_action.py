@@ -1,4 +1,5 @@
 import torch as to
+import torch.nn as nn
 from abc import ABC
 from torch.distributions import Distribution, Bernoulli, Categorical
 
@@ -10,7 +11,7 @@ from pyrado.policies.two_headed import TwoHeadedPolicy
 from pyrado.sampling.step_sequence import StepSequence
 from pyrado.utils.math import clamp
 from pyrado.utils.properties import Delegate
-from pyrado.utils.tensor_utils import atleast_2D
+from pyrado.utils.tensor import atleast_2D
 
 
 class StochasticActionExplStrat(Policy, ABC):
@@ -306,7 +307,7 @@ class EpsGreedyExplStrat(StochasticActionExplStrat):
         :param eps_final: minimum value of epsilon
         """
         super().__init__(policy)
-        self.eps = to.nn.Parameter(to.tensor(eps), requires_grad=True)
+        self.eps = nn.Parameter(to.tensor(eps), requires_grad=True)
         self._eps_init = to.tensor(eps)
         self._eps_final = to.tensor(eps_final)
         self._eps_old = to.tensor(eps)
@@ -326,7 +327,7 @@ class EpsGreedyExplStrat(StochasticActionExplStrat):
     def train(self, mode=True):
         """ Call PyTorch's eval function and set the re-activate every exploration. """
         super(Policy, self).train()
-        self.eps = to.nn.Parameter(self._eps_old, requires_grad=True)
+        self.eps = nn.Parameter(self._eps_old, requires_grad=True)
         self.distr_eps = Bernoulli(probs=self.eps.data)
 
     def schedule_eps(self, steps: int):

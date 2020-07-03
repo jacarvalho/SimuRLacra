@@ -45,7 +45,7 @@ def atleast_3D(x: to.Tensor) -> to.Tensor:
 
 def stack_tensor_list(tensor_list: list) -> to.Tensor:
     """
-    Covenience funtion for stacking a list of tensors
+    Convenience function for stacking a list of tensors
 
     :param tensor_list: list of tensors to stack (along a new dim)
     :return: tensor of at least 1-dim

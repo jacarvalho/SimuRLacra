@@ -51,9 +51,8 @@ def plot_observations_actions_rewards(ro: StepSequence):
         # Use recorded time stamps if possible
         t = ro.env_infos.get('t', np.arange(0, ro.length)) if hasattr(ro, 'env_infos') else np.arange(0, ro.length)
 
-        fig, axs = plt.subplots(dim_obs + dim_act + 1, 1, figsize=(8, 12), constrained_layout=True)
+        fig, axs = plt.subplots(dim_obs + dim_act + 1, 1, figsize=(8, 12))
         fig.suptitle('Observations, Actions, and Reward over Time')
-        plt.subplots_adjust(hspace=.5)
         colors = plt.get_cmap('tab20')(np.linspace(0, 1, dim_obs if dim_obs > dim_act else dim_act))
 
         # Observations (without the last time step)
@@ -70,6 +69,7 @@ def plot_observations_actions_rewards(ro: StepSequence):
         # Rewards
         axs[-1].plot(t, ro.rewards, label='reward', c='k')
         axs[-1].legend()
+        plt.subplots_adjust(hspace=.5)
         plt.show()
 
 
@@ -96,9 +96,8 @@ def plot_observations(ro: StepSequence, idcs_sel: Sequence[int] = None):
         num_cols = int(np.ceil(len(dim_obs)/divisor))
         num_rows = int(np.ceil(len(dim_obs)/num_cols))
 
-        fig, axs = plt.subplots(num_rows, num_cols, figsize=(num_cols*5, num_rows*3), constrained_layout=True)
+        fig, axs = plt.subplots(num_rows, num_cols, figsize=(num_cols*5, num_rows*3), )
         fig.suptitle('Observations over Time')
-        plt.subplots_adjust(hspace=.5)
         colors = plt.get_cmap('tab20')(np.linspace(0, 1, len(dim_obs)))
 
         if len(dim_obs) == 1:
@@ -109,12 +108,13 @@ def plot_observations(ro: StepSequence, idcs_sel: Sequence[int] = None):
                 for j in range(num_cols):
                     if j + i*num_cols < len(dim_obs):
                         # Omit the last observation for simplicity
-                        axs[i, j].plot(t, ro.observations[:-1, j + i*num_cols],
-                                       label=_get_obs_label(ro, j + i*num_cols), c=colors[j + i*num_cols])
+                        axs[i, j].plot(t, ro.observations[:-1, j + i*num_cols], c=colors[j + i*num_cols],
+                                       label=_get_obs_label(ro, j + i*num_cols))
                         axs[i, j].legend()
                     else:
                         # We might create more subplots than there are observations
                         pass
+        plt.subplots_adjust(hspace=.2)
         plt.show()
 
 
@@ -182,15 +182,14 @@ def plot_actions(ro: StepSequence, env: Env):
         # Use recorded time stamps if possible
         t = ro.env_infos.get('t', np.arange(0, ro.length)) if hasattr(ro, 'env_infos') else np.arange(0, ro.length)
 
-        fig, axs = plt.subplots(dim_act, figsize=(8, 12), constrained_layout=True)
+        fig, axs = plt.subplots(dim_act, figsize=(8, 12))
         fig.suptitle('Actions over Time')
-        plt.subplots_adjust(hspace=.5)
         colors = plt.get_cmap('tab20')(np.linspace(0, 1, dim_act))
 
         act_norm_wrapper = typed_env(env, ActNormWrapper)
         if act_norm_wrapper is not None:
             lb, ub = inner_env(env).act_space.bounds
-            act_denorm = lb + (ro.actions[:] + 1.) * (ub - lb) / 2
+            act_denorm = lb + (ro.actions[:] + 1.)*(ub - lb)/2
             act_clipped = np.array([inner_env(env).limit_act(a) for a in act_denorm])
         else:
             act_denorm = ro.actions
@@ -262,14 +261,15 @@ def plot_potentials(ro: StepSequence, layout: str = 'joint'):
                     ax2.set_title(f'{ro.potentials.shape[1]} Potentials over time')
                     ax3.set_title(f'{ro.actions.shape[1]} Actions over time')
 
-            # for a in fig.get_axes():
-            #     a.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+            if num_pot < 8:  # otherwise it gets too cluttered
+                for a in fig.get_axes():
+                    a.legend(loc='center left', bbox_to_anchor=(1, 0.5))
 
             plt.subplots_adjust(hspace=.5)
             plt.subplots_adjust(wspace=.8)
 
         elif layout == 'joint':
-            fig, axs = plt.subplots(nrows=4, ncols=1, sharex=True, figsize=(8, 12))
+            fig, axs = plt.subplots(nrows=4, ncols=1, figsize=(12, 10), sharex='all')
 
             for i in range(num_pot):
                 axs[0].plot(t, ro.stimuli_external[:, i], label=rf'$s_{{ext,{i}}}$', c=colors_pot[i])
@@ -284,8 +284,8 @@ def plot_potentials(ro: StepSequence, layout: str = 'joint'):
             axs[2].set_title(f'{ro.potentials.shape[1]} Potentials over time')
             axs[3].set_title(f'{ro.actions.shape[1]} Actions over time')
 
-            # for a in fig.get_axes():
-            #     a.legend(loc='center left', bbox_to_anchor=(1, 0.5))
+            for a in fig.get_axes():
+                a.legend(loc='center left', bbox_to_anchor=(1, 0.5))
 
             plt.subplots_adjust(wspace=.8)
 

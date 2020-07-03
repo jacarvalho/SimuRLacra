@@ -38,6 +38,7 @@ if __name__ == '__main__':
     # Use the environments number of steps in case of the default argument (inf)
     max_steps = env.max_steps if args.max_steps == pyrado.inf else args.max_steps
 
+
     # Simulate
     done, state, param = False, None, None
     while not done:
