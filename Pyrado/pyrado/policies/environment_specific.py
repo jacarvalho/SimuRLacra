@@ -453,6 +453,9 @@ class QQubePDCtrl(Policy):
         if abs(err[0].item()) <= self.tols[0].item() and abs(err[1].item()) <= self.tols[1].item():
             self.done = True
 
+
+        # err = err.float()
+
         # PD control
         return k.dot(err).unsqueeze(0)
 

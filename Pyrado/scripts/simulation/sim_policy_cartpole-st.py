@@ -74,7 +74,7 @@ if __name__ == '__main__':
     # MVD
     policy = CartpoleStabilizerPolicy(
         env.spec,
-        K = np.array([2.808297, 6.8337216, 0.5270572, 6.738731, -6.4826946])
+        K = np.array([2.1342492,  4.500987 , 0.2497045,  8.18922,   -5.8538713])
     )
 
     print_cbt('Set up controller for the QuanserCartpole environment.', 'c')
