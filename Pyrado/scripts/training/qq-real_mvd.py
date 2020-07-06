@@ -5,6 +5,7 @@ from pyrado.algorithms.emvd import EMVD
 from pyrado.algorithms.torchdistributions import GaussianDiagonalLogStdParametrization, GaussianDiagonal
 from pyrado.environment_wrappers.action_normalization import ActNormWrapper
 from pyrado.environments.pysim.quanser_qube import QQubeSim
+from pyrado.environments.quanser.quanser_qube import QQubeReal
 from pyrado.logger.experiment import setup_experiment, save_list_of_dicts_to_yaml
 from pyrado.policies.environment_specific import QQubeSwingUpAndBalanceCtrl
 from pyrado.policies.features import FeatureStack, identity_feat, sign_feat, abs_feat, squared_feat, qubic_feat, \
@@ -17,11 +18,11 @@ import numpy as np
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
     # ex_dir = setup_experiment(QQubeSim.name, PoWER.name, f'{LinearPolicy}_actnorm', seed=1)
-    ex_dir = setup_experiment(QQubeSim.name, EMVD.name, QQubeSwingUpAndBalanceCtrl.name, seed=0)
+    ex_dir = setup_experiment(QQubeReal.name, EMVD.name, QQubeSwingUpAndBalanceCtrl.name, seed=0)
 
     # Environment
     env_hparams = dict(dt=1/500., max_steps=5000)
-    env = QQubeSim(**env_hparams)
+    env = QQubeReal(**env_hparams)
     # env = ActNormWrapper(env)
 
     # Search distribution

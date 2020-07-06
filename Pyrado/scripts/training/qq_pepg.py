@@ -43,14 +43,14 @@ if __name__ == '__main__':
     # Algorithm
     algo_hparam = dict(
         max_iter=50,
-        pop_size=2,
+        pop_size=10,
         num_rollouts=10,
         # pop_size=2*(6+6),
         # num_rollouts=10,
         expl_std_init=1.0,
         expl_std_min=0.000001,
         num_sampler_envs=12,
-        lr=1e-1,
+        lr=3e-1,
         optim='Adam'
     )
     algo = PEPG(ex_dir, env, policy, **algo_hparam)

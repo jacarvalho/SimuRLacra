@@ -110,7 +110,7 @@ class ParameterExploring(Algorithm):
             # If you do not want to include the current policy parameters, be aware that you also have to do follow-up
             # changes in the update() functions in all subclasses of ParameterExploring
             # include_nominal_params=True
-            include_nominal_params = False
+            include_nominal_params = True
         )
 
         with to.no_grad():

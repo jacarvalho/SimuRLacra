@@ -102,6 +102,58 @@ class EMVD(ParameterExploring):
         loss.backward()
         self.optim.step()
 
+    def step(self, snapshot_mode: str, meta_info: dict = None):
+        # Sample new policy parameters
+        paramsets = self._expl_strat.sample_param_sets(
+            self._policy.param_values,
+            num_samples=0,
+            # If you do not want to include the current policy parameters, be aware that you also have to do follow-up
+            # changes in the update() functions in all subclasses of ParameterExploring
+            # include_nominal_params=True
+            include_nominal_params = True
+        )
+
+        with to.no_grad():
+            # Sample rollouts using these parameters
+            param_samp_res = self.sampler.sample(paramsets)
+
+        # Evaluate the current policy (first one in list if include_nominal_params is True)
+        ret_avg_curr = param_samp_res[0].mean_undiscounted_return
+
+        # Store the average return for the stopping criterion
+        self.ret_avg_stack = np.delete(self.ret_avg_stack, 0)
+        self.ret_avg_stack = np.append(self.ret_avg_stack, ret_avg_curr)
+
+        all_rets = param_samp_res.mean_returns
+        all_lengths = np.array([len(ro) for pss in param_samp_res for ro in pss.rollouts])
+
+        # Log metrics computed from the old policy (before the update)
+        self.logger.add_value('curr policy return', ret_avg_curr)
+        self.logger.add_value('max return', float(np.max(all_rets)))
+        self.logger.add_value('median return', float(np.median(all_rets)))
+        self.logger.add_value('avg return', float(np.mean(all_rets)))
+        self.logger.add_value('std return', float(np.std(all_rets)))
+        self.logger.add_value('avg rollout len', float(np.mean(all_lengths)))
+        # self.logger.add_value('min mag policy param',
+        #                       self._policy.param_values[to.argmin(abs(self._policy.param_values))])
+        # self.logger.add_value('max mag policy param',
+        #                       self._policy.param_values[to.argmax(abs(self._policy.param_values))])
+
+        # Logging
+        self.logger.add_value('policy param', self._policy.param_values.detach().numpy())
+        self.logger.add_value('expl strat mean', self._distribution.get_mean(tensor=False))
+        self.logger.add_value('expl strat cov', self._distribution.get_cov(tensor=False))
+
+        # Extract the best policy parameter sample for saving it later
+        self.best_policy_param = param_samp_res.parameters[np.argmax(param_samp_res.mean_returns)].clone()
+
+        # Save snapshot data
+        self.make_snapshot(snapshot_mode, float(np.max(param_samp_res.mean_returns)), meta_info)
+
+        # Update the policy
+        self.update(param_samp_res, ret_avg_curr)
+
+
     def update(self, param_results: ParameterSamplingResult, ret_avg_curr: float = None):
 
         loss = -self._mvd_gaussian_diag_covariance_surrogate_loss().mean()
@@ -111,11 +163,7 @@ class EMVD(ParameterExploring):
         # Update the policy parameters to the mean of the seach distribution
         self._policy.param_values = self._distribution.get_mean(tensor=True).view(-1)
 
-        # Logging
-        self.logger.add_value('policy param', self._policy.param_values.detach().numpy())
-        self.logger.add_value('expl strat mean', self._distribution.get_mean(tensor=False))
-        self.logger.add_value('expl strat cov', self._distribution.get_cov(tensor=False))
-        # self.logger.add_value('expl strat entropy', self._expl_strat.get_entropy().item())
+
 
 
     def _mvd_gaussian_diag_covariance_surrogate_loss(self):
