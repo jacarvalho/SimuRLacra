@@ -360,7 +360,8 @@ class QQubeEnergyCtrl(Policy):
         # Initialize parameters
         self._log_E_ref = nn.Parameter(to.log(to.tensor(ref_energy)), requires_grad=True)
         self._log_E_gain = nn.Parameter(to.log(to.tensor(energy_gain)), requires_grad=True)
-        self._th_gain = nn.Parameter(to.tensor(th_gain), requires_grad=True)
+        # self._th_gain = nn.Parameter(to.tensor(th_gain), requires_grad=True)
+        self._th_gain = to.tensor(th_gain)
         self.acc_max = to.tensor(acc_max)
         self.dp_nom = QQubeSim.get_nominal_domain_param()
 

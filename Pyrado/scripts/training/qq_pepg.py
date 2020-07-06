@@ -1,7 +1,7 @@
 """
 Train an agent to solve the Quanser Qube environment using Policy learning by Weighting Exploration with the Returns.
 """
-from pyrado.algorithms.power import PoWER
+from pyrado.algorithms.pepg import PEPG
 from pyrado.environment_wrappers.action_normalization import ActNormWrapper
 from pyrado.environments.pysim.quanser_qube import QQubeSim
 from pyrado.logger.experiment import setup_experiment, save_list_of_dicts_to_yaml
@@ -15,7 +15,7 @@ import torch as to
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
     # ex_dir = setup_experiment(QQubeSim.name, PoWER.name, f'{LinearPolicy}_actnorm', seed=1)
-    ex_dir = setup_experiment(QQubeSim.name, PoWER.name, QQubeSwingUpAndBalanceCtrl.name, seed=1)
+    ex_dir = setup_experiment(QQubeSim.name, PEPG.name, QQubeSwingUpAndBalanceCtrl.name, seed=1)
 
     # Environment
     env_hparams = dict(dt=1/500., max_steps=5000)
@@ -33,7 +33,7 @@ if __name__ == '__main__':
     policy_hparam = dict(
         ref_energy=0.02,
         energy_gain=50.,
-        energy_th_gain=0.3, # This parameter is fixed. (requires_grad = False)
+        energy_th_gain=0.3, # This parameter is fixed.
         acc_max=5.,
         alpha_max_pd_enable=10.,
         pd_gains=to.tensor([-2, 35, -1.5, 3])
@@ -46,14 +46,14 @@ if __name__ == '__main__':
         pop_size=50,
         num_rollouts=10,
         # pop_size=2*(6+6),
-        # num_rollouts=1,
-        num_is_samples=10,
+        # num_rollouts=10,
         expl_std_init=1.0,
         expl_std_min=0.000001,
-        symm_sampling=False,
         num_sampler_envs=12,
+        lr=1e-1,
+        optim='Adam'
     )
-    algo = PoWER(ex_dir, env, policy, **algo_hparam)
+    algo = PEPG(ex_dir, env, policy, **algo_hparam)
 
     # Save the hyper-parameters
     save_list_of_dicts_to_yaml([

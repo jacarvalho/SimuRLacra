@@ -58,6 +58,7 @@ class PEPG(ParameterExploring):
                  transform_returns: bool = True,
                  num_sampler_envs: int = 4,
                  lr: float = 5e-4,
+                 optim: str = 'SGD',
                  base_seed: int = None):
         """
         Constructor
@@ -102,10 +103,16 @@ class PEPG(ParameterExploring):
             std_min=expl_std_min,
         ))
 
-        self.optim = to.optim.SGD([{'params': self._policy.parameters()}], lr=lr, momentum=0.8, dampening=0.1)
+        if optim == 'SGD':
+            self.optim = to.optim.SGD([{'params': self._policy.parameters()}], lr=lr, momentum=0.8, dampening=0.1)
+        elif optim == 'Adam':
+            self.optim = to.optim.Adam([{'params': self._policy.parameters()}], lr=lr)
+        else:
+            raise NotImplementedError
 
     @to.no_grad()
     def update(self, param_results: ParameterSamplingResult, ret_avg_curr: float = None):
+        print(param_results)
         # Average the return values over the rollouts
         rets_avg_ros = param_results[1:].mean_returns
 
