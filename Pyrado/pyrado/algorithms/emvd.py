@@ -192,7 +192,7 @@ class EMVD(ParameterExploring):
 
         self._optimize_distribution_parameters(loss)
 
-        # Update the policy parameters to the mean of the seach distribution
+        # Update the policy parameters to the mean of the search distribution
         self._policy.param_values = self._distribution.get_mean(tensor=True).view(-1)
 
 
