@@ -24,6 +24,9 @@ if __name__ == '__main__':
     # Load the environment and the policy
     env, policy, kwout = load_experiment(ex_dir, args)
 
+    print("Policy: ", policy.param_values)
+
+
     # Override the time step size if specified
     if args.dt is not None:
         env.dt = args.dt

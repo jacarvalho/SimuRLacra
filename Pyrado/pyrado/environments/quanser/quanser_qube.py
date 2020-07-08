@@ -22,7 +22,7 @@ class QQubeReal(RealEnv, Serializable):
     def __init__(self,
                  dt: float = 1/500.,
                  max_steps: int = pyrado.inf,
-                 ip: str = '192.168.2.40',
+                 ip: str = '10.42.0.74',
                  task_args: [dict, None] = None):
         """
         Constructor

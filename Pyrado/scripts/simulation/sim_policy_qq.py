@@ -67,16 +67,38 @@ if __name__ == '__main__':
     #     alpha_max_pd_enable=10.,  # Quanser's value: 20
     #     pd_gains=to.tensor([-2.1271, 34.8878, -1.5363, 2.8060]))
 
-
-    # MVD
+    # QUANSER with MVD energy controller for swing up
     policy = QQubeSwingUpAndBalanceCtrl(
         env.spec,
-        ref_energy=np.exp(-2.6142373),
-        energy_gain=np.exp(2.6333313),
-        energy_th_gain=0.3,  # for simulation and real system
+        ref_energy=np.exp(-2.6142373),  # Quanser's value: 0.02
+        energy_gain=np.exp(2.6333313),  # Quanser's value: 50
+        energy_th_gain=0.3,  # former: 0.4
+        # energy_th_gain=1.1970321,  # former: 0.4
         acc_max=5.,  # Quanser's value: 6
         alpha_max_pd_enable=10.,  # Quanser's value: 20
-        pd_gains=to.tensor([-1.7313308, 35.976177, -1.58682, 3.0102878]))
+        pd_gains=to.tensor([-2., 20., -1.0, 6.]))
+
+
+    # Initial Controller
+    # policy = QQubeSwingUpAndBalanceCtrl(
+    #     env.spec,
+    #     ref_energy=np.exp(np.log(0.2)),  # Quanser's value: 0.02
+    #     energy_gain=np.exp(np.log(50.)),  # Quanser's value: 50
+    #     energy_th_gain=0.3,  # former: 0.4
+    #     # energy_th_gain=1.1970321,  # former: 0.4
+    #     acc_max=5.,  # Quanser's value: 6
+    #     alpha_max_pd_enable=10.,  # Quanser's value: 20
+    #     pd_gains=to.tensor([-0.3, 9., -0.8, 2.]))
+
+    # MVD
+    # policy = QQubeSwingUpAndBalanceCtrl(
+    #     env.spec,
+    #     ref_energy=np.exp(-2.6142373),
+    #     energy_gain=np.exp(2.6333313),
+    #     energy_th_gain=0.3,  # for simulation and real system
+    #     acc_max=5.,  # Quanser's value: 6
+    #     alpha_max_pd_enable=10.,  # Quanser's value: 20
+    #     pd_gains=to.tensor([-1.7313308, 35.976177, -1.58682, 3.0102878]))
 
 
     print_cbt('Set up controller for the QQubeSim environment.', 'c')

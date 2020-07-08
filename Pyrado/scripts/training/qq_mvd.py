@@ -17,7 +17,7 @@ import numpy as np
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
     # ex_dir = setup_experiment(QQubeSim.name, PoWER.name, f'{LinearPolicy}_actnorm', seed=1)
-    ex_dir = setup_experiment(QQubeSim.name, EMVD.name, QQubeSwingUpAndBalanceCtrl.name, seed=0)
+    ex_dir = setup_experiment(QQubeSim.name, EMVD.name, QQubeSwingUpAndBalanceCtrl.name, seed=2)
 
     # Environment
     env_hparams = dict(dt=1/500., max_steps=5000)
@@ -25,10 +25,22 @@ if __name__ == '__main__':
     # env = ActNormWrapper(env)
 
     # Search distribution
-    init_loc = np.array([np.log(0.02), np.log(50.),
-                         -2., 35., -1.5, 3.],
+    # init_loc = np.array([np.log(0.02), np.log(50.), 0.3,
+    #                      -2., 35., -1.5, 3.], dtype=np.float64)
+    # init_std = 0.5 * np.ones(init_loc.shape[0], dtype=np.float64)
+
+    # init_loc = np.array([np.log(0.02), np.log(50.), 0.3,
+    #                      -2., 20., -1.0, 6.], dtype=np.float64)
+    # init_std = 1.0 * np.ones(init_loc.shape[0], dtype=np.float64)
+
+    # init_loc = np.array([np.log(0.02), np.log(50.), 0.3,
+    #                      -2., 20., -1.0, 6.], dtype=np.float64)
+    # init_std = 1.0 * np.ones(init_loc.shape[0], dtype=np.float64)
+
+    init_loc = np.array([np.log(0.02), np.log(50.), 0.3,
+                         -2., 20., -1.0, 6.],
                         dtype=np.float64)
-    init_std = 1.0 * np.ones(init_loc.shape[0], dtype=np.float64)
+    init_std = 1.0  * np.ones(init_loc.shape[0], dtype=np.float64)
 
     dist = GaussianDiagonalLogStdParametrization(init_loc=init_loc, init_std=init_std)
     # dist = GaussianDiagonal(init_loc=init_loc, init_std=init_std)
@@ -37,10 +49,11 @@ if __name__ == '__main__':
     policy_hparam = dict(
         ref_energy=init_loc[0],
         energy_gain=init_loc[1],
-        energy_th_gain=0.3, # This parameter is fixed.
+        # energy_th_gain=0.3, # This parameter is fixed.
+        energy_th_gain=init_loc[2], # This parameter is fixed.
         acc_max=5.,
         alpha_max_pd_enable=10.,
-        pd_gains=to.tensor([init_loc[2], init_loc[3], init_loc[4], init_loc[5]], dtype=to.float64)
+        pd_gains=to.tensor([init_loc[3], init_loc[4], init_loc[5], init_loc[6]], dtype=to.float64)
     )
     policy = QQubeSwingUpAndBalanceCtrl(env.spec, **policy_hparam)
 
@@ -57,7 +70,7 @@ if __name__ == '__main__':
         num_sampler_envs=16,
         n_mc_samples_gradient=1,
         coupling=True,
-        lr=3e-1,
+        lr=1e-1,
         optim='Adam'
     )
 

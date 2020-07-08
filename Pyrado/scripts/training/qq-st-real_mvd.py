@@ -18,7 +18,7 @@ import numpy as np
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
     # ex_dir = setup_experiment(QQubeSim.name, PoWER.name, f'{LinearPolicy}_actnorm', seed=1)
-    ex_dir = setup_experiment(QQubeReal.name, EMVD.name, QQubeSwingUpAndBalanceCtrl.name, seed=2)
+    ex_dir = setup_experiment(QQubeReal.name + 'stab' , EMVD.name, QQubeSwingUpAndBalanceCtrl.name, seed=2)
 
     # Environment
     env_hparams = dict(dt=1/500., max_steps=5000)
@@ -26,19 +26,9 @@ if __name__ == '__main__':
     # env = ActNormWrapper(env)
 
     # Search distribution
-    # init_loc = np.array([np.log(0.02), np.log(50.), 0.3,
-    #                      -2., 20., -1.0, 6.],
-    #                     dtype=np.float64)
-    # init_std = 0.5  * np.ones(init_loc.shape[0], dtype=np.float64)
-
-    # init_loc = np.array([-3.727,   3.8218,  1.04,   -0.9979,  20.257,  -0.7138,  5.7895],
-    #                     dtype=np.float64)
-    # init_std = np.array([0.2288,  0.1952,  0.4372,  0.5408,  0.3838,  0.3574,  0.5939], dtype=np.float64)
-
-    # Seach distribution AT ITERATION 18
-    init_loc = np.array([-3.5888, 3.7302, 1.0079, -1.1522, 20.4393, -0.8824, 5.6107],
+    init_loc = np.array([-2., 20., -1.0, 6.],
                         dtype=np.float64)
-    init_std = np.array([0.199, 0.1868, 0.3627, 0.5551, 0.4632, 0.329, 0.6465], dtype=np.float64)
+    init_std = 1.0  * np.ones(init_loc.shape[0], dtype=np.float64)
 
 
     dist = GaussianDiagonalLogStdParametrization(init_loc=init_loc, init_std=init_std)
@@ -46,21 +36,14 @@ if __name__ == '__main__':
 
     # Policy
     policy_hparam = dict(
-        ref_energy=init_loc[0],
-        energy_gain=init_loc[1],
-        # energy_th_gain=0.3, # This parameter is fixed.
-        energy_th_gain=init_loc[2], # This parameter is fixed.
         acc_max=5.,
         alpha_max_pd_enable=10.,
-        pd_gains=to.tensor([init_loc[3], init_loc[4], init_loc[5], init_loc[6]], dtype=to.float64)
+        pd_gains=to.tensor([init_loc[0], init_loc[1], init_loc[2], init_loc[3]], dtype=to.float64)
     )
-    policy = QQubeSwingUpAndBalanceCtrl(env.spec, **policy_hparam)
+    policy = QQubeSwingUpAndBalanceCtrl(env.spec, **policy_hparam, only_pd_control=True)
 
     # Set the policy parameters to the initial ones...
-    # policy.param_values = to.tensor(init_loc)
-
-    # Sample a policy from the final search distribution
-    policy.param_values = to.tensor(dist.sample([1]).view(-1))
+    policy.param_values = to.tensor(init_loc)
 
 
     # Algorithm

@@ -1,6 +1,7 @@
 import numpy as np
 import torch as to
 import torch.distributions as torchdist
+from copy import deepcopy
 
 from pyrado.algorithms.parameter_exploring import ParameterExploring
 from pyrado.algorithms.torchdist_utils import DoubleSidedStandardMaxwell, std_gaussian_from_std_dsmaxwell
@@ -9,7 +10,8 @@ from pyrado.policies.base import Policy
 from pyrado.utils.math import clamp_symm
 from pyrado.sampling.parameter_exploration_sampler import ParameterSamplingResult
 from pyrado.exploration.stochastic_params import SymmParamExplStrat, NormalParamNoise
-
+from pyrado.sampling.rollout import rollout, after_rollout_query
+from pyrado.utils.data_types import RenderMode
 
 
 class EMVD(ParameterExploring):
@@ -36,6 +38,7 @@ class EMVD(ParameterExploring):
                  num_sampler_envs: int = 4,
                  n_mc_samples_gradient=1,
                  coupling=True,
+                 real_env=False,
                  lr: float = 5e-4,
                  optim: str = 'SGD',
                  base_seed: int = None):
@@ -72,6 +75,7 @@ class EMVD(ParameterExploring):
         self._n_mc_samples_gradient = n_mc_samples_gradient
         self._coupling = coupling
 
+        self._real_env = real_env
 
         # Store the inputs
         self.clip_ratio_std = clip_ratio_std
@@ -97,64 +101,92 @@ class EMVD(ParameterExploring):
         else:
             raise NotImplementedError
 
+        self._iter = 0
+
     def _optimize_distribution_parameters(self, loss):
         self.optim.zero_grad()
         loss.backward()
         self.optim.step()
 
     def step(self, snapshot_mode: str, meta_info: dict = None):
-        # Sample new policy parameters
-        paramsets = self._expl_strat.sample_param_sets(
-            self._policy.param_values,
-            num_samples=0,
-            # If you do not want to include the current policy parameters, be aware that you also have to do follow-up
-            # changes in the update() functions in all subclasses of ParameterExploring
-            # include_nominal_params=True
-            include_nominal_params = True
-        )
+        if not self._real_env:
+            # Sample new policy parameters
+            paramsets = self._expl_strat.sample_param_sets(
+                self._policy.param_values,
+                num_samples=10,
+                # If you do not want to include the current policy parameters, be aware that you also have to do follow-up
+                # changes in the update() functions in all subclasses of ParameterExploring
+                # include_nominal_params=True
+                include_nominal_params = True
+            )
 
+            with to.no_grad():
+                # Sample rollouts using these parameters
+                param_samp_res = self.sampler.sample(paramsets)
+
+            # Evaluate the current policy (first one in list if include_nominal_params is True)
+            ret_avg_curr = param_samp_res[0].mean_undiscounted_return
+
+            # Store the average return for the stopping criterion
+            self.ret_avg_stack = np.delete(self.ret_avg_stack, 0)
+            self.ret_avg_stack = np.append(self.ret_avg_stack, ret_avg_curr)
+
+            all_rets = param_samp_res.mean_returns
+            all_lengths = np.array([len(ro) for pss in param_samp_res for ro in pss.rollouts])
+
+            # Log metrics computed from the old policy (before the update)
+            self.logger.add_value('curr policy return', ret_avg_curr)
+            self.logger.add_value('max return', float(np.max(all_rets)))
+            self.logger.add_value('median return', float(np.median(all_rets)))
+            self.logger.add_value('avg return', float(np.mean(all_rets)))
+            self.logger.add_value('std return', float(np.std(all_rets)))
+            self.logger.add_value('avg rollout len', float(np.mean(all_lengths)))
+            # self.logger.add_value('min mag policy param',
+            #                       self._policy.param_values[to.argmin(abs(self._policy.param_values))])
+            # self.logger.add_value('max mag policy param',
+            #                       self._policy.param_values[to.argmax(abs(self._policy.param_values))])
+
+            # Logging
+            self.logger.add_value('policy param', self._policy.param_values.detach().numpy())
+            self.logger.add_value('expl strat mean', deepcopy(self._distribution.get_mean(tensor=False)))
+            self.logger.add_value('expl strat cov', deepcopy(self._distribution.get_cov(tensor=False)))
+
+            # Extract the best policy parameter sample for saving it later
+            self.best_policy_param = param_samp_res.parameters[np.argmax(param_samp_res.mean_returns)].clone()
+
+            # Save snapshot data
+            self.make_snapshot(snapshot_mode, float(np.max(param_samp_res.mean_returns)), meta_info)
+            # Update the policy
+            self.update(param_samp_res)
+
+
+        else:
+            input("Change video and Press ENTER")
+
+            ro = rollout(self._env, self.policy, eval=True, render_mode=RenderMode(text=False))
+
+            r =  np.sum(ro.rewards)
+            print('curr policy return: ', r)
+            print('policy param: ', self._policy.param_values.detach().numpy())
+            print('expl strat mean: ', self._distribution.get_mean(tensor=False))
+            print('expl strat std: ', np.sqrt(self._distribution.get_cov(tensor=False)))
+            # Update the policy
+            self.update()
+
+    def policy_return(self, Ks):
         with to.no_grad():
-            # Sample rollouts using these parameters
-            param_samp_res = self.sampler.sample(paramsets)
+            r_l = []
+            for i, K in enumerate(Ks):
+                print("{}/{} - K: {}".format(i, len(K)-1, K.view(-1)), end=" ")
 
-        # Evaluate the current policy (first one in list if include_nominal_params is True)
-        ret_avg_curr = param_samp_res[0].mean_undiscounted_return
+                self.policy.param_values = K
+                ro = rollout(self._env, self.policy, eval=True, render_mode=RenderMode(text=False))
+                r = np.sum(ro.rewards)
+                r_l.append(r)
+                print(" - r: {}".format(r))
+            return r_l
 
-        # Store the average return for the stopping criterion
-        self.ret_avg_stack = np.delete(self.ret_avg_stack, 0)
-        self.ret_avg_stack = np.append(self.ret_avg_stack, ret_avg_curr)
-
-        all_rets = param_samp_res.mean_returns
-        all_lengths = np.array([len(ro) for pss in param_samp_res for ro in pss.rollouts])
-
-        # Log metrics computed from the old policy (before the update)
-        self.logger.add_value('curr policy return', ret_avg_curr)
-        self.logger.add_value('max return', float(np.max(all_rets)))
-        self.logger.add_value('median return', float(np.median(all_rets)))
-        self.logger.add_value('avg return', float(np.mean(all_rets)))
-        self.logger.add_value('std return', float(np.std(all_rets)))
-        self.logger.add_value('avg rollout len', float(np.mean(all_lengths)))
-        # self.logger.add_value('min mag policy param',
-        #                       self._policy.param_values[to.argmin(abs(self._policy.param_values))])
-        # self.logger.add_value('max mag policy param',
-        #                       self._policy.param_values[to.argmax(abs(self._policy.param_values))])
-
-        # Logging
-        self.logger.add_value('policy param', self._policy.param_values.detach().numpy())
-        self.logger.add_value('expl strat mean', self._distribution.get_mean(tensor=False))
-        self.logger.add_value('expl strat cov', self._distribution.get_cov(tensor=False))
-
-        # Extract the best policy parameter sample for saving it later
-        self.best_policy_param = param_samp_res.parameters[np.argmax(param_samp_res.mean_returns)].clone()
-
-        # Save snapshot data
-        self.make_snapshot(snapshot_mode, float(np.max(param_samp_res.mean_returns)), meta_info)
-
-        # Update the policy
-        self.update(param_samp_res, ret_avg_curr)
-
-
-    def update(self, param_results: ParameterSamplingResult, ret_avg_curr: float = None):
+    def update(self, param_results: ParameterSamplingResult = None, ret_avg_curr: float = None):
 
         loss = -self._mvd_gaussian_diag_covariance_surrogate_loss().mean()
 
@@ -162,8 +194,6 @@ class EMVD(ParameterExploring):
 
         # Update the policy parameters to the mean of the seach distribution
         self._policy.param_values = self._distribution.get_mean(tensor=True).view(-1)
-
-
 
 
     def _mvd_gaussian_diag_covariance_surrogate_loss(self):
@@ -197,7 +227,7 @@ class EMVD(ParameterExploring):
         """
         Computes the measure valued gradient wrt the mean of the multivariate Gaussian with diagonal Covariance.
         """
-        print("----Grad mean")
+        print("----Grad mean", flush=True)
 
         mean, std = self._distribution.get_mean_and_std()
         diag_std = std
@@ -240,20 +270,24 @@ class EMVD(ParameterExploring):
         # pos_f_samples = self._func.eval(positive_samples.reshape(self._n_mc_samples_gradient * self._dims, self._dims))
         # neg_f_samples = self._func.eval(negative_samples.reshape(self._n_mc_samples_gradient * self._dims, self._dims))
 
-        pos_paramsets = positive_samples.reshape(self._n_mc_samples_gradient * self._dims, self._dims)
-        pos_f_samples_param_samp_res = self.sampler.sample(pos_paramsets.detach())
-        r_l = []
-        for i in range(len(pos_f_samples_param_samp_res)):
-            r_l.append(pos_f_samples_param_samp_res[i].mean_undiscounted_return)
-        pos_f_samples = to.tensor(r_l)
+        if not self._real_env:
+            pos_paramsets = positive_samples.reshape(self._n_mc_samples_gradient * self._dims, self._dims)
+            pos_f_samples_param_samp_res = self.sampler.sample(pos_paramsets.detach())
+            r_l = []
+            for i in range(len(pos_f_samples_param_samp_res)):
+                r_l.append(pos_f_samples_param_samp_res[i].mean_undiscounted_return)
+            pos_f_samples = to.tensor(r_l)
 
 
-        neg_paramsets = negative_samples.reshape(self._n_mc_samples_gradient * self._dims, self._dims)
-        neg_f_samples_param_samp_res = self.sampler.sample(neg_paramsets.detach())
-        r_l = []
-        for i in range(len(neg_f_samples_param_samp_res)):
-            r_l.append(neg_f_samples_param_samp_res[i].mean_undiscounted_return)
-        neg_f_samples = to.tensor(r_l)
+            neg_paramsets = negative_samples.reshape(self._n_mc_samples_gradient * self._dims, self._dims)
+            neg_f_samples_param_samp_res = self.sampler.sample(neg_paramsets.detach())
+            r_l = []
+            for i in range(len(neg_f_samples_param_samp_res)):
+                r_l.append(neg_f_samples_param_samp_res[i].mean_undiscounted_return)
+            neg_f_samples = to.tensor(r_l)
+        else:
+            pos_f_samples = to.tensor(self.policy_return(positive_samples.reshape(self._n_mc_samples_gradient * self._dims, self._dims)))
+            neg_f_samples = to.tensor(self.policy_return(negative_samples.reshape(self._n_mc_samples_gradient * self._dims, self._dims)))
 
         # Gradient batch
         # (B, D)
@@ -267,7 +301,7 @@ class EMVD(ParameterExploring):
         """
         Computes the measure valued gradient wrt the covariance of the multivariate Gaussian with diagonal covariance.
         """
-        print("----Grad covariance")
+        print("----Grad covariance", flush=True)
 
         mean, std = self._distribution.get_mean_and_std()
         diag_std = std
@@ -322,20 +356,24 @@ class EMVD(ParameterExploring):
         # pos_f_samples = self._func.eval(positive_samples.reshape(self._n_mc_samples_gradient * self._dims, self._dims))
         # neg_f_samples = self._func.eval(negative_samples.reshape(self._n_mc_samples_gradient * self._dims, self._dims))
 
-        pos_paramsets = positive_samples.reshape(self._n_mc_samples_gradient * self._dims, self._dims)
-        pos_f_samples_param_samp_res = self.sampler.sample(pos_paramsets.detach())
-        r_l = []
-        for i in range(len(pos_f_samples_param_samp_res)):
-            r_l.append(pos_f_samples_param_samp_res[i].mean_undiscounted_return)
-        pos_f_samples = to.tensor(r_l)
+        if not self._real_env:
+            pos_paramsets = positive_samples.reshape(self._n_mc_samples_gradient * self._dims, self._dims)
+            pos_f_samples_param_samp_res = self.sampler.sample(pos_paramsets.detach())
+            r_l = []
+            for i in range(len(pos_f_samples_param_samp_res)):
+                r_l.append(pos_f_samples_param_samp_res[i].mean_undiscounted_return)
+            pos_f_samples = to.tensor(r_l)
 
 
-        neg_paramsets = negative_samples.reshape(self._n_mc_samples_gradient * self._dims, self._dims)
-        neg_f_samples_param_samp_res = self.sampler.sample(neg_paramsets.detach())
-        r_l = []
-        for i in range(len(neg_f_samples_param_samp_res)):
-            r_l.append(neg_f_samples_param_samp_res[i].mean_undiscounted_return)
-        neg_f_samples = to.tensor(r_l)
+            neg_paramsets = negative_samples.reshape(self._n_mc_samples_gradient * self._dims, self._dims)
+            neg_f_samples_param_samp_res = self.sampler.sample(neg_paramsets.detach())
+            r_l = []
+            for i in range(len(neg_f_samples_param_samp_res)):
+                r_l.append(neg_f_samples_param_samp_res[i].mean_undiscounted_return)
+            neg_f_samples = to.tensor(r_l)
+        else:
+            pos_f_samples = to.tensor(self.policy_return(positive_samples.reshape(self._n_mc_samples_gradient * self._dims, self._dims)))
+            neg_f_samples = to.tensor(self.policy_return(negative_samples.reshape(self._n_mc_samples_gradient * self._dims, self._dims)))
 
 
         # Gradient batch

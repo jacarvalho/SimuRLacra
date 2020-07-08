@@ -288,7 +288,9 @@ class QQubeSwingUpAndBalanceCtrl(Policy):
                  acc_max: float = 5.,  # Quanser's value: 6
                  alpha_max_pd_enable: float = 10.,  # Quanser's value: 20
                  # pd_gains: to.Tensor = to.tensor([-0.42, 18.45, -0.53, 1.53])):  # Quanser's value: [-2, 35, -1.5, 3]
-                 pd_gains: to.Tensor = to.tensor([-2., 35., -1.5, 3.])):
+                 pd_gains: to.Tensor = to.tensor([-2., 35., -1.5, 3.]),
+                 only_pd_control=False,
+                 only_swingup_control=False):
                  # pd_gains: to.Tensor = to.tensor([-0.4707,  4.4347, -1.6357,  3.7186])):
         """
         Constructor
@@ -309,8 +311,8 @@ class QQubeSwingUpAndBalanceCtrl(Policy):
         self.alpha_max_pd_enable = alpha_max_pd_enable/180.*math.pi
 
         # Set up the energy and PD controller
-        self.e_ctrl = QQubeEnergyCtrl(env_spec, ref_energy, energy_gain, energy_th_gain, acc_max)
-        self.pd_ctrl = QQubePDCtrl(env_spec, k=pd_gains, al_des=math.pi)
+        self.e_ctrl = QQubeEnergyCtrl(env_spec, ref_energy, energy_gain, energy_th_gain, acc_max, only_pd_control=only_pd_control)
+        self.pd_ctrl = QQubePDCtrl(env_spec, k=pd_gains, al_des=math.pi, only_swingup_control=only_swingup_control)
 
     def pd_enabled(self, cos_al: [float, to.Tensor]) -> bool:
         """
@@ -337,6 +339,7 @@ class QQubeSwingUpAndBalanceCtrl(Policy):
             return self.e_ctrl(s)
 
 
+
 class QQubeEnergyCtrl(Policy):
     """ Energy-based controller used to swing the pendulum up """
 
@@ -345,7 +348,8 @@ class QQubeEnergyCtrl(Policy):
                  ref_energy: float,
                  energy_gain: float,
                  th_gain: float,
-                 acc_max: float):
+                 acc_max: float,
+                 only_pd_control=False):
         """
         Constructor
 
@@ -358,10 +362,15 @@ class QQubeEnergyCtrl(Policy):
         super().__init__(env_spec)
 
         # Initialize parameters
-        self._log_E_ref = nn.Parameter(to.log(to.tensor(ref_energy)), requires_grad=True)
-        self._log_E_gain = nn.Parameter(to.log(to.tensor(energy_gain)), requires_grad=True)
-        # self._th_gain = nn.Parameter(to.tensor(th_gain), requires_grad=True)
-        self._th_gain = to.tensor(th_gain)
+        if only_pd_control:
+            self._log_E_ref = to.log(to.tensor(ref_energy))
+            self._log_E_gain = to.log(to.tensor(energy_gain))
+            self._th_gain = to.tensor(th_gain)
+        else:
+            self._log_E_ref = nn.Parameter(to.log(to.tensor(ref_energy)), requires_grad=True)
+            self._log_E_gain = nn.Parameter(to.log(to.tensor(energy_gain)), requires_grad=True)
+            self._th_gain = nn.Parameter(to.tensor(th_gain), requires_grad=True)
+        # self._th_gain = to.tensor(th_gain)
         self.acc_max = to.tensor(acc_max)
         self.dp_nom = QQubeSim.get_nominal_domain_param()
 
@@ -423,7 +432,8 @@ class QQubePDCtrl(Policy):
                  th_des: float = 0.,
                  al_des: float = 0.,
                  tols: to.Tensor = to.tensor([1/180.*math.pi, 1./180.*math.pi]),
-                 calibration_mode: bool = False):
+                 calibration_mode: bool = False,
+                 only_swingup_control=False):
         """
         Constructor
 
@@ -436,7 +446,10 @@ class QQubePDCtrl(Policy):
         """
         super().__init__(env_spec)
 
-        self.k = nn.Parameter(k, requires_grad=True)
+        if only_swingup_control:
+            self.k = k
+        else:
+            self.k = nn.Parameter(k, requires_grad=True)
         self.state_des = to.tensor([th_des, al_des, 0., 0.])
         self.tols = tols
         self.calibration_mode = calibration_mode

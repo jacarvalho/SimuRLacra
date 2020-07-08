@@ -47,10 +47,10 @@ if __name__ == '__main__':
         num_rollouts=10,
         # pop_size=2*(6+6),
         # num_rollouts=10,
-        expl_std_init=1.0,
+        expl_std_init=0.5,
         expl_std_min=0.000001,
         num_sampler_envs=12,
-        lr=3e-1,
+        lr=5e-2,
         optim='Adam'
     )
     algo = PEPG(ex_dir, env, policy, **algo_hparam)
