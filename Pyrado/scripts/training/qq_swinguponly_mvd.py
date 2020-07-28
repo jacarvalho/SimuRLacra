@@ -49,7 +49,7 @@ if __name__ == '__main__':
     algo_hparam = dict(
         max_iter=50,
         pop_size=1,
-        num_rollouts=1,
+        num_rollouts=10,
         expl_std_init=1.0,
         expl_std_min=0.0,
         num_sampler_envs=16,

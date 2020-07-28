@@ -101,14 +101,24 @@ if __name__ == '__main__':
     #     pd_gains=to.tensor([-1.7313308, 35.976177, -1.58682, 3.0102878]))
 
     # Initial Controller SWINGUP ONLY
+    # policy = QQubeSwingUpAndBalanceCtrl(
+    #     env.spec,
+    #     ref_energy=np.exp(np.log(0.02)),  # Quanser's value: 0.02
+    #     energy_gain=np.exp(np.log(50)),  # Quanser's value: 50
+    #     energy_th_gain=0.3,
+    #     acc_max=5.,
+    #     alpha_max_pd_enable=10.,
+    #     pd_gains=to.tensor([-0.42, 18.45, -0.53, 1.53]))
+
+    # MVD - Learned for the paper
     policy = QQubeSwingUpAndBalanceCtrl(
         env.spec,
-        ref_energy=np.exp(np.log(0.02)),  # Quanser's value: 0.02
-        energy_gain=np.exp(np.log(50)),  # Quanser's value: 50
-        energy_th_gain=0.3,
-        acc_max=5.,
-        alpha_max_pd_enable=10.,
-        pd_gains=to.tensor([-0.42, 18.45, -0.53, 1.53]))
+        ref_energy=np.exp(-2.9414043),
+        energy_gain=np.exp(3.1400251),
+        energy_th_gain=0.73774934,  # for simulation and real system
+        acc_max=5.,  # Quanser's value: 6
+        alpha_max_pd_enable=10.,  # Quanser's value: 20
+        pd_gains=to.tensor([-1.9773294, 35.084324, -1.1951622, 3.3797605]))
 
 
     print_cbt('Set up controller for the QQubeSim environment.', 'c')
