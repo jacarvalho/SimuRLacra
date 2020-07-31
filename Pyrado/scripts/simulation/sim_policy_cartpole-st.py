@@ -25,7 +25,7 @@ class CartpoleStabilizerPolicy(Policy):
 
     def __init__(self,
                  env_spec: EnvSpec,
-                 K: np.ndarray = np.array([0.61746764, 3.0299, 0.0234721, 6.45926, -4.7399826]),
+                 K: np.ndarray = np.array([ 1.2278416e+00, 4.5279346e+00 , -1.2385756e-02,  6.0038762e+00,   -4.1818547e+00]),
                  u_max: float = 18.,
                  v_max: float = 12.):
         """
@@ -44,6 +44,8 @@ class CartpoleStabilizerPolicy(Policy):
 
         self.K_pd = to.tensor(K)
 
+        self._max_u = 8.
+
     def init_param(self, init_values: to.Tensor = None, **kwargs):
         pass
 
@@ -60,7 +62,31 @@ class CartpoleStabilizerPolicy(Policy):
 
         # Return the clipped action
         act = act.clamp(-self.v_max, self.v_max)
+
+        # Denormalize action
+        lb, ub = -self._max_u, self._max_u
+        act = lb + (act + 1) * (ub - lb) / 2
+
+        # Bound
+        act = self._bound(act, -self._max_u, self._max_u)
+
         return act.view(1)  # such that when act is later converted to numpy it does not become a float
+
+    @staticmethod
+    def _bound(x, min_value, max_value):
+        """
+        Method used to bound state and action variables.
+
+        Args:
+            x: the variable to bound;
+            min_value: the minimum value;
+            max_value: the maximum value;
+
+        Returns:
+            The bounded variable.
+
+        """
+        return np.maximum(min_value, np.minimum(x, max_value))
 
 
 
@@ -74,7 +100,7 @@ if __name__ == '__main__':
     # MVD
     policy = CartpoleStabilizerPolicy(
         env.spec,
-        K = np.array([2.1342492,  4.500987 , 0.2497045,  8.18922,   -5.8538713])
+        K = np.array([ 1.2278416e+00, 4.5279346e+00 , -1.2385756e-02,  6.0038762e+00,   -4.1818547e+00])
     )
 
     print_cbt('Set up controller for the QuanserCartpole environment.', 'c')
