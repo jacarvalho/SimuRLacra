@@ -18,7 +18,7 @@ import numpy as np
 if __name__ == '__main__':
     # Experiment (set seed before creating the modules)
     # ex_dir = setup_experiment(QQubeSim.name, PoWER.name, f'{LinearPolicy}_actnorm', seed=1)
-    ex_dir = setup_experiment(QQubeReal.name + 'swinguponly', EMVD.name, QQubeSwingUpAndBalanceCtrl.name, seed=0)
+    ex_dir = setup_experiment(QQubeReal.name + 'swinguponly', EMVD.name, QQubeSwingUpAndBalanceCtrl.name, seed=1)
 
     # Environment
     env_hparams = dict(dt=1/500., max_steps=5000)
@@ -33,13 +33,19 @@ if __name__ == '__main__':
     init_std = 0.5 * np.ones(init_loc.shape[0], dtype=np.float64)
 
 
+    init_loc = np.array([-3.7448, 3.4727, 0.9504],
+                        dtype=np.float64)
+    init_std = np.array([0.1341, 0.4115, 0.3194], dtype=np.float64)
+
+
     dist = GaussianDiagonalLogStdParametrization(init_loc=init_loc, init_std=init_std)
 
     # Policy
     policy_hparam = dict(
         pd_gains = to.tensor([-1.7313308, 35.976177, -1.58682, 3.0102878])
     )
-    policy = QQubeSwingUpAndBalanceCtrl(env.spec, **policy_hparam)
+    policy = QQubeSwingUpAndBalanceCtrl(env.spec, **policy_hparam,
+                                        only_swingup_control=True)
 
     # Set the policy parameters to the initial ones...
     # policy.param_values = to.tensor(init_loc)
@@ -58,7 +64,7 @@ if __name__ == '__main__':
         num_sampler_envs=1,
         n_mc_samples_gradient=1,
         coupling=True,
-        lr=5e-2,
+        lr=5e-1,
         optim='Adam',
         real_env=True
     )

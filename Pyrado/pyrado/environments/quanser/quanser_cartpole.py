@@ -189,6 +189,8 @@ class QCartPoleStabReal(QCartPoleReal):
         """
         super().__init__(dt, max_steps, ip, task_args)
 
+        self._sleep_before_start = True
+
         # Define the task-specific state space
         stab_thold = 15/180.*np.pi  # threshold angle for the stabilization task to be a failure [rad]
         min_state_1 = np.array([-self._l_rail/2. + self._x_buffer, np.pi - stab_thold, -np.inf, -np.inf])
@@ -248,6 +250,9 @@ class QCartPoleStabReal(QCartPoleReal):
 
         elif verbose:
             print('\u2713')
+
+        if self._sleep_before_start:
+            time.sleep(0.5)
 
         return
 

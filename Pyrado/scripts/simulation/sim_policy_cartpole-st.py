@@ -44,7 +44,7 @@ class CartpoleStabilizerPolicy(Policy):
 
         self.K_pd = to.tensor(K)
 
-        self._max_u = 8.
+        self._max_u = 3.
 
     def init_param(self, init_values: to.Tensor = None, **kwargs):
         pass

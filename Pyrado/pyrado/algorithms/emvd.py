@@ -162,14 +162,14 @@ class EMVD(ParameterExploring):
 
         else:
             input("Change video and Press ENTER")
+            print('policy param: ', self._policy.param_values.detach().numpy())
+            print('expl strat mean: ', self._distribution.get_mean(tensor=False))
+            print('expl strat std: ', np.sqrt(self._distribution.get_cov(tensor=False)))
 
             ro = rollout(self._env, self.policy, eval=True, render_mode=RenderMode(text=False))
 
             r =  np.sum(ro.rewards)
             print('curr policy return: ', r)
-            print('policy param: ', self._policy.param_values.detach().numpy())
-            print('expl strat mean: ', self._distribution.get_mean(tensor=False))
-            print('expl strat std: ', np.sqrt(self._distribution.get_cov(tensor=False)))
             # Update the policy
             self.update()
 
